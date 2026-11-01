@@ -1,0 +1,11 @@
+id,risk,severity,mitigation,owner,status
+R1,Unauthorized intimate info access,Critical,deny by default and JIT evidence,security lead,open
+R2,Unreviewed psychometrics and behavioral guarantees,High,placeholder-only bank and legal review,product owner,open
+R3,MFA missing from base Firebase,Critical,Identity Platform or proven provider MFA,identity lead,open
+R4,Mode/photo leakage,Critical,pairwise multi-runtime policy tests,privacy lead,open
+R5,Unstaffed safety cases,Critical,on-call plan and staffing cost,trust lead,open
+R6,Unapproved branding,Medium,D2/D1/D5 founder comparison test,design lead,open
+R7,Global jurisdiction misapplication,High,territory gates and counsel,legal,open
+R8,D1 scale/cost surprises,High,meter and load tests,SRE,open
+R9,Google AI Studio mocks treated as deployed,High,evidence ledger and deploy tests,tech lead,open
+R10,Unfair mode-specific paywall,Medium,unified entitlement test,business,open

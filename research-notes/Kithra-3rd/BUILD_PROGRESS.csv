@@ -1,0 +1,11 @@
+module_id,module_name,owner_spec,status,completion_pct,verification_evidence
+MOD-01,Inventory & Plan + Open Dependencies Register,00_MASTER_CONTROL_SPEC.md,completed,100%,IMPLEMENTATION_PLAN.md & OPEN_DEPENDENCIES.md written
+MOD-02,Visual Token System (D2 Default + D5 + D1 Light/Dark + Indic Fonts),04_UIUX_RD_Complete_Design_System.md,completed,100%,src/index.css & live palette/theme/locale switchers verified
+MOD-03,Motion for React System & Reduced-Motion / Low-Data Hook,MOTION_FOR_REACT_COMPLETE_MATRIX.md,completed,100%,src/lib/motion.ts with 0ms safety invariant & reduced-motion support
+MOD-04,Public Editorial Website (S0-S10 + H-B/H-A/H-C + Legal Drafts + HTTP Errors),04A_LANDING_RD_Exact_Site_Content.md,completed,100%,src/components/LandingPage.tsx & src/components/Footer.tsx
+MOD-05,Auth & Onboarding (Split Sign-In + 6 Error States + 18+ Gate + 3-Mode Intent),04B_AUTH_PHOTO_AND_ERRORS_RD.md,completed,100%,src/components/LoginPage.tsx & src/components/SignupPage.tsx
+MOD-06,Deterministic Psychometrics Engine (Echo / Counterpoint / Mosaic Fit / Simulator),05_MATCHING_RD_Deterministic_Psychometrics.md,completed,100%,src/domain/matching.ts & src/domain/matching.test.ts (100% pass)
+MOD-07,Mode-Isolated Discovery & Compare & 4:5 Photo Per-Mode ACLs,02_PRD_Product_Requirements.md,completed,100%,src/components/MatchesView.tsx & src/components/ProfileView.tsx
+MOD-08,Mutual Connections / Messaging / 0ms Safety Bar / 4-Step Report / Circles,02_PRD_Product_Requirements.md,completed,100%,src/components/MessagingView.tsx & src/components/JournalView.tsx
+MOD-09,Unified Pricing (Free ₹0 / Plus ₹149 / Connect ₹249) + 1-Step Cancel + JSON Export,12_BILLING_RD_Unified_Pricing.md,completed,100%,src/components/BillingView.tsx & src/components/SecurityView.tsx
+MOD-10,Palantir-Inspired 3-Pane Staff Console + 10-Role RBAC + JIT + Hash-Chained Audit,06_ADMIN_RD_Full_Console.md,completed,100%,src/components/AdminView.tsx & src/domain/rbac.ts

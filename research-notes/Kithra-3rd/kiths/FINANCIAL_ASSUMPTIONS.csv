@@ -1,0 +1,11 @@
+variable,illustrative_value,unit,evidence_status
+Registered users,5000,persons,"scenario example, not forecast"
+Monthly active percent,0.3,fraction,illustrative
+Paid percent of MAU,0.03,fraction,illustrative
+Realized ARPPU,200,INR/month,"assumption, before tax and refunds"
+Founder salary,50000,INR/month,illustrative
+Moderation support reserve,30000,INR/month,illustrative
+Legal/compliance reserve,20000,INR/month,illustrative
+Cloudflare infrastructure,577,INR/month,illustrative old model; no guarantee
+Variable MAU expense,1.9,INR/active-month,illustrative old model; excluding AI
+AI inference,0,INR/month,fixed zero because no AI product feature

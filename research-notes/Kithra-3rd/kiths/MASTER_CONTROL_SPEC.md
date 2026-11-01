@@ -1,0 +1,49 @@
+# KITHRA 2026 — CANONICAL FULL-PRODUCT MASTER CONTROL SPECIFICATION
+
+**Build contract:** a complete, multi-region-ready, privacy-first social compatibility system for consenting adults, with Friendship, Dating and Matrimony experiences, deterministic questionnaire matching, explainable comparison lenses, communities, messaging, payments, support and a secure admin operations center. Production deployments: Cloudflare and Docker servers with feature/API parity.
+
+## 1. Product identity and the truthful promise
+Kithra helps adults meet compatible people through consented intentions, declared preferences, deterministic questionnaire patterns and mutual human choice. Never imply a brain copy, mathematical destiny, psychotherapy, behavioral certainty, scientifically proven predictive outcomes, or entitlement to a person. "Echo" = similarity; "Counterpoint" = meaningful difference; "Mosaic Fit" = explicit rule-based complementarity; all report coverage, model version, explanation and uncertainty. Users can decline, block or withdraw at any point.
+
+## 2. Success definition
+Primary north star: mutually confirmed valuable connection (repeat voluntary interaction after 7/30 days) segmented by mode, without unsafe engagement optimizations. Guardrails: complaint resolution, no privacy leakage, mode cross-disclosure zero, account recoverability, reliable billing and no fabricated data. Registered ≠ MAU ≠ retained ≠ paying. Do not optimize only swipes/scroll time.
+
+## 3. Complete feature domains (no MVP exclusions)
+Public web and SEO; editorial landing; fully adaptive auth/sign-in/signup/recovery/verification/MFA; progressive onboarding and intent selection; locale/consent; member profiles/photos/verification; themed 100-question banks & shuffled, server-signed versioned sessions; trait scoring, comparisons, lenses, explanations, coverage bands, choices to retake and withdraw; mode home/discover/search/filters; connection requests/mutual connections; DMs/groups; Circles/events; notifications; unified subscriptions/receipts/refunds; support & grievance; rights center/export/delete; accessibility & low-data settings; staff admin with users, safety, photos, reports, evidence, anti-spam, scoring releases, support, payments, RBAC, analytics, system health and incident response; audit and backups. See `12_REGISTERS/SCREENS.csv` and `REQUIREMENTS.csv` for complete routes and acceptance mapping.
+
+## 4. User-facing experience
+Desktop landing editorial with light-first Ink & Clay (provisional); hero must answer WHAT/WHO/HOW in 5 seconds: "Find your kind of people." Primary CTA "Start with a few questions". Three equal mode cards, honest 4-step matching explanation, fictional clearly-labeled interactive comparison demo, questionnaires, photo story, safety, unified pricing, FAQ, supported locales and real entity/legal footer. No fake live user numbers, marriage stories or "scientific" badges. Mobile CTA and first real content must appear immediately.
+
+Auth: accessible Google/email sign-in, email verification, password reset, error/locked states, 18+ gate, explicit consent, one account and mode activation. Never front-load hundreds of questions before any value. Modal flows never obscure a pending safety issue. Photo workflow: upload → crop → EXIF scrub → approve → privacy per mode → review/reorder/remove; anonymous/blur/limited-photo experience is honest, inclusive and configurable.
+
+Member UX: one shell; mode switcher communicates scope without blending mode data. Navigation: Home, Discover, Patterns, Messages, Circles, Notifications, Profile, Safety, Settings; premium under Account, not a nagging main tab. Desktop responsive sidebar + content + contextual details; mobile bottom tabs plus More sheet; keyboard support and mobile browser back behavior tested. Always show empty/error/offline/loading/permission/blocked states.
+
+Admin: separate /staff sub-app or admin subdomain; must not be discoverable as a working surface without a verified staff session. No "hidden link" security. Dense triage: left navigation, central list, case details in right pane; no raw private answers by default. Explicit assignment, evidence access justification, SLA, appeal, dual control on sensitive actions and immutable audit events.
+
+## 5. Visual foundation — pending founder sign-off
+Recommended research direction D2 Culture-Neutral Editorial "Ink & Clay". Light: canvas #FBFAF7, white #FFFFFF, ink #1F2320, deep teal #1F6F5C, clay #D98A3D DECORATIVE ONLY, safe clay text #8A5A1E, blue support #3E4A6B. Dark: canvas #14170F, surface #1F241D, ink #F2F2EC, teal #4FB39B, clay #E0A863. Friendship = teal; Dating = rose-clay; Matrimony = ink-blue as **labels+icons+accents**, not separate brands. Typography Fraunces display + Inter interface + Noto script-local. Token source: `13_RESEARCH_ORIGINAL/03_BRAND/design-tokens.json`; live implementation CSS source also supplied. Use all tokens; no raw scattered hex values. Test accessible contrast in all states before freeze.
+
+## 6. Motion contract
+Use `motion/react` and shared variants, `AnimatePresence` for quiz/question/wizard transitions, `layout`/`layoutId` for mode chip/selected tabs and drawers. Hero headline fade-rise ≤520ms; editorial photo reveal ≤520ms; relationship-map edge draw on interaction only; quiz horizontal transition ≤220ms; photo/modal micro transitions 120–220ms; admin 0–160ms only where it improves state recognition. Prefers-reduced-motion and low-data mode disable decorative motion; never animate safety submissions, delays, warnings or payment outcomes. No scroll-jacking, autoplay video or looping animation.
+
+## 7. Architecture contract
+Monorepo `apps/web`, `apps/api-worker`, `apps/api-node`, `apps/admin`, `packages/domain`, `packages/contracts`, `packages/repositories`, `packages/ui`, `packages/design-tokens`, `packages/matching`, `packages/auth`, `packages/storage`, `packages/realtime`, `packages/notifications`, `infra/cloudflare`, `infra/docker`, `tests/*`.
+
+Cloudflare: React 19 + Vite + TS + Tailwind + Motion, Workers Static Assets or supported Pages alternative, Hono API, D1, private R2, DO for real-time, Queues/Cron, transactional email vendor, Firebase identity token verification. Server: same React and domain packages, Hono Node adapter, PostgreSQL, S3/R2 media, WebSocket + Redis, BullMQ, Caddy/Nginx, Docker Compose, Jenkins and GHA. Both share OpenAPI, permissions, scoring and events, with adapters for SQL, object storage, clocks/IDs, realtime and background workers.
+
+Database portability is NOT `replace SQLite with Postgres` blindly: two migrations, same logical schema, transaction semantics and collation tests, explicit cutover and rollback, reconciliation checks. Docker Compose is a deployment baseline, not automatically a highly available 100k-user architecture. Scalable prod requires HA PostgreSQL/Redis, object storage, observability, backups and on-call.
+
+## 8. Security, legal, operations
+18+ assumption; no covert trait inference (especially sexual orientation/religion/health). Auth tokens verified server-side, short-lived sessions, secure cookies, CSRF strategy, rate limiting, bot mitigation, session revocation, MFA for staff. RBAC+ABAC by case/mode/actor/resource with deny by default; evidence access JIT and audited. Privacy: purpose-specific notice, per-mode consent, retention and withdrawal, real exports/deletions, processor register, incident handling, verified user right responses. Different jurisdictions require local counsel review; no claim of immunity. India DPDP operational phase 2027, current IT duties 2026 and CERT-In where applicable. Verify dates and applicability at release.
+
+## 9. Commercial model
+Unified Free/Plus/Connect; Friendship/Dating/Matrimony do not have different core entrance fees. Indicative India Plus ₹149/399/749/1399 for 1/3/6/12 months and Connect ₹249/699/1299/2399. These are hypotheses, NOT validated prices or legally final tax-inclusive offers. Optional human assistance and verified review must correspond to actual staffed/provider-delivered services. Safety, eligible discovery, mutual chat and data rights remain free. Show taxes, renewal, cancellation and refund clarity before payment. No VIP "perfect match" sale.
+
+## 10. Quality gates
+All routes completed in all states; no stub buttons; no mocked auth/payment; 404/403/410/429/500/503 and offline paths; identity access matrix test; media privacy test; matching determinism property tests; mode isolation; admin staff escalation; full subscription lifecycle; CI clean and deployment both environments; a11y WCAG 2.2 AA audited; Core Web Vitals and real-device regression; load and reliability; audit/backup/restore rehearsal; UAT and independent privacy/security review. No missing module can silently be recategorized as post-launch.
+
+## 11. Build process for AI Studio
+AI Studio may generate code in bounded slices. For each slice: cite requirement IDs, output actual code + migrations + API docs + tests + screenshot, run static checks, security checks and parity, register blockers. Do not claim tests were run if tools unavailable. Always preserve full-product scope in backlog. Team may sequence work, but no "MVP" reduction. `11_AI_STUDIO/START_PROMPT.md` is the agent launch instruction; `12_REGISTERS/REQUIREMENTS.csv` is the contract ledger.
+
+## 12. Critical external validations still required
+Brand approval; scientifically review questionnaire constructs and weights; verify provider limits/prices/availability; real payment/test merchant account; admin MFA; retention schedule and law review; copyright/consents for photography; user research in India and at least one other market; measurable fairness/false-positive/false-negative performance; anti-harassment operations. Until done, present them as blockers, never as green status.

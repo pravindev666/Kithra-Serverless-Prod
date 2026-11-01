@@ -1,0 +1,29 @@
+# Template: Jenkins deploys immutable verified GHCR image digests after separate approval.
+name: Server container build
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+  packages: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: 'npm'}
+      - run: npm ci && npm run test:unit && npm run test:security && npm run build
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/server/Dockerfile.api
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/kithra-api:${{ github.sha }}
+      # Repeat with separate auditable builds for web/admin/jobs; add SBOM, signatures and vulnerability gates.

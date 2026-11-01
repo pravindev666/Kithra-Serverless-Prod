@@ -1,0 +1,1 @@
+{"$schema":"node_modules/wrangler/config-schema.json","name":"kithra-admin","compatibility_date":"2026-10-30","assets":{"directory":"./apps/admin/dist","not_found_handling":"single-page-application"},"env":{"staging":{},"production":{}}}

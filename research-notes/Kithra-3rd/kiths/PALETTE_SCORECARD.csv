@@ -1,0 +1,14 @@
+criterion,weight,D1 Sunlit Humanist,D2 Culture-Neutral Editorial,D3 Restrained Luxury,D4 Bright Community,D5 Sophisticated Nature
+Visual warmth,15,5,4,3,5,4
+Trust / credibility,15,4,5,5,3,5
+Distinctiveness (vs dating cliche),15,3,5,4,3,4
+Inclusivity (gender/culture neutral),14,3,5,3,5,5
+Accessibility (measured contrast),14,4,5,5,2,5
+Performance (few colours, simple),5,5,5,4,5,5
+Localisation friendliness,5,4,5,4,4,5
+Works across FRIEND+DATE+MATRIMONY,10,3,5,3,4,5
+Admin usability (separable density),4,4,5,4,3,5
+Implementation effort (lower effort = higher score),3,4,5,4,3,5
+WEIGHTED SCORE (max 5.00),100,3.81,4.85,3.95,3.69,4.70
+RANK,,4,1,3,5,2
+VERDICT,,Alt 2,PRIMARY,Consider,Build-adjust,Alt 1

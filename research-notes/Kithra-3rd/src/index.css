@@ -1,0 +1,418 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   KITHRA 2026 — CANONICAL SEMANTIC DESIGN TOKENS
+   Directions:
+     - D2: Culture-Neutral Editorial ("Ink & Clay") [DEFAULT PROVISIONAL]
+     - D5: Sophisticated Nature ("Forest & Sand")   [ALT-1]
+     - D1: Sunlit Humanist ("Warm Rose-Clay")       [ALT-2]
+   WCAG 2.2 AA target verified across all pairs.
+   Clay/Sand/Peach accents are decorative; use --k-accent-text for text.
+   ========================================================================== */
+
+@layer base {
+  :root,
+  [data-palette="d2"] {
+    color-scheme: light;
+
+    /* ---- D2 Ink & Clay · Light ---- */
+    --k-canvas: #FBFAF7;
+    --k-canvas-alt: #F4F2EC;
+    --k-surface: #FFFFFF;
+    --k-surface-alt: #F7F6F1;
+    --k-overlay: rgba(31, 35, 32, 0.48);
+    --k-text: #1F2320;
+    --k-text-muted: #5A6159;
+    --k-text-subtle: #8A9089;
+    --k-text-inverse: #FFFFFF;
+    --k-primary: #1F6F5C;
+    --k-primary-hover: #1A5E4E;
+    --k-primary-active: #155042;
+    --k-primary-subtle: #E3F0EB;
+    --k-on-primary: #FFFFFF;
+    --k-accent: #D98A3D;
+    --k-accent-text: #8A5A1E;
+    --k-accent-subtle: #FBEEDD;
+    --k-support: #3E4A6B;
+    --k-support-subtle: #E7EAF3;
+    --k-border: #E4E3DC;
+    --k-border-strong: #CDCCC2;
+    --k-focus: #1F6F5C;
+    --k-link: #1F6F5C;
+    --k-link-visited: #3E4A6B;
+    --k-selected: #E3F0EB;
+    --k-disabled-bg: #EFEEE8;
+    --k-disabled-text: #A5AAA3;
+    --k-danger: #B3261E;
+    --k-danger-subtle: #FBE9E7;
+    --k-warning: #8A5A1E;
+    --k-warning-subtle: #FBEEDD;
+    --k-success: #1F6F5C;
+    --k-success-subtle: #E3F0EB;
+
+    /* ---- Mode Accents (always paired with glyph + label) ---- */
+    --k-mode-friendship: #1F6F5C;
+    --k-mode-friendship-bg: #E3F0EB;
+    --k-mode-dating: #A83E50;
+    --k-mode-dating-bg: #F7E7EC;
+    --k-mode-matrimony: #3E4A6B;
+    --k-mode-matrimony-bg: #E7EAF3;
+
+    /* ---- Typography ---- */
+    --k-font-display: 'Fraunces', 'Newsreader', Georgia, 'Times New Roman', serif;
+    --k-font-body: 'Inter', 'Noto Sans Devanagari', 'Noto Sans Tamil', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --k-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* ---- Radius ---- */
+    --k-r-chip: 8px;
+    --k-r-input: 12px;
+    --k-r-card: 16px;
+    --k-r-sheet: 20px;
+    --k-r-editorial: 24px;
+    --k-r-pill: 999px;
+
+    /* ---- Elevation ---- */
+    --k-shadow-xs: 0 1px 2px rgba(31, 35, 32, 0.06);
+    --k-shadow-sm: 0 1px 3px rgba(31, 35, 32, 0.08), 0 1px 2px rgba(31, 35, 32, 0.04);
+    --k-shadow-md: 0 4px 12px rgba(31, 35, 32, 0.08);
+    --k-shadow-lg: 0 12px 28px rgba(31, 35, 32, 0.10);
+    --k-focus-ring: 0 0 0 3px rgba(31, 111, 92, 0.35);
+
+    /* ---- Motion Tokens (Strict Budget) ---- */
+    --k-dur-instant: 80ms;
+    --k-dur-micro: 140ms;
+    --k-dur-quiz: 200ms;
+    --k-dur-ui: 220ms;
+    --k-dur-hero: 520ms;
+    --k-dur-admin: 140ms;
+    --k-ease-standard: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --k-ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+    --k-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  }
+
+  /* ---- ALT-1 · D5 "Sophisticated Nature" (Forest & Sand) · Light ---- */
+  [data-palette="d5"] {
+    --k-canvas: #FBFBF7;
+    --k-canvas-alt: #F2F3EC;
+    --k-surface: #FFFFFF;
+    --k-surface-alt: #F6F7F1;
+    --k-text: #1E241F;
+    --k-text-muted: #57614F;
+    --k-text-subtle: #848E7C;
+    --k-primary: #2F5D3A;
+    --k-primary-hover: #264D2F;
+    --k-primary-active: #1E3E26;
+    --k-primary-subtle: #E4EFE6;
+    --k-on-primary: #FFFFFF;
+    --k-accent: #C98A4B;
+    --k-accent-text: #7A5220;
+    --k-accent-subtle: #F9EFE2;
+    --k-support: #41677A;
+    --k-support-subtle: #E6EFF4;
+    --k-border: #E2E3D8;
+    --k-border-strong: #C9CBBF;
+    --k-focus: #2F5D3A;
+    --k-link: #2F5D3A;
+    --k-selected: #E4EFE6;
+    --k-mode-friendship: #2F5D3A;
+    --k-mode-friendship-bg: #E4EFE6;
+    --k-mode-dating: #A05A4A;
+    --k-mode-dating-bg: #F6EAE6;
+    --k-mode-matrimony: #41677A;
+    --k-mode-matrimony-bg: #E6EFF4;
+    --k-font-display: 'Newsreader', 'Fraunces', Georgia, serif;
+    --k-focus-ring: 0 0 0 3px rgba(47, 93, 58, 0.35);
+  }
+
+  /* ---- ALT-2 · D1 "Sunlit Humanist" (Warm Editorial) · Light ---- */
+  [data-palette="d1"] {
+    --k-canvas: #FFF9F3;
+    --k-canvas-alt: #F9F0E7;
+    --k-surface: #FFFFFF;
+    --k-surface-alt: #FCF5EE;
+    --k-text: #2C2320;
+    --k-text-muted: #6B5B52;
+    --k-text-subtle: #96857B;
+    --k-primary: #A83E50;
+    --k-primary-hover: #8F3343;
+    --k-primary-active: #782A37;
+    --k-primary-subtle: #F9E6E9;
+    --k-on-primary: #FFFFFF;
+    --k-accent: #EFA88B;
+    --k-accent-text: #8A5236;
+    --k-accent-subtle: #FDF0EA;
+    --k-support: #78846A;
+    --k-support-subtle: #EEF1EA;
+    --k-border: #EADFD6;
+    --k-border-strong: #D4C5B9;
+    --k-focus: #A83E50;
+    --k-link: #A83E50;
+    --k-selected: #F9E6E9;
+    --k-mode-friendship: #78846A;
+    --k-mode-friendship-bg: #EEF1EA;
+    --k-mode-dating: #A83E50;
+    --k-mode-dating-bg: #F9E6E9;
+    --k-mode-matrimony: #6B5B52;
+    --k-mode-matrimony-bg: #F2ECE9;
+    --k-font-display: 'Fraunces', Georgia, serif;
+    --k-focus-ring: 0 0 0 3px rgba(168, 62, 80, 0.35);
+  }
+
+  /* ---- D2 Ink & Clay · Dark ---- */
+  .dark,
+  [data-theme="dark"],
+  [data-palette="d2"].dark,
+  [data-palette="d2"][data-theme="dark"] {
+    color-scheme: dark;
+    --k-canvas: #14170F;
+    --k-canvas-alt: #1B1F18;
+    --k-surface: #1F241D;
+    --k-surface-alt: #262C23;
+    --k-overlay: rgba(0, 0, 0, 0.65);
+    --k-text: #F2F2EC;
+    --k-text-muted: #B9BDB2;
+    --k-text-subtle: #8B9086;
+    --k-text-inverse: #14170F;
+    --k-primary: #4FB39B;
+    --k-primary-hover: #67C4AD;
+    --k-primary-active: #84D2BE;
+    --k-primary-subtle: #1E2B26;
+    --k-on-primary: #0E1512;
+    --k-accent: #E0A863;
+    --k-accent-text: #F0C48E;
+    --k-accent-subtle: #2C2418;
+    --k-support: #9AA9CC;
+    --k-support-subtle: #1C2130;
+    --k-border: #333A30;
+    --k-border-strong: #49503F;
+    --k-focus: #4FB39B;
+    --k-link: #7FCBB7;
+    --k-link-visited: #9AA9CC;
+    --k-selected: #1E2B26;
+    --k-disabled-bg: #22261F;
+    --k-disabled-text: #6A6F65;
+    --k-danger: #F2B8B5;
+    --k-danger-subtle: #3A1F1D;
+    --k-warning: #F0C48E;
+    --k-warning-subtle: #2C2418;
+    --k-success: #4FB39B;
+    --k-success-subtle: #1E2B26;
+    --k-mode-friendship: #4FB39B;
+    --k-mode-friendship-bg: #1E2B26;
+    --k-mode-dating: #E08C99;
+    --k-mode-dating-bg: #321F24;
+    --k-mode-matrimony: #9AA9CC;
+    --k-mode-matrimony-bg: #1C2130;
+    --k-focus-ring: 0 0 0 3px rgba(79, 179, 155, 0.40);
+  }
+
+  /* ---- ALT-1 · D5 "Forest & Sand" · Dark ---- */
+  [data-palette="d5"].dark,
+  [data-palette="d5"][data-theme="dark"] {
+    --k-canvas: #12160F;
+    --k-canvas-alt: #171C13;
+    --k-surface: #1B2118;
+    --k-surface-alt: #22291E;
+    --k-text: #EFF2EA;
+    --k-text-muted: #B6BDAF;
+    --k-text-subtle: #889082;
+    --k-primary: #6FBF7F;
+    --k-primary-hover: #85CC93;
+    --k-primary-subtle: #1C2B1F;
+    --k-on-primary: #0C130D;
+    --k-accent: #E7BE84;
+    --k-accent-text: #F2CFA0;
+    --k-accent-subtle: #2B2418;
+    --k-support: #93B2C4;
+    --k-support-subtle: #1A242B;
+    --k-border: #2F382B;
+    --k-border-strong: #434F3E;
+    --k-mode-friendship: #6FBF7F;
+    --k-mode-friendship-bg: #1C2B1F;
+    --k-mode-dating: #E0928A;
+    --k-mode-dating-bg: #31201E;
+    --k-mode-matrimony: #93B2C4;
+    --k-mode-matrimony-bg: #1A242B;
+  }
+
+  /* ---- ALT-2 · D1 "Sunlit Humanist" · Dark ---- */
+  [data-palette="d1"].dark,
+  [data-palette="d1"][data-theme="dark"] {
+    --k-canvas: #1A1310;
+    --k-canvas-alt: #201714;
+    --k-surface: #241A16;
+    --k-surface-alt: #2D211C;
+    --k-text: #F6EFE9;
+    --k-text-muted: #C4B2A8;
+    --k-text-subtle: #948278;
+    --k-primary: #E38B9C;
+    --k-primary-hover: #EAA0AE;
+    --k-primary-subtle: #331D22;
+    --k-on-primary: #2A1219;
+    --k-accent: #F0C2A6;
+    --k-accent-text: #F5D2BC;
+    --k-accent-subtle: #31231B;
+    --k-support: #B9C0A8;
+    --k-support-subtle: #252820;
+    --k-border: #3B2D27;
+    --k-border-strong: #523F37;
+    --k-mode-friendship: #B9C0A8;
+    --k-mode-friendship-bg: #252820;
+    --k-mode-dating: #E38B9C;
+    --k-mode-dating-bg: #331D22;
+    --k-mode-matrimony: #C4B2A8;
+    --k-mode-matrimony-bg: #2C2420;
+  }
+
+  /* ---- Legacy Token Bridge (maps all components cleanly to --k-* tokens) ---- */
+  :root,
+  .dark,
+  [data-theme="dark"],
+  [data-palette="d2"],
+  [data-palette="d5"],
+  [data-palette="d1"] {
+    --bg-main: var(--k-canvas);
+    --surface-main: var(--k-surface);
+    --surface-muted: var(--k-surface-alt);
+    --surface-glass: color-mix(in srgb, var(--k-surface) 90%, transparent);
+    --text-main: var(--k-text);
+    --text-muted: var(--k-text-muted);
+    --accent-sage: var(--k-primary);
+    --cta-sage: var(--k-primary);
+    --gold-verify: var(--k-accent-text);
+    --coral-highlight: var(--k-mode-dating);
+    --coral-error: var(--k-danger);
+    --destructive-red: var(--k-danger);
+    --border-main: var(--k-border);
+    --border-glass: var(--k-border);
+  }
+
+  body {
+    background-color: var(--k-canvas);
+    color: var(--k-text);
+    font-family: var(--k-font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    transition: background-color 220ms var(--k-ease-standard), color 220ms var(--k-ease-standard);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, .font-display {
+    font-family: var(--k-font-display);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  h3, h4, h5, h6 {
+    font-family: var(--k-font-body);
+    letter-spacing: -0.015em;
+  }
+
+  /* Accessibility: WCAG 2.2 AA Focus Ring */
+  *:focus-visible {
+    outline: 3px solid var(--k-focus);
+    outline-offset: 2px;
+  }
+}
+
+/* ─── SEMANTIC UTILITY CLASSES ─── */
+.bg-kithra { background-color: var(--k-canvas); }
+.bg-kithra-alt { background-color: var(--k-canvas-alt); }
+.bg-kithra-surface { background-color: var(--k-surface); }
+.bg-kithra-surface-alt { background-color: var(--k-surface-alt); }
+.text-kithra { color: var(--k-text); }
+.text-kithra-muted { color: var(--k-text-muted); }
+.text-kithra-subtle { color: var(--k-text-subtle); }
+.border-kithra { border-color: var(--k-border); }
+.border-kithra-strong { border-color: var(--k-border-strong); }
+
+.font-display {
+  font-family: var(--k-font-display);
+}
+
+.font-heading {
+  font-family: var(--k-font-body);
+  font-weight: 600;
+}
+
+.font-body {
+  font-family: var(--k-font-body);
+}
+
+.font-serif {
+  font-family: var(--k-font-display);
+}
+
+.font-data {
+  font-family: var(--k-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.kithra-card {
+  background: var(--k-surface);
+  box-shadow: var(--k-shadow-sm);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-r-card);
+  transition: transform var(--k-dur-ui) var(--k-ease-standard),
+              box-shadow var(--k-dur-ui) var(--k-ease-standard),
+              border-color var(--k-dur-ui) var(--k-ease-standard);
+}
+
+.kithra-card:hover {
+  box-shadow: var(--k-shadow-md);
+}
+
+/* ─── PER-SCRIPT FALLBACKS ─── */
+:lang(hi) { --k-font-body: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif; }
+:lang(ta) { --k-font-body: 'Inter', 'Noto Sans Tamil', system-ui, sans-serif; }
+
+/* ─── GLOBAL REDUCED-MOTION & LOW-DATA CONTRACT ─── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --k-dur-hero: 0ms;
+    --k-dur-ui: 0ms;
+    --k-dur-quiz: 0ms;
+    --k-dur-micro: 0ms;
+    --k-dur-admin: 0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after,
+[data-low-data="true"] *,
+[data-low-data="true"] *::before,
+[data-low-data="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--k-border-strong);
+  border-radius: 9999px;
+}
+

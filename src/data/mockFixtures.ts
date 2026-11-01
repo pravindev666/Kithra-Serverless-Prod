@@ -12,6 +12,7 @@ import {
   RouteInventoryItem,
   StaffCase,
 } from '../types/kithra';
+import { PILOT_60_QUESTION_BANK } from './pilotQuestionBank';
 
 export const INTENTION_METADATA: Record<
   IntentionId,
@@ -62,22 +63,22 @@ export const SIGNAL_VOCABULARY_METADATA: Record<
   }
 > = {
   echo: {
-    label: 'Echo',
-    subtitle: 'Measured similarities',
+    label: 'Similar to Me',
+    subtitle: 'Discover people who share your traits, interests and values.',
     description:
       'Places where your questionnaire answers closely align—such as conversational pace, repair style, or quiet weekend routines.',
     accentColor: 'var(--friend)',
   },
   counterpoint: {
-    label: 'Counterpoint',
-    subtitle: 'Significant differences',
+    label: 'Different from Me',
+    subtitle: 'Meet people who see or experience the world differently.',
     description:
-      'Places where your answers diverge meaningfully. Surfaced early so you can talk about them openly rather than discovering them by surprise.',
+      'Places where your answers diverge meaningfully. Surfaced early so you can explore different perspectives openly rather than discovering them by surprise.',
     accentColor: 'var(--date)',
   },
   mosaic: {
-    label: 'Mosaic Fit',
-    subtitle: 'Useful complementarity',
+    label: 'We Balance Each Other',
+    subtitle: 'Find people whose strengths and preferences may complement yours.',
     description:
       'Different instincts that often work well together when paired with mutual respect—such as a structured planner and a spontaneous explorer.',
     accentColor: 'var(--ochre)',
@@ -155,6 +156,28 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
     portraitVariant: 'member-aarav',
     saved: true,
     connectionState: 'connected',
+    attributeSimilarityScore: 95,
+    complementaryBalanceScore: 76,
+    sharedGroundSummary: 'Unhurried evening conversational rhythm, daytime coffee walks, and calm repair style.',
+    differenceSummary: 'Aarav plans Sunday morning architectural walks a week ahead; you keep one weekend day unscheduled.',
+    potentialBalanceSummary: 'Your archival research and his spatial architectural fieldwork balance each other naturally.',
+    eligibility: {
+      memberId: 'member-aarav',
+      isAdultVerified: true,
+      enabledIntentions: ['friendship', 'dating'],
+      discoverableInIntentions: ['friendship', 'dating'],
+      blockedMemberIds: [],
+      relationshipStructure: 'exclusive_preferred',
+      childrenPreference: 'open_or_unsure',
+      childrenRequirementLevel: 'flexible',
+    },
+    constructProfile: [
+      { constructId: 'C1_openness', constructName: 'Curiosity & Openness', layer: 'personality', score: 86, confidence: 0.85, answeredItemCount: 8, importance: 'important' },
+      { constructId: 'C2_planfulness', constructName: 'Structure & Planfulness', layer: 'personality', score: 84, confidence: 0.82, answeredItemCount: 7, importance: 'flexible' },
+      { constructId: 'C3_social_energy', constructName: 'Social Energy & Cadence', layer: 'personality', score: 42, confidence: 0.8, answeredItemCount: 6, importance: 'important' },
+      { constructId: 'C4_warmth', constructName: 'Interpersonal Warmth & Repair', layer: 'values', score: 88, confidence: 0.88, answeredItemCount: 8, importance: 'essential' },
+      { constructId: 'C5_steadiness', constructName: 'Emotional Steadiness', layer: 'personality', score: 90, confidence: 0.84, answeredItemCount: 7, importance: 'important' },
+    ],
     alignment: [
       {
         id: 'al-aarav-echo',
@@ -189,7 +212,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-aarav-1',
         dimension: 'Conversational Cadence & Reply Pace',
         signalKind: 'echo',
-        bandLabel: 'Strong Echo · 80–90% questionnaire overlap',
+        bandLabel: 'Similar to Me · 80–90% questionnaire overlap',
         bandRangeText: '80–90% overlap band',
         visualFillPercent: 85,
         viewerStance: 'Prefers 2–3 thoughtful evening messages per week before meeting.',
@@ -201,7 +224,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-aarav-2',
         dimension: 'Disagreement & Repair Style',
         signalKind: 'echo',
-        bandLabel: 'Strong Echo · 85–95% questionnaire overlap',
+        bandLabel: 'Similar to Me · 85–95% questionnaire overlap',
         bandRangeText: '85–95% overlap band',
         visualFillPercent: 88,
         viewerStance: 'Asks clarifying questions first before assuming intent.',
@@ -213,7 +236,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-aarav-3',
         dimension: 'Weekend Schedule Structure',
         signalKind: 'counterpoint',
-        bandLabel: 'Counterpoint · 35–50% questionnaire overlap',
+        bandLabel: 'Different from Me · 35–50% questionnaire overlap',
         bandRangeText: '35–50% overlap band',
         visualFillPercent: 42,
         viewerStance: 'Enjoys keeping one weekend day unscheduled.',
@@ -225,7 +248,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-aarav-4',
         dimension: 'Shared Curiosity & Project Collaboration',
         signalKind: 'mosaic',
-        bandLabel: 'Mosaic Fit · 70–80% complementary band',
+        bandLabel: 'We Balance Each Other · 70–80% complementary band',
         bandRangeText: '70–80% complementary band',
         visualFillPercent: 76,
         viewerStance: 'Brings historical text and archival context.',
@@ -252,6 +275,28 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
     portraitVariant: 'member-meera',
     saved: false,
     connectionState: 'discover',
+    attributeSimilarityScore: 75,
+    complementaryBalanceScore: 88,
+    sharedGroundSummary: 'Egalitarian household partnership, financial transparency, and affectionate family warmth with clear couple autonomy.',
+    differenceSummary: 'Meera is a 6:00 AM coastal walker in Adyar, whereas your most reflective hours are late in the evening.',
+    potentialBalanceSummary: 'She loves cooking elaborate coastal meals while you enjoy setting a calm table with music and conversation.',
+    eligibility: {
+      memberId: 'member-meera',
+      isAdultVerified: true,
+      enabledIntentions: ['dating', 'matrimony'],
+      discoverableInIntentions: ['dating', 'matrimony'],
+      blockedMemberIds: [],
+      relationshipStructure: 'exclusive_required',
+      childrenPreference: 'wants_children',
+      childrenRequirementLevel: 'important',
+    },
+    constructProfile: [
+      { constructId: 'C1_openness', constructName: 'Curiosity & Openness', layer: 'personality', score: 78, confidence: 0.85, answeredItemCount: 7, importance: 'important' },
+      { constructId: 'C2_planfulness', constructName: 'Structure & Planfulness', layer: 'personality', score: 88, confidence: 0.84, answeredItemCount: 7, importance: 'important' },
+      { constructId: 'C3_social_energy', constructName: 'Social Energy & Cadence', layer: 'personality', score: 60, confidence: 0.78, answeredItemCount: 6, importance: 'flexible' },
+      { constructId: 'C4_warmth', constructName: 'Interpersonal Warmth & Repair', layer: 'values', score: 90, confidence: 0.9, answeredItemCount: 8, importance: 'essential' },
+      { constructId: 'C5_steadiness', constructName: 'Emotional Steadiness', layer: 'personality', score: 85, confidence: 0.82, answeredItemCount: 7, importance: 'important' },
+    ],
     alignment: [
       {
         id: 'al-meera-echo',
@@ -286,7 +331,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-meera-1',
         dimension: 'Family Warmth & Couple Autonomy',
         signalKind: 'echo',
-        bandLabel: 'Strong Echo · 85–95% questionnaire overlap',
+        bandLabel: 'Similar to Me · 85–95% questionnaire overlap',
         bandRangeText: '85–95% overlap band',
         visualFillPercent: 90,
         viewerStance: 'Warm ties with extended family alongside clear autonomy as a couple.',
@@ -298,7 +343,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-meera-2',
         dimension: 'Daily Wake & Rest Chronotype',
         signalKind: 'counterpoint',
-        bandLabel: 'Counterpoint · 30–45% questionnaire overlap',
+        bandLabel: 'Different from Me · 30–45% questionnaire overlap',
         bandRangeText: '30–45% overlap band',
         visualFillPercent: 38,
         viewerStance: 'Most reflective and focused after 9:00 PM.',
@@ -310,7 +355,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-meera-3',
         dimension: 'Hospitality & Domestic Rhythm',
         signalKind: 'mosaic',
-        bandLabel: 'Mosaic Fit · 75–85% complementary band',
+        bandLabel: 'We Balance Each Other · 75–85% complementary band',
         bandRangeText: '75–85% complementary band',
         visualFillPercent: 80,
         viewerStance: 'Enjoys setting a calm atmosphere, tea, and conversation.',
@@ -337,6 +382,28 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
     portraitVariant: 'member-kabir',
     saved: true,
     connectionState: 'discover',
+    attributeSimilarityScore: 25,
+    complementaryBalanceScore: 84,
+    sharedGroundSummary: 'Direct, kind emotional communication and appreciation for documentary storytelling.',
+    differenceSummary: 'Spontaneous travel schedule, rapid voice notes, and late-night sound mixing vs your structured written cadence.',
+    potentialBalanceSummary: 'His improvisational sonic curiosity and your grounded planning offer a lively creative counterpoint when both welcome the contrast.',
+    eligibility: {
+      memberId: 'member-kabir',
+      isAdultVerified: true,
+      enabledIntentions: ['dating', 'friendship'],
+      discoverableInIntentions: ['dating', 'friendship'],
+      blockedMemberIds: [],
+      relationshipStructure: 'exclusive_preferred',
+      childrenPreference: 'unknown',
+      childrenRequirementLevel: 'flexible',
+    },
+    constructProfile: [
+      { constructId: 'C1_openness', constructName: 'Curiosity & Openness', layer: 'personality', score: 94, confidence: 0.85, answeredItemCount: 7, importance: 'important' },
+      { constructId: 'C2_planfulness', constructName: 'Structure & Planfulness', layer: 'personality', score: 22, confidence: 0.8, answeredItemCount: 6, importance: 'flexible' },
+      { constructId: 'C3_social_energy', constructName: 'Social Energy & Cadence', layer: 'personality', score: 78, confidence: 0.82, answeredItemCount: 6, importance: 'flexible' },
+      { constructId: 'C4_warmth', constructName: 'Interpersonal Warmth & Repair', layer: 'values', score: 80, confidence: 0.84, answeredItemCount: 7, importance: 'important' },
+      { constructId: 'C5_steadiness', constructName: 'Emotional Steadiness', layer: 'personality', score: 65, confidence: 0.78, answeredItemCount: 6, importance: 'flexible' },
+    ],
     alignment: [
       {
         id: 'al-kabir-echo',
@@ -371,7 +438,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-kabir-1',
         dimension: 'Conflict & Repair Openness',
         signalKind: 'echo',
-        bandLabel: 'Strong Echo · 80–90% questionnaire overlap',
+        bandLabel: 'Similar to Me · 80–90% questionnaire overlap',
         bandRangeText: '80–90% overlap band',
         visualFillPercent: 84,
         viewerStance: 'Values calm, good-faith clarification.',
@@ -398,6 +465,28 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
     portraitVariant: 'member-ananya',
     saved: false,
     connectionState: 'discover',
+    attributeSimilarityScore: 5,
+    complementaryBalanceScore: 74,
+    sharedGroundSummary: 'Mutual respect for kindness, community stewardship, and honest boundaries.',
+    differenceSummary: 'Very different daily tempo, outdoor field-group energy, and spontaneous potluck hosting vs your quiet indoor routine.',
+    potentialBalanceSummary: 'Connecting with someone across the spectrum brings fresh outdoor ecology perspectives into your circle.',
+    eligibility: {
+      memberId: 'member-ananya',
+      isAdultVerified: true,
+      enabledIntentions: ['friendship'],
+      discoverableInIntentions: ['friendship'],
+      blockedMemberIds: [],
+      relationshipStructure: 'unknown',
+      childrenPreference: 'unknown',
+      childrenRequirementLevel: 'flexible',
+    },
+    constructProfile: [
+      { constructId: 'C1_openness', constructName: 'Curiosity & Openness', layer: 'personality', score: 35, confidence: 0.78, answeredItemCount: 6, importance: 'flexible' },
+      { constructId: 'C2_planfulness', constructName: 'Structure & Planfulness', layer: 'personality', score: 18, confidence: 0.75, answeredItemCount: 6, importance: 'flexible' },
+      { constructId: 'C3_social_energy', constructName: 'Social Energy & Cadence', layer: 'personality', score: 95, confidence: 0.84, answeredItemCount: 7, importance: 'important' },
+      { constructId: 'C4_warmth', constructName: 'Interpersonal Warmth & Repair', layer: 'values', score: 85, confidence: 0.82, answeredItemCount: 7, importance: 'important' },
+      { constructId: 'C5_steadiness', constructName: 'Emotional Steadiness', layer: 'personality', score: 40, confidence: 0.72, answeredItemCount: 5, importance: 'flexible' },
+    ],
     alignment: [
       {
         id: 'al-ananya-echo',
@@ -423,7 +512,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-ananya-1',
         dimension: 'Group Circle vs 1:1 Comfort',
         signalKind: 'echo',
-        bandLabel: 'Strong Echo · 80–90% questionnaire overlap',
+        bandLabel: 'Similar to Me · 80–90% questionnaire overlap',
         bandRangeText: '80–90% overlap band',
         visualFillPercent: 86,
         viewerStance: 'Enjoys small hosted walks and reading groups.',
@@ -450,6 +539,28 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
     portraitVariant: 'member-rohan',
     saved: false,
     connectionState: 'note-sent',
+    attributeSimilarityScore: 50,
+    complementaryBalanceScore: 79,
+    sharedGroundSummary: 'Long-term partnership clarity, modern history reading, and transparent financial planning.',
+    differenceSummary: 'Anchored in Delhi policy circles with structured weekday routines vs your flexible Bengaluru creative schedule.',
+    potentialBalanceSummary: 'His structured policy horizon and your reflective cultural lens create a steady, balanced household rhythm.',
+    eligibility: {
+      memberId: 'member-rohan',
+      isAdultVerified: true,
+      enabledIntentions: ['matrimony'],
+      discoverableInIntentions: ['matrimony'],
+      blockedMemberIds: [],
+      relationshipStructure: 'exclusive_required',
+      childrenPreference: 'open_or_unsure',
+      childrenRequirementLevel: 'flexible',
+    },
+    constructProfile: [
+      { constructId: 'C1_openness', constructName: 'Curiosity & Openness', layer: 'personality', score: 60, confidence: 0.8, answeredItemCount: 7, importance: 'flexible' },
+      { constructId: 'C2_planfulness', constructName: 'Structure & Planfulness', layer: 'personality', score: 95, confidence: 0.9, answeredItemCount: 8, importance: 'important' },
+      { constructId: 'C3_social_energy', constructName: 'Social Energy & Cadence', layer: 'personality', score: 68, confidence: 0.8, answeredItemCount: 6, importance: 'flexible' },
+      { constructId: 'C4_warmth', constructName: 'Interpersonal Warmth & Repair', layer: 'values', score: 75, confidence: 0.82, answeredItemCount: 7, importance: 'important' },
+      { constructId: 'C5_steadiness', constructName: 'Emotional Steadiness', layer: 'personality', score: 82, confidence: 0.85, answeredItemCount: 7, importance: 'important' },
+    ],
     alignment: [
       {
         id: 'al-rohan-echo',
@@ -475,7 +586,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-rohan-1',
         dimension: 'Financial Transparency & Planning',
         signalKind: 'echo',
-        bandLabel: 'Strong Echo · 85–95% questionnaire overlap',
+        bandLabel: 'Similar to Me · 85–95% questionnaire overlap',
         bandRangeText: '85–95% overlap band',
         visualFillPercent: 89,
         viewerStance: 'Values calm, open conversations about savings, caregiving, and shared goals.',
@@ -502,6 +613,28 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
     portraitVariant: 'member-zoya',
     saved: false,
     connectionState: 'discover',
+    attributeSimilarityScore: 84,
+    complementaryBalanceScore: 82,
+    sharedGroundSummary: 'Slow living, regional food archives, independent bookshops, and quiet neighbourhood cafes.',
+    differenceSummary: 'She works hands-on in a bustling ceramic studio while you gravitate toward quiet library tables.',
+    potentialBalanceSummary: 'Tactile studio craft and written historical observation enrich shared creative weekends.',
+    eligibility: {
+      memberId: 'member-zoya',
+      isAdultVerified: true,
+      enabledIntentions: ['friendship', 'dating'],
+      discoverableInIntentions: ['friendship', 'dating'],
+      blockedMemberIds: [],
+      relationshipStructure: 'exclusive_preferred',
+      childrenPreference: 'open_or_unsure',
+      childrenRequirementLevel: 'flexible',
+    },
+    constructProfile: [
+      { constructId: 'C1_openness', constructName: 'Curiosity & Openness', layer: 'personality', score: 92, confidence: 0.88, answeredItemCount: 8, importance: 'important' },
+      { constructId: 'C2_planfulness', constructName: 'Structure & Planfulness', layer: 'personality', score: 65, confidence: 0.78, answeredItemCount: 6, importance: 'flexible' },
+      { constructId: 'C3_social_energy', constructName: 'Social Energy & Cadence', layer: 'personality', score: 50, confidence: 0.8, answeredItemCount: 6, importance: 'flexible' },
+      { constructId: 'C4_warmth', constructName: 'Interpersonal Warmth & Repair', layer: 'values', score: 86, confidence: 0.86, answeredItemCount: 7, importance: 'essential' },
+      { constructId: 'C5_steadiness', constructName: 'Emotional Steadiness', layer: 'personality', score: 80, confidence: 0.82, answeredItemCount: 7, importance: 'important' },
+    ],
     alignment: [
       {
         id: 'al-zoya-echo',
@@ -527,7 +660,7 @@ export const INITIAL_MEMBER_PROFILES: MemberProfile[] = [
         id: 'dim-zoya-1',
         dimension: 'Cultural & Creative Curiosity',
         signalKind: 'echo',
-        bandLabel: 'Strong Echo · 85–95% questionnaire overlap',
+        bandLabel: 'Similar to Me · 85–95% questionnaire overlap',
         bandRangeText: '85–95% overlap band',
         visualFillPercent: 91,
         viewerStance: 'Values independent bookshops, music, and regional history.',
@@ -592,170 +725,7 @@ export const INITIAL_MEMBER_PHOTOS: MemberPhoto[] = [
   },
 ];
 
-export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
-  {
-    id: 'q-pace',
-    themeId: 'theme-pace',
-    questionNumber: 1,
-    module: 'Conversational Pace & Presence',
-    intentionScope: 'All intentions',
-    applicableIntentions: ['friendship', 'dating', 'matrimony'],
-    prompt: 'When you meet someone new on Kithra, what pace feels most natural to you?',
-    context:
-      'Used to set expectations gently on your profile card so nobody misreads a quiet workday as disinterest.',
-    whyWeAsk:
-      'Mismatched reply expectations are one of the most common sources of early friction. Sharing your natural cadence creates an Echo signal for people with a similar rhythm—or a helpful Counterpoint note if your paces differ.',
-    options: [
-      {
-        id: 'opt-slow',
-        label: 'A few thoughtful longer messages each week before meeting in person',
-        reflection: 'Highlights a reflective, letter-like conversational rhythm.',
-        signalEffect: 'Contributes to Conversational Cadence (Echo / Counterpoint)',
-      },
-      {
-        id: 'opt-early-call',
-        label: 'A brief exchange followed by a calm voice call or daytime coffee walk',
-        reflection: 'Prioritizes real-world presence over extended text threads.',
-        signalEffect: 'Contributes to First Meet-Up Comfort (Echo / Mosaic Fit)',
-      },
-      {
-        id: 'opt-group-first',
-        label: 'Connecting inside small topic Circles before one-on-one introductions',
-        reflection: 'Centers shared community context first.',
-        signalEffect: 'Contributes to Group Circle vs 1:1 Comfort (Echo)',
-      },
-    ],
-  },
-  {
-    id: 'q-disagreement',
-    themeId: 'theme-values',
-    questionNumber: 21,
-    module: 'Everyday Values & Repair',
-    intentionScope: 'All intentions',
-    applicableIntentions: ['friendship', 'dating', 'matrimony'],
-    prompt: 'When two people see an important question differently, what helps you feel respected?',
-    context: 'Helps surface qualitative alignment around emotional steadiness and listening.',
-    whyWeAsk:
-      'Healthy connections do not require agreeing on everything; they depend on how two people repair misunderstandings.',
-    options: [
-      {
-        id: 'opt-curiosity',
-        label: 'Asking clarifying questions before assuming what the other person meant',
-        reflection: 'Signals patience and good-faith interpretation.',
-        signalEffect: 'Contributes to Disagreement & Repair Style (Echo)',
-      },
-      {
-        id: 'opt-pause',
-        label: 'Taking a short pause to reflect privately, then returning to talk calmly',
-        reflection: 'Values measured reflection over heat-of-the-moment debate.',
-        signalEffect: 'Contributes to Cooling-Off Rhythm (Counterpoint / Mosaic Fit)',
-      },
-      {
-        id: 'opt-direct',
-        label: 'Addressing the concern warmly and directly on the same day',
-        reflection: 'Values immediate clarity and open air.',
-        signalEffect: 'Contributes to Conflict Openness (Echo)',
-      },
-    ],
-  },
-  {
-    id: 'q-weekend',
-    themeId: 'theme-social',
-    questionNumber: 41,
-    module: 'Social Energy & Community',
-    intentionScope: 'Friendship & Dating',
-    applicableIntentions: ['friendship', 'dating'],
-    prompt: 'Which kind of free Sunday leaves you feeling most restored?',
-    context: 'Helps match daily lifestyle rhythms across Friendship and Dating.',
-    whyWeAsk:
-      'Knowing whether someone recharges through quiet solitude, cultural outings, or hosting a full table helps frame both Echoes and Mosaic Fits.',
-    options: [
-      {
-        id: 'opt-quiet-morning',
-        label: 'An early neighbourhood walk, reading, and an unhurried home-cooked lunch',
-        reflection: 'Matches well with members who enjoy quiet daytime routines.',
-        signalEffect: 'Contributes to Weekend Restoration Rhythm (Echo)',
-      },
-      {
-        id: 'opt-cultural',
-        label: 'Visiting a gallery, concert, or craft market and talking over tea afterward',
-        reflection: 'Highlights cultural curiosity and shared outings.',
-        signalEffect: 'Contributes to Cultural Outings & Curiosity (Echo)',
-      },
-      {
-        id: 'opt-hosting',
-        label: 'Cooking for a small table of close friends with music playing',
-        reflection: 'Centers warmth, hospitality, and community.',
-        signalEffect: 'Contributes to Hospitality & Domestic Rhythm (Mosaic Fit)',
-      },
-    ],
-  },
-  {
-    id: 'q-finances',
-    themeId: 'theme-independence',
-    questionNumber: 61,
-    module: 'Independence, Home & Finances',
-    intentionScope: 'Matrimony & Partnership',
-    applicableIntentions: ['dating', 'matrimony'],
-    prompt: 'How do you prefer to approach shared household planning and personal independence?',
-    context: 'Applies only when exploring Dating or Matrimony; never shown in Friendship.',
-    whyWeAsk:
-      'Surfaces practical alignment around domestic routines, personal space, and financial transparency.',
-    options: [
-      {
-        id: 'opt-transparent-shared',
-        label: 'Open conversations about shared goals alongside personal creative/discretionary space',
-        reflection: 'Balances transparency with individual autonomy.',
-        signalEffect: 'Contributes to Financial Transparency & Planning (Echo)',
-      },
-      {
-        id: 'opt-structured-budget',
-        label: 'Detailed joint planning for major milestones and household rhythms',
-        reflection: 'Highlights structured long-horizon planning.',
-        signalEffect: 'Contributes to Structured Household Planning (Echo / Mosaic Fit)',
-      },
-      {
-        id: 'opt-flexible-autonomy',
-        label: 'High day-to-day independence with periodic check-ins on big decisions',
-        reflection: 'Prioritizes individual flexibility.',
-        signalEffect: 'Contributes to Independence & Autonomy (Counterpoint)',
-      },
-    ],
-  },
-  {
-    id: 'q-partnership',
-    themeId: 'theme-partnership',
-    questionNumber: 81,
-    module: 'Long-Term Partnership & Family Context',
-    intentionScope: 'Matrimony & Partnership',
-    applicableIntentions: ['matrimony'],
-    prompt: 'In a serious long-term partnership or marriage, how do you think about family and independence?',
-    context:
-      'Strictly scoped to Matrimony—never visible to members browsing Friendship.',
-    whyWeAsk:
-      'Helps two marriage-minded people understand expectations around extended family warmth and couple autonomy before misunderstandings arise.',
-    options: [
-      {
-        id: 'opt-warm-boundaries',
-        label: 'Warm, affectionate ties with extended family alongside clear autonomy as a couple',
-        reflection: 'Balances familial warmth with independent decision-making.',
-        signalEffect: 'Contributes to Family Warmth & Couple Autonomy (Echo)',
-      },
-      {
-        id: 'opt-interwoven',
-        label: 'Closely interwoven family life with frequent shared traditions and gatherings',
-        reflection: 'Highlights multi-generational closeness.',
-        signalEffect: 'Contributes to Multi-Generational Closeness (Counterpoint / Echo)',
-      },
-      {
-        id: 'opt-independent-home',
-        label: 'Building our own quiet household rhythm first while staying supportive from afar',
-        reflection: 'Centers couple autonomy and flexible geography.',
-        signalEffect: 'Contributes to Household Autonomy (Echo)',
-      },
-    ],
-  },
-];
+export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = PILOT_60_QUESTION_BANK;
 
 export const INITIAL_CONVERSATIONS: ConversationThread[] = [
   {
@@ -765,7 +735,7 @@ export const INITIAL_CONVERSATIONS: ConversationThread[] = [
     city: 'Bengaluru',
     intention: 'friendship',
     portraitVariant: 'member-aarav',
-    contextNote: 'Introduced via Friendship · Echo on evening conversational pace & heritage walks',
+    contextNote: 'Introduced via Friendship · Similar to Me on evening conversational pace & heritage walks',
     messages: [
       {
         id: 'msg-1',
@@ -794,7 +764,7 @@ export const INITIAL_CONVERSATIONS: ConversationThread[] = [
     city: 'Chennai',
     intention: 'matrimony',
     portraitVariant: 'member-meera',
-    contextNote: 'Introduced via Matrimony · Echo on egalitarian partnership & Mosaic Fit on hospitality',
+    contextNote: 'Introduced via Matrimony · Similar to Me on egalitarian partnership & We Balance Each Other on hospitality',
     messages: [
       {
         id: 'msg-4',
@@ -974,11 +944,11 @@ export const ROUTE_INVENTORY: RouteInventoryItem[] = [
     id: 'rt-landing',
     routePath: '/',
     shell: 'Public',
-    screenName: 'Landing Page (2.5D Coromandel Threads Hero)',
+    screenName: 'Landing Page (The Kithra Weave Hero)',
     keyStates: [
-      '2.5D Connection Paths hero + licensed editorial photography',
+      'The Kithra Weave organic editorial SVG hero',
       'Three independent intentions (Friendship, Dating, Matrimony)',
-      'Echo, Counterpoint & Mosaic Fit vocabulary preview',
+      'Similar to Me, Different from Me & We Balance Each Other lenses',
       'Unified membership (Illustrative pricing)',
     ],
     targetSection: 'landing',
@@ -1062,11 +1032,11 @@ export const ROUTE_INVENTORY: RouteInventoryItem[] = [
     id: 'rt-member-discover',
     routePath: '/member/discover',
     shell: 'Member',
-    screenName: 'Discover (Intention-Scoped)',
+    screenName: 'Discover (Intention-Scoped & 0–100 Similarity Spectrum)',
     keyStates: [
       'Intention scope selector before browsing',
-      'Echo / Counterpoint / Mosaic Fit card preview',
-      'Link to full Measured Alignment Details Sheet',
+      'Full 0–100 Attribute Similarity range filter & presets',
+      'Similar to Me / Different from Me / We Balance Each Other lenses',
     ],
     targetSection: 'member',
     targetMemberTab: 'discover',
@@ -1075,9 +1045,9 @@ export const ROUTE_INVENTORY: RouteInventoryItem[] = [
     id: 'rt-member-match',
     routePath: '/member/match/member-aarav',
     shell: 'Member',
-    screenName: 'Match Details (Echo / Counterpoint / Mosaic Fit)',
+    screenName: 'Match Details (Similar to Me / Different from Me / We Balance Each Other)',
     keyStates: [
-      'Interactive Echo, Counterpoint & Mosaic Fit tabs',
+      'Interactive Similar to Me, Different from Me & We Balance Each Other tabs',
       'Measured questionnaire alignment bands (non-predictive)',
       'Conversation starters',
     ],

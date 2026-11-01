@@ -1,0 +1,13 @@
+persona,primary_screens,critical_requirement,test_focus
+P1 Ananya (24 Pune, friendship),Discover-Circles-Requests,platonic boundary visible; no romantic solicitation,attends >=1 meetup; day-30 recontact
+P2 Rahul (29 Bengaluru, introvert),Quiz-Patterns-MatchDetail,deeper conversation starters; ghosting reduction,>=3 sustained conversations
+P3 Meera (31 Chennai, dating),DatingMode-MatchDetail-Safety,intent clarity; catfish/stalk prevention,mutual safe date; day-30 continues
+P4 Arjun (34 Delhi, matrimony),MatrimonyMode-LifePlanCompare-FamilyInvite,family opt-in only; anti-coercion,mutual intentional conversation
+P5 Fatima (27 Hyderabad, no-photo),PhotoPrivacy-BlurAvatar-Circles,no forced photo; group-first,feels safe; continues
+P6 Devan (33 Coimbatore, low vision),ALL screens,WCAG 2.2 AA; screen reader; >=44px,completes journey unassisted
+P7 Kiruthika (26 Madurai, Tamil),LanguageSetting-Quiz-Discover,full Tamil UI; script shaping,comprehension + completion in Tamil
+P8 Sofia (30 Berlin, intl),DatingMode-Settings-Export,GDPR-style export/delete; PPP pricing,day-30 mutual follow-through
+M1 Safety reviewer,AdminQueue-CaseDetail-EvidencePanel,no raw quizzes; JIT evidence,triage without privacy misuse
+M2 Support agent,AdminSupport-Billing,minimal privilege; no entitlements edit,resolves access/payment
+M3 Psychometric steward,AdminQuestionBanks-MatchingVersions,publish governance; bias monitoring,defensible bank versions
+M4 Privacy officer,AdminPrivacy-Audit,export/delete; legal holds,DPDP-shaped requests honoured

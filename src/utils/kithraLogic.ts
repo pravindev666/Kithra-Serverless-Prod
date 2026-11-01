@@ -1,7 +1,9 @@
 import {
   AdminTab,
   AssessmentQuestion,
+  DiscoveryLensView,
   IntentionId,
+  MemberEligibilityRequirements,
   MemberPhoto,
   MemberProfile,
   MemberTab,
@@ -9,9 +11,14 @@ import {
   QualitativeAlignment,
   RelationshipSignalKind,
   ShellSection,
+  SimilarityPresetId,
   StaffCase,
   SystemErrorCode,
 } from '../types/kithra';
+import {
+  filterProfilesByFullSimilaritySpectrum,
+  resolvePresetRange,
+} from '../domain/psychologyEngine';
 
 export interface ParsedRoute {
   pathname: string;
@@ -48,6 +55,7 @@ const VALID_ADMIN_TABS: AdminTab[] = [
   'privacy',
   'staff',
   'audit',
+  'questions',
 ];
 
 export function parsePathnameToRoute(rawPathname: string): ParsedRoute {
@@ -180,7 +188,7 @@ export function getPageTitleForRoute(route: ParsedRoute): string {
         home: 'Home · Your Kithra',
         discover: 'Discover introductions · Kithra',
         connections: 'Connections & saved profiles · Kithra',
-        match: 'Echo, Counterpoint & Mosaic Fit · Kithra',
+        match: 'Similar to Me, Different from Me & We Balance Each Other · Kithra',
         messages: 'Messages · Kithra',
         circles: 'Community Circles · Kithra',
         assessments: 'Reflection Questions (100-Question Map) · Kithra',
@@ -210,12 +218,51 @@ export interface ProfileFilterCriteria {
   city: string;
   searchQuery: string;
   savedOnly: boolean;
+  minSimilarity?: number;
+  maxSimilarity?: number;
+  similarityPreset?: SimilarityPresetId;
+  lensView?: DiscoveryLensView;
+  sortBySimilarity?: 'desc' | 'asc' | 'none';
+  viewerEligibility?: MemberEligibilityRequirements;
 }
 
 export function filterProfiles(
   profiles: MemberProfile[],
   criteria: ProfileFilterCriteria
 ): MemberProfile[] {
+  const hasSpectrumFilter =
+    criteria.minSimilarity !== undefined ||
+    criteria.maxSimilarity !== undefined ||
+    criteria.similarityPreset !== undefined ||
+    criteria.lensView !== undefined ||
+    criteria.sortBySimilarity !== undefined ||
+    criteria.viewerEligibility !== undefined;
+
+  if (hasSpectrumFilter) {
+    const presetBounds = criteria.similarityPreset
+      ? resolvePresetRange(
+        criteria.similarityPreset,
+        criteria.minSimilarity ?? 0,
+        criteria.maxSimilarity ?? 100
+      )
+      : {
+        min: criteria.minSimilarity ?? 0,
+        max: criteria.maxSimilarity ?? 100,
+      };
+
+    return filterProfilesByFullSimilaritySpectrum(profiles, {
+      intention: criteria.intention,
+      city: criteria.city,
+      searchQuery: criteria.searchQuery,
+      savedOnly: criteria.savedOnly,
+      minSimilarity: presetBounds.min,
+      maxSimilarity: presetBounds.max,
+      lensView: criteria.lensView ?? 'all',
+      sortBySimilarity: criteria.sortBySimilarity ?? 'none',
+      viewerEligibility: criteria.viewerEligibility,
+    });
+  }
+
   const normalizedQuery = criteria.searchQuery.trim().toLowerCase();
 
   return profiles.filter((profile) => {

@@ -1,0 +1,150 @@
+openapi: 3.1.0
+info:
+  title: Kithra API v1 — starter contract only
+  version: 1.0.0-draft
+  description: Proposed endpoints; expand schemas before production. User IDs are server-derived.
+servers:
+  - url: https://api.kithra.example/v1
+security:
+  - FirebaseBearer: []
+components:
+  securitySchemes:
+    FirebaseBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      required: [code, title, correlation_id]
+      properties:
+        code: {type: string}
+        title: {type: string}
+        correlation_id: {type: string}
+    Mode:
+      type: string
+      enum: [friend, dating, matrimony]
+paths:
+  /me:
+    get:
+      operationId: getMe
+      responses:
+        '200': {description: Current verified account and per-mode settings}
+        '401': {description: Invalid session}
+  /me/modes:
+    post:
+      operationId: activateMode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode, consent_receipt]
+              properties:
+                mode: {$ref: '#/components/schemas/Mode'}
+                consent_receipt: {type: string}
+      responses:
+        '201': {description: Mode persona created}
+  /quiz/themes:
+    get:
+      operationId: getPublishedThemes
+      responses:
+        '200': {description: Approved themes only}
+  /quiz/attempts:
+    post:
+      operationId: startQuizAttempt
+      responses:
+        '201': {description: Stable assigned published bank version}
+  /quiz/attempts/{attemptId}/answers:
+    put:
+      operationId: saveAnswers
+      parameters:
+        - in: path
+          name: attemptId
+          required: true
+          schema: {type: string}
+      responses:
+        '200': {description: Idempotently saved, owner validated}
+  /quiz/attempts/{attemptId}/submit:
+    post:
+      operationId: submitQuiz
+      parameters:
+        - in: path
+          name: attemptId
+          required: true
+          schema: {type: string}
+      responses:
+        '202': {description: Scoring queued}
+  /discovery:
+    get:
+      operationId: findEligibleCandidates
+      responses:
+        '200': {description: Mode-, consent- and block-filtered candidates}
+  /introductions:
+    post:
+      operationId: requestIntroduction
+      responses:
+        '201': {description: Request stored}
+  /conversations/{id}/messages:
+    post:
+      operationId: sendMessage
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: string}
+      responses:
+        '201': {description: Authorized persisted message}
+  /reports:
+    post:
+      operationId: reportUserContent
+      responses:
+        '201': {description: Case created with protected report ID}
+  /blocks:
+    post:
+      operationId: blockMember
+      responses:
+        '204': {description: Block immediately effective}
+  /rights/exports:
+    post:
+      operationId: requestDataExport
+      responses:
+        '202': {description: Export job queued}
+  /rights/deletion:
+    post:
+      operationId: requestDataErasure
+      responses:
+        '202': {description: Deletion processing started}
+  /payments/checkout:
+    post:
+      operationId: startCheckout
+      responses:
+        '201': {description: Gateway checkout token}
+  /webhooks/razorpay:
+    post:
+      operationId: processRazorpayWebhook
+      security: []
+      responses:
+        '200': {description: Signature-verified event accepted/idempotent}
+  /admin/cases:
+    get:
+      operationId: adminListCases
+      responses:
+        '200': {description: Permission-filtered active cases}
+        '403': {description: Admin permission denied}
+  /admin/cases/{caseId}/actions:
+    post:
+      operationId: adminActOnCase
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: {type: string}
+      responses:
+        '200': {description: Audited authorized action}
+  /admin/invitations:
+    post:
+      operationId: adminInviteStaff
+      responses:
+        '202': {description: Dual-approval invitation pending}

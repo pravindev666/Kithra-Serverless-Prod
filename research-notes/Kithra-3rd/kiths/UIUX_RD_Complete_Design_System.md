@@ -1,0 +1,36 @@
+# UI/UX-RD — Complete Design System, Light/Dark, Screen Composition, Interaction
+
+## 0. Design standard
+Target is consumer polish on par with leading large apps in **clarity, responsiveness, useful density and fault handling**, not visual imitation. Kithra should feel approachable and culturally inclusive. Use Palantir-style relational clarity in the compatibility map and admin triage; never adopt its enterprise density in the landing or signup. All requirements support mobile, desktop, tablet, light/dark, 320–1920 px, touch, keyboard and screen readers.
+
+## 1. Evidence-derived look and feel
+Recommended-but-NOT-APPROVED D2 Ink & Clay from Hermes. D1 Sunlit Humanist is warmer but rose-coded; D5 Forest & Sand quieter. Before founder freeze, show same landing/sign-in/member card/admin frame under all 3 to avoid isolated palette decisions. D2 palette: light canvas `#FBFAF7`, surfaces `#FFFFFF`/`#F7F6F1`, text `#1F2320`, muted `#5A6159`, teal `#1F6F5C`, decoration clay `#D98A3D`, clay text `#8A5A1E`, support `#3E4A6B`; dark canvas `#14170F`, surface `#1F241D`, text `#F2F2EC`, primary `#4FB39B`, accent `#E0A863`. Modes: Friendship teal, Dating muted rose #A83E50, Matrimony support #3E4A6B, only where labels/icons clarify. Use exact source `13_RESEARCH_ORIGINAL/03_BRAND/design-tokens.json` and accompanying CSS. Contrast test disabled/muted text, focus and danger on actual surfaces: passing body roles in research does not certify every combination.
+
+Typography: Fraunces for editorial headlines only; Inter for form controls, body, data tables; Noto Sans per active Indic script; number tables use tabular figures; JetBrains Mono for request IDs / logs only. Font licensing must be checked for distribution and self-hosting. 17 px large body and 15 px UI body default; forms no smaller than 16px on mobile; min interactive targets 44×44. Set max text measure 60–72ch. Defer brand finalization for founder approval while preserving provisional tokens. No font files bundled.
+
+## 2. Grids and responsiveness
+12-col desktop 1240px content; 8-col tablet; 4-col mobile, gutter 16px on small, 24px on desktop. Landing: generous white space and human photography. Dashboard: desktop 240px navigation, flexible 700px central canvas, optional 320px contextual panel; mobile 4–5 bottom tabs, overflow More sheet, fixed safe-area consideration and back navigation. Staff desktop minimum effective width 1024 for 3-pane queue; tablet 2-pane; phone emergency/triage one-pane (not forced microscopic tables). Page padding 16 mobile / 24 tablet / 32 desktop; sticky header keeps single CTA where appropriate.
+
+## 3. Primitive component contract
+Button (primary/secondary/ghost/destructive/text), Link, Input, PasswordField, PhoneField, GoogleSignIn, EmailCodePanel, FormError, Combobox, RadioCard, Checkbox, ConsentNotice, ModeCard, Chip, Badge, Avatar, PortraitCard, Gallery, Lightbox, FileUploader, PhotoCrop, SortablePhotoGrid, ProgressStepper, QuizQuestion, PatternBar, MatchExplain, RelationshipMap, DataTable, DataGrid, CommandSearch, Drawer, Modal, Sheet, Toast, Banner, Skeleton, OfflineIndicator, StatusTimeline, GrievanceCard, CaseEvidencePanel, AuditTrail. Every component has specified props, keyboard, disabled/error/loading/read-only, light/dark, RTL slot, high contrast, focus and reduced motion. Do NOT invent interaction only visible on hover.
+
+## 4. Navigation and information hierarchy
+Public: logo / How it works / Friendship / Dating / Matrimony / Safety / Pricing / Sign in / Get started. Logged-in: Home, Discover, My Patterns, Connections, Messages, Circles, Notifications; Account overlay with Profile, Photos, Privacy, Assessments, Support, Subscription, Settings and Sign out. Explicit current intent header; switching modes uses persistent mode-scoped banners. Admin: Overview, Trust & Safety, People, Photos, Circles, Assessments, Scoring, Support, Billing, Rights, Compliance, Staff, Audit, Analytics, System, Incidents and Settings. Accessible breadcrumbs and direct-deep links; route changes preserve intended context where safe.
+
+## 5. Portrait and photographic art direction
+Authentic, consented, adult Indian and international people in everyday relationships: coffee, reading, hobby clubs, building something, walking, talking, not forced intimacy or wedding tropes. Prioritize a human moment plus clear headline, no huge collage/synthetic testimonial. Lifestyle photos alternate age, body type, region and setting without tokenizing identity. Include fallbacks for no photo, slow image, moderated/rejected, blocked or hidden photo; never expose a private image as a placeholder thumbnail. Hero landscape crop at mobile below headline; member portrait 4:5, avatar 1:1, contextual photo 16:9, server derivatives with LQIP and `srcset`.
+
+## 6. Light/dark requirements
+Honor system preference on first use, persist explicit override securely; SSR prevent flash using initial theme class. All semantic tokens must exist for dark, including focus, danger, chart categories, muted backgrounds, separators, overlays, keyboard focus, selected state. Maintain contrast AA in both; photos get scrim only where text overlays are unavoidable; admin charts must use patterns/tooltips not color alone; inspect Indian scripts in dark mode. No light mode inversion via CSS filter. Mood should stay warm and trustworthy in dark, not gamer-neon.
+
+## 7. Whole-product states
+Every route has: initial skeleton, empty, normal, filtered-empty, transient network failure with retry, offline if applicable, unauthorized, forbidden, deleted/410, conflict/409, throttled/429, maintenance/503 and severe/500 fallback. Real 404 has neutral illustration (not fake account), routes to Home and Help, search optionally. Account-specific 404 must not reveal a user's existence. Session expiry should preserve intended route after re-auth; modal stack does not destroy route history.
+
+## 8. Accessibility + performance gates
+Accessibility WCAG 2.2 AA, semantically correct headings, focus order, alt meaningful/non-redundant, keyboard / SR tested, 44px product targets, 400% zoom, 320px reflow and reduced motion. UX metrics: first impression in 5 seconds tested, signup completion, quiz drop-off, comprehension of percent-band caveat, intent leakage test, successful block/report, checkout comprehension, recovery after error. Lighthouse is indicative only; test actual mobile on 3G/4G, budget assets, ensure low data mode doesn't load motion assets.
+
+## 9. What design team must deliver
+Figma or equivalent editable design file, variables for tokens and dark/light, complete responsive screens and states, prototype clickable flows, photo art direction & license ledger, exact microcopy, component behavior/API states, annotated Motion and accessibility specs, i18n-ready strings, assets at specified aspect ratios, developer handoff and user research results. "Look like Facebook" is not an asset license and should not be translated into copying copyrighted designs.
+
+## 10. Traceability
+The dedicated source research is more granular and remains incorporated in full: `13_RESEARCH_ORIGINAL/05_USER_UX/COMPLETE_MEMBER_SCREEN_INVENTORY.md`, `WIREFRAMES_MEMBER.md`, `06_ADMIN/WIREFRAMES_ADMIN.md`, `07_MOTION/MOTION_FOR_REACT_COMPLETE_MATRIX.md`, `10_HANDOFF/DEVELOPER_COMPONENT_CONTRACTS.md`.

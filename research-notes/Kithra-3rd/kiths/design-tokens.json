@@ -1,0 +1,174 @@
+{
+  "$schema": "kithra-design-tokens/1.0",
+  "meta": {
+    "name": "Kithra Design Tokens",
+    "direction": "D2 Culture-Neutral Editorial (Ink & Clay)",
+    "provisional": true,
+    "founder_signoff_required": true,
+    "date": "2026-11-01",
+    "accessibility_target": "WCAG 2.2 AA",
+    "note": "Alternative directions D5 and D1 documented in FIVE_VISUAL_DIRECTIONS.md. Clay accent is decoration-only; use accentText for text."
+  },
+  "color": {
+    "light": {
+      "canvas": "#FBFAF7",
+      "canvasAlt": "#F4F2EC",
+      "surface": "#FFFFFF",
+      "surfaceAlt": "#F7F6F1",
+      "overlay": "rgba(31,35,32,0.48)",
+      "text": "#1F2320",
+      "textMuted": "#5A6159",
+      "textSubtle": "#8A9089",
+      "textInverse": "#FFFFFF",
+      "primary": "#1F6F5C",
+      "primaryHover": "#1A5E4E",
+      "primaryActive": "#155042",
+      "primarySubtle": "#E3F0EB",
+      "onPrimary": "#FFFFFF",
+      "accent": "#D98A3D",
+      "accentText": "#8A5A1E",
+      "accentSubtle": "#FBEEDD",
+      "support": "#3E4A6B",
+      "supportSubtle": "#E7EAF3",
+      "border": "#E4E3DC",
+      "borderStrong": "#CDCCC2",
+      "focus": "#1F6F5C",
+      "link": "#1F6F5C",
+      "linkVisited": "#3E4A6B",
+      "selected": "#E3F0EB",
+      "disabledBg": "#EFEEE8",
+      "disabledText": "#A5AAA3",
+      "danger": "#B3261E",
+      "dangerSubtle": "#FBE9E7",
+      "warning": "#8A5A1E",
+      "warningSubtle": "#FBEEDD",
+      "success": "#1F6F5C",
+      "successSubtle": "#E3F0EB",
+      "shadowColor": "rgba(31,35,32,0.10)"
+    },
+    "dark": {
+      "canvas": "#14170F",
+      "canvasAlt": "#1B1F18",
+      "surface": "#1F241D",
+      "surfaceAlt": "#262C23",
+      "overlay": "rgba(0,0,0,0.60)",
+      "text": "#F2F2EC",
+      "textMuted": "#B9BDB2",
+      "textSubtle": "#8B9086",
+      "textInverse": "#14170F",
+      "primary": "#4FB39B",
+      "primaryHover": "#67C4AD",
+      "primaryActive": "#84D2BE",
+      "primarySubtle": "#1E2B26",
+      "onPrimary": "#0E1512",
+      "accent": "#E0A863",
+      "accentText": "#F0C48E",
+      "accentSubtle": "#2C2418",
+      "support": "#9AA9CC",
+      "supportSubtle": "#1C2130",
+      "border": "#333A30",
+      "borderStrong": "#49503F",
+      "focus": "#4FB39B",
+      "link": "#7FCBB7",
+      "linkVisited": "#9AA9CC",
+      "selected": "#1E2B26",
+      "disabledBg": "#22261F",
+      "disabledText": "#6A6F65",
+      "danger": "#F2B8B5",
+      "dangerSubtle": "#3A1F1D",
+      "warning": "#F0C48E",
+      "warningSubtle": "#2C2418",
+      "success": "#4FB39B",
+      "successSubtle": "#1E2B26",
+      "shadowColor": "rgba(0,0,0,0.50)"
+    },
+    "mode": {
+      "friendship": "#1F6F5C",
+      "dating": "#A83E50",
+      "matrimony": "#3E4A6B"
+    },
+    "modeDark": {
+      "friendship": "#4FB39B",
+      "dating": "#E08C99",
+      "matrimony": "#9AA9CC"
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "display": "'Fraunces', 'Noto Serif', Georgia, 'Times New Roman', serif",
+      "body": "'Inter', 'Noto Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "mono": "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+      "indic": {
+        "hi": "'Noto Sans Devanagari', sans-serif",
+        "ta": "'Noto Sans Tamil', sans-serif",
+        "te": "'Noto Sans Telugu', sans-serif",
+        "ml": "'Noto Sans Malayalam', sans-serif",
+        "kn": "'Noto Sans Kannada', sans-serif",
+        "bn": "'Noto Sans Bengali', sans-serif"
+      }
+    },
+    "weight": { "regular": 400, "medium": 500, "semibold": 600, "bold": 700 },
+    "scale": {
+      "display-2xl": { "size": "56px", "lineHeight": "60px", "mobile": "40px/46px", "tracking": "-0.02em" },
+      "display-xl": { "size": "44px", "lineHeight": "50px", "mobile": "34px/40px", "tracking": "-0.02em" },
+      "h1": { "size": "34px", "lineHeight": "40px", "mobile": "28px/34px", "tracking": "-0.01em" },
+      "h2": { "size": "26px", "lineHeight": "32px", "tracking": "-0.01em" },
+      "h3": { "size": "20px", "lineHeight": "28px", "tracking": "0" },
+      "body-lg": { "size": "17px", "lineHeight": "28px", "tracking": "0" },
+      "body": { "size": "15px", "lineHeight": "24px", "tracking": "0" },
+      "body-sm": { "size": "13px", "lineHeight": "20px", "tracking": "0" },
+      "caption": { "size": "12px", "lineHeight": "16px", "tracking": "0.01em" }
+    },
+    "measure": { "paragraphMaxCh": 72, "promptMaxCh": 48 },
+    "numeric": { "variantNumeric": "tabular-nums" },
+    "fontDisplay": "swap"
+  },
+  "space": {
+    "unit": "4px",
+    "scale": { "0": "0", "1": "4px", "2": "8px", "3": "12px", "4": "16px", "5": "20px", "6": "24px", "8": "32px", "10": "40px", "12": "48px", "16": "64px", "20": "80px", "24": "96px" }
+  },
+  "radius": { "chip": "8px", "input": "12px", "card": "16px", "sheet": "20px", "editorial": "24px", "pill": "999px" },
+  "shadow": {
+    "xs": "0 1px 2px rgba(31,35,32,0.06)",
+    "sm": "0 1px 3px rgba(31,35,32,0.08), 0 1px 2px rgba(31,35,32,0.04)",
+    "md": "0 4px 12px rgba(31,35,32,0.08)",
+    "lg": "0 12px 28px rgba(31,35,32,0.10)",
+    "focusRing": "0 0 0 3px rgba(31,111,92,0.35)"
+  },
+  "elevation": { "0": "none", "1": "sm", "2": "md", "3": "lg" },
+  "border": { "width": "1px", "widthStrong": "1.5px" },
+  "grid": {
+    "columnsMobile": 4, "columnsTablet": 8, "columnsDesktop": 12,
+    "gutterMobile": "16px", "gutterDesktop": "24px",
+    "containerMax": "1240px", "contentMax": "760px", "adminMax": "1600px"
+  },
+  "breakpoints": { "xs": "320px", "sm": "480px", "md": "768px", "lg": "1024px", "xl": "1280px", "2xl": "1536px" },
+  "density": {
+    "comfortable": { "rowHeight": "48px", "controlHeight": "48px", "controlHeightSm": "36px" },
+    "compactAdmin": { "rowHeight": "36px", "controlHeight": "32px" }
+  },
+  "touch": { "minTarget": "44px", "wcagMinTarget": "24px", "iconSize": "20px" },
+  "motion": {
+    "duration": { "instant": "80ms", "micro": "140ms", "ui": "220ms", "hero": "520ms", "quiz": "200ms", "admin": "140ms" },
+    "easing": { "standard": "cubic-bezier(0.2,0.7,0.2,1)", "enter": "cubic-bezier(0.16,1,0.3,1)", "exit": "cubic-bezier(0.4,0,1,1)" },
+    "spring": { "layout": { "type": "spring", "stiffness": 380, "damping": 30 } },
+    "stagger": "40ms",
+    "reducedMotion": "all non-essential animation disabled; opacity-only fades <=120ms permitted"
+  },
+  "zIndex": { "base": 0, "sticky": 100, "dropdown": 200, "drawer": 300, "modal": 400, "toast": 500, "tooltip": 600 },
+  "icon": { "stroke": "1.75px", "size": { "sm": "16px", "md": "20px", "lg": "24px" }, "style": "outline, rounded joins, no filled pictograms" },
+  "imagery": {
+    "primaryRatio": "4:5", "squareRatio": "1:1", "wideRatio": "16:9",
+    "primaryMinPx": "1080x1350", "thumbnailPx": "320x320",
+    "treatment": "natural light, no heavy retouch, consent-based only",
+    "placeholder": "initials on primarySubtle, no fake faces",
+    "exif": "stripped server-side on ingest"
+  },
+  "stateTheme": {
+    "selected": "2px border primary + primarySubtle bg + check icon",
+    "focusVisible": "3px focusRing offset 2px",
+    "disabled": "disabledBg/disabledText + aria-disabled",
+    "error": "danger text + dangerSubtle bg + icon + instruction",
+    "loading": "skeleton using canvasAlt, optional 1.2s shimmer (disabled under reduced motion)"
+  }
+}

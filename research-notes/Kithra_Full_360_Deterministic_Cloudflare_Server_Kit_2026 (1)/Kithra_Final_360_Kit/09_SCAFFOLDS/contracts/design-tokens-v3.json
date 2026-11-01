@@ -1,0 +1,10 @@
+{
+ "version":"3.0","concept":"Warm editorial clarity, global trust",
+ "fonts":{"display":"Manrope","body":"Plus Jakarta Sans","fallbackIndic":["Noto Sans Devanagari","Noto Sans Tamil","Noto Sans Telugu","Noto Sans Bengali","Noto Sans Malayalam","Noto Sans Kannada"]},
+ "light":{"bg":"#FAF8F4","surface":"#FFFFFF","text":"#232736","secondary":"#53596B","border":"#DCDDE7","action":"#4B5DDB","actionText":"#FFFFFF"},
+ "dark":{"bg":"#14182C","surface":"#232A47","text":"#F5F4F1","secondary":"#C0C5D5","border":"#424963","action":"#6675ED","actionText":"#101326"},
+ "semantic":{"friendship":"#4B5DDB","dating":"#DB755F","matrimony":"#217B75","support":"#2E8C78","danger":"#B53848","warning":"#A76A21"},
+ "radii":{"chip":8,"input":12,"card":16,"editorial":24},
+ "spacingUnitPx":4,"desktopMaxWidthPx":1240,"mobileMinControlHeightPx":48,
+ "accessibility":{"target":"WCAG 2.2 AA","bodyContrast":4.5,"largeContrast":3,"reducedMotion":"respected"}
+}

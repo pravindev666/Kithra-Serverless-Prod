@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kithra — Visual Direction Tiles (PROPOSED, not implemented)</title>
+<style>
+  :root{ --pad:20px; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#eceae4;color:#222;font:14px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+  header{background:#1F2320;color:#F2F2EC;padding:22px 28px}
+  header h1{margin:0 0 4px;font-size:20px;font-weight:600}
+  header p{margin:0;font-size:13px;opacity:.85}
+  .warn{background:#FBEEDD;color:#8A5A1E;padding:10px 28px;font-weight:600;font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:22px;padding:24px 28px}
+  .dir{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.10)}
+  .dir h2{margin:0;font-size:15px;padding:14px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+  .dir h2 span.rank{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px}
+  .swatches{display:flex;flex-wrap:wrap;gap:0}
+  .sw{flex:1 1 16%;height:52px;position:relative}
+  .sw small{position:absolute;bottom:3px;left:5px;font-size:9px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .mock{padding:16px}
+  .hero{border-radius:12px;padding:22px;margin-bottom:12px}
+  .hero .eyebrow{font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.8;margin-bottom:8px}
+  .hero .h1{font-size:22px;line-height:1.15;margin:0 0 8px;letter-spacing:-.02em}
+  .hero .sub{font-size:12px;opacity:.85;margin:0 0 14px}
+  .btn{display:inline-block;font-size:12px;font-weight:700;padding:9px 14px;border-radius:9px;min-height:36px}
+  .btn.ghost{background:transparent;border:1px solid currentColor}
+  .card{border:1px solid;border-radius:12px;padding:13px;display:flex;gap:12px;align-items:center}
+  .av{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px}
+  .meta{font-size:11px;opacity:.8;margin-top:3px}
+  .chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;margin-top:5px}
+  .modes{display:flex;gap:8px;margin-top:10px}
+  .modechip{font-size:10px;font-weight:700;padding:4px 9px;border-radius:999px;border:1px solid}
+  .ratios{font-size:11px;padding:10px 16px;border-top:1px solid #eee;background:#fafafa}
+  .ratios b{font-weight:700}
+  .ok{color:#1b7a4b}.bad{color:#b3261e}
+  footer{padding:18px 28px;font-size:12px;color:#555}
+</style>
+</head>
+<body>
+<header>
+  <h1>Kithra — Five Visual Directions · ORIGINAL PROPOSED TILES</h1>
+  <p>Colour/contrast data is computed (WCAG 2.2). Layout shown is an original Kithra mock, <b>not</b> copied from any competitor. No real member data.</p>
+</header>
+<div class="warn">⚠ PROPOSED, NOT IMPLEMENTED · none of these is an approved brand · founder sign-off required · fictional examples only</div>
+
+<div class="grid" id="grid"></div>
+
+<footer>
+  Generated for the Kithra UX Research &amp; Redesign 2026 package · companion to
+  03_BRAND/FIVE_VISUAL_DIRECTIONS.md and PALETTE_SCORECARD.csv.
+  D2 is recommended (weighted 4.85/5.00); D5 and D1 are alternatives.
+</footer>
+
+<script>
+const DIRS = [
+ {n:"D2 · Culture-Neutral Editorial (Ink & Clay)", score:"4.85 · RECOMMENDED", rank:"#1F6F5C",
+  sw:{"canvas":"#FBFAF7","surface":"#FFFFFF","text":"#1F2320","primary":"#1F6F5C","accent":"#D98A3D","support":"#3E4A6B"},
+  hero:{bg:"#FBFAF7",fg:"#1F2320",btn:"#1F6F5C",card:"#FFFFFF",border:"#E4E3DC",av:"#E3F0EB",avfg:"#1F6F5C"},
+  modes:["#1F6F5C","#A83E50","#3E4A6B"], ok:true, txt:"15.25", pri:"6.02"},
+ {n:"D5 · Sophisticated Nature (Forest & Sand)", score:"4.70 · Alt 1", rank:"#2F5D3A",
+  sw:{"canvas":"#FBFBF7","surface":"#FFFFFF","text":"#1E241F","primary":"#2F5D3A","accent":"#C98A4B","support":"#41677A"},
+  hero:{bg:"#FBFBF7",fg:"#1E241F",btn:"#2F5D3A",card:"#FFFFFF",border:"#E2E3D8",av:"#E3EFE6",avfg:"#2F5D3A"},
+  modes:["#2F5D3A","#A83E50","#41677A"], ok:true, txt:"15.25", pri:"7.64"},
+ {n:"D1 · Sunlit Humanist (warm editorial)", score:"3.81 · Alt 2", rank:"#A83E50",
+  sw:{"canvas":"#FFF9F3","surface":"#FFFFFF","text":"#2C2320","primary":"#A83E50","accent":"#EFA88B","support":"#78846A"},
+  hero:{bg:"#FFF9F3",fg:"#2C2320",btn:"#A83E50",card:"#FFFFFF",border:"#EADFD6",av:"#F7E7EC",avfg:"#A83E50"},
+  modes:["#78846A","#A83E50","#6B5B52"], ok:true, txt:"14.69", pri:"6.05"},
+ {n:"D3 · Restrained Luxury (Plum & Gold)", score:"3.95 · Consider", rank:"#5B2A4E",
+  sw:{"canvas":"#FAF7F4","surface":"#FFFFFF","text":"#241E2A","primary":"#5B2A4E","accent":"#B4873F","support":"#2E5D6B"},
+  hero:{bg:"#FAF7F4",fg:"#241E2A",btn:"#5B2A4E",card:"#FFFFFF",border:"#E7E0E4",av:"#F0E6EE",avfg:"#5B2A4E"},
+  modes:["#2E5D6B","#5B2A4E","#B4873F"], ok:true, txt:"15.20", pri:"11.13"},
+ {n:"D4 · Bright Community (Coral & Teal)", score:"3.69 · Build-adjust", rank:"#E2603F",
+  sw:{"canvas":"#FDFBF7","surface":"#FFFFFF","text":"#23282B","primary":"#E2603F","accent":"#1E8F84","support":"#3C6DF0"},
+  hero:{bg:"#FDFBF7",fg:"#23282B",btn:"#E2603F",card:"#FFFFFF",border:"#E6E4DE",av:"#FBE6DF",avfg:"#E2603F"},
+  modes:["#1E8F84","#E2603F","#3C6DF0"], ok:false, txt:"14.41", pri:"3.51"},
+];
+
+const g=document.getElementById('grid');
+for(const d of DIRS){
+  const sws=Object.entries(d.sw).map(([k,v])=>{
+    const fg = k==='canvas'||k==='surface'? '#222':'#fff';
+    return `<div class="sw" style="background:${v}"><small style="color:${fg};text-shadow:none">${v}</small></div>`;
+  }).join('');
+  const chip=(c)=>`<span class="modechip" style="border-color:${c};color:${c}">mode</span>`;
+  const el=document.createElement('div');
+  el.className='dir';
+  el.innerHTML=`
+   <h2>${d.n}<span class="rank" style="background:${d.rank};color:#fff">${d.score}</span></h2>
+   <div class="swatches">${sws}</div>
+   <div class="mock">
+     <div class="hero" style="background:${d.hero.bg};color:${d.hero.fg};border:1px solid ${d.hero.border}">
+       <div class="eyebrow">Friendship · Dating · Matrimony</div>
+       <div class="h1">Understand your patterns.<br>Meet people who make sense to you.</div>
+       <div class="sub">One account. Three separate intentions. Private by default.</div>
+       <span class="btn" style="background:${d.hero.btn};color:#fff">Start with a few questions</span>
+       <span class="btn ghost" style="color:${d.hero.fg};margin-left:6px">How it works</span>
+     </div>
+     <div class="card" style="background:${d.hero.card};border-color:${d.hero.border};color:${d.hero.fg}">
+       <div class="av" style="background:${d.hero.av};color:${d.hero.avfg}">AK</div>
+       <div>
+         <b>Example A · Chennai</b>
+         <div class="meta">Similar communication pace · shared activities</div>
+         <div class="chip" style="background:${d.hero.av};color:${d.hero.avfg}">82% compared agreement</div>
+         <div class="meta">Based on 68/100 answers · model v1.2 — not a prediction</div>
+       </div>
+     </div>
+     <div class="modes">${d.modes.map(chip).join('')}</div>
+   </div>
+   <div class="ratios">
+     Text/canvas <b>${d.txt}:1</b> · Primary white-on <b class="${d.ok?'ok':'bad'}">${d.pri}:1</b>
+     ${d.ok?'✅ AA':'❌ fails AA for normal text'}
+   </div>`;
+  g.appendChild(el);
+}
+</script>
+</body>
+</html>

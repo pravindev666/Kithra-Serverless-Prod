@@ -1,0 +1,14 @@
+# Replace domains; DNS/TLS and Cloudflare edge policies must be configured separately.
+kithra.example {
+  encode gzip zstd
+  reverse_proxy web:80
+}
+api.kithra.example {
+  encode gzip zstd
+  reverse_proxy api:8787
+}
+admin.kithra.example {
+  encode gzip zstd
+  # Strict identity + MFA + RBAC enforcement takes place in the admin app and API.
+  reverse_proxy admin:80
+}

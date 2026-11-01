@@ -1,6 +1,119 @@
 export type IntentionId = 'friendship' | 'dating' | 'matrimony';
 
+/**
+ * Internal stable identifiers preserved for backend/storage compatibility ('echo' | 'counterpoint' | 'mosaic').
+ * Member-facing UI displays:
+ * - 'echo' -> 'Similar to Me'
+ * - 'counterpoint' -> 'Different from Me'
+ * - 'mosaic' -> 'We Balance Each Other'
+ */
 export type RelationshipSignalKind = 'echo' | 'counterpoint' | 'mosaic';
+
+export type DiscoveryLensView =
+  | 'all'
+  | 'similar_to_me'
+  | 'different_from_me'
+  | 'we_balance_each_other';
+
+export type SimilarityPresetId =
+  | 'all_0_100'
+  | 'very_similar_80_100'
+  | 'somewhat_similar_50_79'
+  | 'quite_different_0_49'
+  | 'custom';
+
+export type ConstructLayerId =
+  | 'personality_traits'
+  | 'personal_values'
+  | 'communication'
+  | 'emotional_regulation'
+  | 'conflict_repair'
+  | 'trust_reliability'
+  | 'autonomy_boundaries'
+  | 'daily_lifestyle'
+  | 'social_friendship'
+  | 'romantic_expectations'
+  | 'family_domestic'
+  | 'adaptability_change'
+  | 'C1_openness'
+  | 'C2_planfulness'
+  | 'C3_social_energy'
+  | 'C4_warmth'
+  | 'C5_steadiness'
+  | 'C1'
+  | 'C2'
+  | 'C3'
+  | 'C4'
+  | (string & {});
+
+export type QuestionFormatType =
+  | 'direct_preference'
+  | 'situational_judgment'
+  | 'contextual_trait'
+  | 'values_tradeoff'
+  | 'forced_choice'
+  | 'importance_boundary'
+  | 'optional_reflection';
+
+export type ImportanceLevel =
+  | 'essential'
+  | 'important'
+  | 'strong_preference'
+  | 'flexible'
+  | 'not_important'
+  | 'unsure'
+  | 'prefer_not_to_answer';
+
+export type RelationshipStructureRequirement =
+  | 'exclusive_required'
+  | 'exclusive_preferred'
+  | 'open_required'
+  | 'open_preferred'
+  | 'flexible_either'
+  | 'unknown'
+  | 'prefer_not_to_answer';
+
+export type LongTermChildrenPreference =
+  | 'wants_children'
+  | 'does_not_want_children'
+  | 'open_or_flexible'
+  | 'open_or_unsure'
+  | 'unknown'
+  | 'prefer_not_to_answer';
+
+export type AssessmentStage =
+  | 'stage_1_lightweight'
+  | 'stage_2_initial'
+  | 'stage_3_thematic_deep'
+  | 'stage_4_reassessment'
+  | 1
+  | 2
+  | 3;
+
+export type ResponseQualityState =
+  | 'valid_high_confidence'
+  | 'valid_provisional'
+  | 'clarification_needed'
+  | 'low_confidence_validity'
+  | 'no_concern_detected'
+  | 'further_clarification_recommended'
+  | 'insufficient_reliable_information';
+
+export type ArchetypeConfidenceBand =
+  | 'insufficient_for_pattern'
+  | 'provisional_early_note'
+  | 'developing_pattern'
+  | 'established_experimental_pattern';
+
+export type ExperimentalArchetypeId =
+  | 'steady_anchor'
+  | 'warm_bridge'
+  | 'curious_spark'
+  | 'mosaic_builder'
+  | 'deep_current'
+  | 'horizon_planner'
+  | 'calm_rhythm'
+  | 'circle_gatherer';
 
 export type ShellSection =
   | 'landing'
@@ -41,7 +154,8 @@ export type AdminTab =
   | 'subscriptions'
   | 'privacy'
   | 'staff'
-  | 'audit';
+  | 'audit'
+  | 'questions';
 
 export type SystemErrorCode =
   | '404'
@@ -80,6 +194,43 @@ export interface MeasuredAlignmentDimension {
   applicableIntentions: IntentionId[];
 }
 
+export interface MemberEligibilityRequirements {
+  memberId?: string;
+  isAdult?: boolean;
+  isAdultVerified?: boolean;
+  enabledIntentions: IntentionId[];
+  discoverableInIntentions?: IntentionId[];
+  discoveryEnabledByIntention?: Record<IntentionId, boolean>;
+  blockedMemberIds: string[];
+  relationshipStructure?: RelationshipStructureRequirement;
+  relationshipStructureByIntention?: Partial<
+    Record<IntentionId, RelationshipStructureRequirement>
+  >;
+  relationshipStructureImportance?: ImportanceLevel;
+  childrenPreference?: LongTermChildrenPreference;
+  childrenRequirementLevel?: ImportanceLevel;
+  childrenPreferenceImportance?: ImportanceLevel;
+  relocationOpenness?: 'open' | 'anchored_in_city' | 'flexible' | 'unknown';
+}
+
+export interface ConstructVectorPoint {
+  constructId: ConstructLayerId;
+  constructName?: string;
+  layer?: 'personality' | 'values' | 'preferences' | 'boundaries';
+  /** Normalized 0..100 continuous construct value */
+  score: number;
+  /** Measurement confidence (0..1) */
+  confidence?: number;
+  /** Flexibility / openness to difference on this construct (0..100) */
+  flexibility?: number;
+  /** Welcomes complementary partner contrast on this construct */
+  welcomesComplementarity?: boolean;
+  /** Answered item count contributing to this construct */
+  itemCount?: number;
+  answeredItemCount?: number;
+  importance?: ImportanceLevel;
+}
+
 export interface MemberProfile {
   id: string;
   name: string;
@@ -99,6 +250,37 @@ export interface MemberProfile {
   measuredDimensions: MeasuredAlignmentDimension[];
   connectionState: 'discover' | 'connected' | 'note-sent';
   saved: boolean;
+  /**
+   * Deterministic 0-100 Attribute Similarity Score relative to the active member
+   * (or null when comparable questionnaire responses are insufficient).
+   */
+  attributeSimilarityScore?: number | null;
+  /**
+   * Measured complementary balance indicator (0-100) when both members welcome complementary habits.
+   */
+  complementaryBalanceScore?: number;
+  /**
+   * Plain-language card summaries for the three discovery lenses:
+   * - Shared Ground (Similar to Me)
+   * - Difference (Different from Me)
+   * - Potential Balance (We Balance Each Other)
+   */
+  sharedGroundSummary?: string;
+  differenceSummary?: string;
+  potentialBalanceSummary?: string;
+  /**
+   * Experimental primary & secondary pattern summaries (only shown when coverage threshold is met)
+   */
+  experimentalPrimaryPattern?: ExperimentalArchetypeId;
+  experimentalSecondaryPattern?: ExperimentalArchetypeId;
+  /**
+   * Structured psychological construct profile for live deterministic calculations
+   */
+  constructProfile?: ConstructVectorPoint[];
+  /**
+   * Explicit mutual eligibility settings
+   */
+  eligibility?: MemberEligibilityRequirements;
 }
 
 export interface PhotoCropTransform {
@@ -132,6 +314,24 @@ export interface QuestionThemeMapItem {
   completedQuestions: number;
   applicableIntentions: IntentionId[];
   sampleTopics: string[];
+  constructLayer?: ConstructLayerId;
+}
+
+export interface AssessmentQuestionOption {
+  id: string;
+  /** Stable semantic identifier independent of visual display order */
+  semanticId?: string;
+  label: string;
+  reflection: string;
+  signalEffect: string;
+  /** Normalized 0..100 construct score contribution */
+  normalizedValue?: number;
+  /** Context tag for behavioral triangulation */
+  contextTag?: string;
+  /** Indicates whether choosing this option welcomes complementary differences */
+  welcomesComplementarity?: boolean;
+  /** Flags if an option represents tolerance of boundary violation (never rewarded) */
+  isBoundaryViolationTolerance?: boolean;
 }
 
 export interface AssessmentQuestion {
@@ -139,22 +339,29 @@ export interface AssessmentQuestion {
   themeId: string;
   questionNumber: number;
   module:
-    | 'Conversational Pace & Presence'
-    | 'Everyday Values & Repair'
-    | 'Social Energy & Community'
-    | 'Independence, Home & Finances'
-    | 'Long-Term Partnership & Family Context';
+  | 'Conversational Pace & Presence'
+  | 'Everyday Values & Repair'
+  | 'Social Energy & Community'
+  | 'Independence, Home & Finances'
+  | 'Long-Term Partnership & Family Context';
   intentionScope: 'All intentions' | 'Friendship & Dating' | 'Matrimony & Partnership';
   applicableIntentions: IntentionId[];
   prompt: string;
   context: string;
   whyWeAsk: string;
-  options: {
-    id: string;
-    label: string;
-    reflection: string;
-    signalEffect: string;
-  }[];
+  options: AssessmentQuestionOption[];
+  /** Extended research metadata */
+  constructId?: ConstructLayerId;
+  facetId?: string;
+  formatType?: QuestionFormatType;
+  stage?: AssessmentStage;
+  reverseKeyed?: boolean;
+  expectedResponseTimeMs?: number;
+  sensitivityLevel?: 'low' | 'moderate' | 'high_voluntary_preference';
+  version?: string;
+  validationStatus?: 'ORIGINAL / UNVALIDATED' | 'PILOT_REVIEWED' | 'VALIDATED';
+  supportedLanguages?: ('en' | 'ta' | 'hi')[];
+  translations?: Partial<Record<'ta' | 'hi', string>>;
 }
 
 export interface MessageItem {
@@ -180,10 +387,10 @@ export interface CommunityCircle {
   title: string;
   city: string;
   format:
-    | 'In-person walk'
-    | 'Listening session'
-    | 'Small table conversation'
-    | 'Online reading circle';
+  | 'In-person walk'
+  | 'Listening session'
+  | 'Small table conversation'
+  | 'Online reading circle';
   intention: IntentionId;
   cadence: string;
   memberCount: number;
@@ -194,11 +401,11 @@ export interface CommunityCircle {
 export interface StaffCase {
   id: string;
   category:
-    | 'Impersonation concern'
-    | 'Photo report'
-    | 'Group moderation'
-    | 'Boundary concern'
-    | 'Account verification';
+  | 'Impersonation concern'
+  | 'Photo report'
+  | 'Group moderation'
+  | 'Boundary concern'
+  | 'Account verification';
   priority: 'High' | 'Normal';
   status: 'Awaiting review' | 'In queue' | 'Assigned' | 'Resolved (Preview)';
   reportedContext: string;
@@ -227,6 +434,20 @@ export interface AuditLogEntry {
   action: string;
   target: string;
   detail: string;
+}
+
+export interface AdminQualityReviewEvent {
+  eventType: 'assessment_quality_review_recommended';
+  sessionReference: string;
+  sessionId?: string;
+  assessmentVersion: string;
+  broadCategory:
+  | 'rapid_completion_and_uniform_pattern'
+  | 'high_missingness_or_incomplete'
+  | 'paired_item_inconsistency_review';
+  timestamp: string;
+  reviewStatus: 'pending_optional_member_retry' | 'resolved' | 'dismissed';
+  rawAnswersIncluded: false;
 }
 
 export interface RouteInventoryItem {

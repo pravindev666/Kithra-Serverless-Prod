@@ -1,0 +1,159 @@
+/* Kithra Design Tokens — D2 Culture-Neutral Editorial (Ink & Clay)
+   provisional: true — founder sign-off required before freeze.
+   WCAG 2.2 AA target. Clay accent is decoration-only; use --k-accent-text for text. */
+
+:root {
+  color-scheme: light;
+
+  /* ---- colour: light ---- */
+  --k-canvas: #FBFAF7;
+  --k-canvas-alt: #F4F2EC;
+  --k-surface: #FFFFFF;
+  --k-surface-alt: #F7F6F1;
+  --k-overlay: rgba(31,35,32,0.48);
+  --k-text: #1F2320;
+  --k-text-muted: #5A6159;
+  --k-text-subtle: #8A9089;
+  --k-text-inverse: #FFFFFF;
+  --k-primary: #1F6F5C;
+  --k-primary-hover: #1A5E4E;
+  --k-primary-active: #155042;
+  --k-primary-subtle: #E3F0EB;
+  --k-on-primary: #FFFFFF;
+  --k-accent: #D98A3D;
+  --k-accent-text: #8A5A1E;
+  --k-accent-subtle: #FBEEDD;
+  --k-support: #3E4A6B;
+  --k-support-subtle: #E7EAF3;
+  --k-border: #E4E3DC;
+  --k-border-strong: #CDCCC2;
+  --k-focus: #1F6F5C;
+  --k-link: #1F6F5C;
+  --k-link-visited: #3E4A6B;
+  --k-selected: #E3F0EB;
+  --k-disabled-bg: #EFEEE8;
+  --k-disabled-text: #A5AAA3;
+  --k-danger: #B3261E;
+  --k-danger-subtle: #FBE9E7;
+  --k-warning: #8A5A1E;
+  --k-warning-subtle: #FBEEDD;
+  --k-success: #1F6F5C;
+  --k-success-subtle: #E3F0EB;
+
+  /* ---- mode accents ---- */
+  --k-mode-friendship: #1F6F5C;
+  --k-mode-dating: #A83E50;
+  --k-mode-matrimony: #3E4A6B;
+
+  /* ---- type ---- */
+  --k-font-display: 'Fraunces', 'Noto Serif', Georgia, 'Times New Roman', serif;
+  --k-font-body: 'Inter', 'Noto Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --k-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --k-w-regular: 400; --k-w-medium: 500; --k-w-semibold: 600; --k-w-bold: 700;
+
+  --k-fs-display-2xl: clamp(40px, 6vw, 56px);
+  --k-fs-display-xl:  clamp(34px, 5vw, 44px);
+  --k-fs-h1: 34px;  --k-lh-h1: 40px;
+  --k-fs-h2: 26px;  --k-lh-h2: 32px;
+  --k-fs-h3: 20px;  --k-lh-h3: 28px;
+  --k-fs-body-lg: 17px; --k-lh-body-lg: 28px;
+  --k-fs-body: 15px;    --k-lh-body: 24px;
+  --k-fs-body-sm: 13px; --k-lh-body-sm: 20px;
+  --k-fs-caption: 12px; --k-lh-caption: 16px;
+  --k-measure: 72ch; --k-prompt-measure: 48ch;
+
+  /* ---- space ---- */
+  --k-s1: 4px;  --k-s2: 8px;  --k-s3: 12px; --k-s4: 16px; --k-s5: 20px;
+  --k-s6: 24px; --k-s8: 32px; --k-s10: 40px; --k-s12: 48px; --k-s16: 64px;
+  --k-s20: 80px; --k-s24: 96px;
+
+  /* ---- radius ---- */
+  --k-r-chip: 8px; --k-r-input: 12px; --k-r-card: 16px; --k-r-sheet: 20px;
+  --k-r-editorial: 24px; --k-r-pill: 999px;
+
+  /* ---- elevation ---- */
+  --k-shadow-xs: 0 1px 2px rgba(31,35,32,0.06);
+  --k-shadow-sm: 0 1px 3px rgba(31,35,32,0.08), 0 1px 2px rgba(31,35,32,0.04);
+  --k-shadow-md: 0 4px 12px rgba(31,35,32,0.08);
+  --k-shadow-lg: 0 12px 28px rgba(31,35,32,0.10);
+  --k-focus-ring: 0 0 0 3px rgba(31,111,92,0.35);
+
+  /* ---- layout ---- */
+  --k-container-max: 1240px; --k-content-max: 760px; --k-admin-max: 1600px;
+  --k-gutter: 16px;
+  --k-row-comfortable: 48px; --k-row-compact: 36px;
+  --k-touch-min: 44px;
+
+  /* ---- motion ---- */
+  --k-dur-instant: 80ms; --k-dur-micro: 140ms; --k-dur-ui: 220ms;
+  --k-dur-hero: 520ms;   --k-dur-quiz: 200ms; --k-dur-admin: 140ms;
+  --k-ease-standard: cubic-bezier(0.2,0.7,0.2,1);
+  --k-ease-enter: cubic-bezier(0.16,1,0.3,1);
+  --k-ease-exit: cubic-bezier(0.4,0,1,1);
+
+  /* ---- z-index ---- */
+  --k-z-sticky: 100; --k-z-dropdown: 200; --k-z-drawer: 300;
+  --k-z-modal: 400; --k-z-toast: 500; --k-z-tooltip: 600;
+}
+
+@media (min-width: 768px) { :root { --k-gutter: 24px; } }
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --k-canvas: #14170F;
+  --k-canvas-alt: #1B1F18;
+  --k-surface: #1F241D;
+  --k-surface-alt: #262C23;
+  --k-overlay: rgba(0,0,0,0.60);
+  --k-text: #F2F2EC;
+  --k-text-muted: #B9BDB2;
+  --k-text-subtle: #8B9086;
+  --k-text-inverse: #14170F;
+  --k-primary: #4FB39B;
+  --k-primary-hover: #67C4AD;
+  --k-primary-active: #84D2BE;
+  --k-primary-subtle: #1E2B26;
+  --k-on-primary: #0E1512;
+  --k-accent: #E0A863;
+  --k-accent-text: #F0C48E;
+  --k-accent-subtle: #2C2418;
+  --k-support: #9AA9CC;
+  --k-support-subtle: #1C2130;
+  --k-border: #333A30;
+  --k-border-strong: #49503F;
+  --k-focus: #4FB39B;
+  --k-link: #7FCBB7;
+  --k-link-visited: #9AA9CC;
+  --k-selected: #1E2B26;
+  --k-disabled-bg: #22261F;
+  --k-disabled-text: #6A6F65;
+  --k-danger: #F2B8B5;
+  --k-danger-subtle: #3A1F1D;
+  --k-warning: #F0C48E;
+  --k-warning-subtle: #2C2418;
+  --k-success: #4FB39B;
+  --k-success-subtle: #1E2B26;
+  --k-mode-friendship: #4FB39B;
+  --k-mode-dating: #E08C99;
+  --k-mode-matrimony: #9AA9CC;
+  --k-focus-ring: 0 0 0 3px rgba(79,179,155,0.40);
+}
+
+/* per-script fallback */
+:lang(hi) { --k-font-body: 'Inter','Noto Sans Devanagari',system-ui,sans-serif; }
+:lang(ta) { --k-font-body: 'Inter','Noto Sans Tamil',system-ui,sans-serif; }
+:lang(te) { --k-font-body: 'Inter','Noto Sans Telugu',system-ui,sans-serif; }
+:lang(ml) { --k-font-body: 'Inter','Noto Sans Malayalam',system-ui,sans-serif; }
+:lang(kn) { --k-font-body: 'Inter','Noto Sans Kannada',system-ui,sans-serif; }
+:lang(bn) { --k-font-body: 'Inter','Noto Sans Bengali',system-ui,sans-serif; }
+
+/* global reduced-motion contract */
+@media (prefers-reduced-motion: reduce) {
+  :root { --k-dur-hero: 0ms; --k-dur-ui: 0ms; --k-dur-quiz: 0ms; --k-dur-micro: 0ms; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

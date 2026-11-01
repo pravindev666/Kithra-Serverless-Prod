@@ -1,0 +1,28 @@
+// Deployment template only. Use verified GHCR digest, credential binding and approved target.
+pipeline {
+  agent any
+  options { disableConcurrentBuilds(); timestamps(); timeout(time: 30, unit: 'MINUTES') }
+  parameters {
+    choice(name: 'ENVIRONMENT', choices: ['staging','production'], description: 'Deployment target')
+    string(name: 'IMAGE_DIGEST', defaultValue: '', description: 'Immutable audited OCI digest, not latest tag')
+  }
+  stages {
+    stage('Validate release intent') {
+      steps { script { if (!params.IMAGE_DIGEST.startsWith('sha256:')) error('Immutable image digest required') } }
+    }
+    stage('Approval') {
+      when { expression { params.ENVIRONMENT == 'production' } }
+      steps { input message: 'Approve production deployment after review of test, security and backup evidence?', ok: 'Approve deploy' }
+    }
+    stage('Backup and migrations') {
+      steps { echo 'REPLACE: run encrypted PG backup + verify object-store backup + tested forward-compatible migrations' }
+    }
+    stage('Deploy') {
+      steps { echo 'REPLACE: pull pinned OCI digest, verify signature, deploy Compose via locked runner and secrets' }
+    }
+    stage('Smoke and rollback gate') {
+      steps { echo 'REPLACE: health, OpenAPI, auth, scoring, chat, billing and admin smoke; rollback safely on failure' }
+    }
+  }
+  post { failure { echo 'Page on-call; invoke rollback runbook if safe.' } }
+}

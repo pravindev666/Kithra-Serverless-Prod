@@ -1,0 +1,59 @@
+# Kithra template — requires implementation of npm scripts and pinned action SHAs before production.
+name: Kithra CI / dual-runtime quality
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4 # production: pin audited immutable SHA
+      - uses: actions/setup-node@v4 # production: pin audited immutable SHA
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run test:contracts
+      - run: npm run test:scoring:golden
+      - run: npm run test:security
+      - run: npm run build
+  database-parity:
+    needs: quality
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: kithra_test, POSTGRES_PASSWORD: test_only_password, POSTGRES_DB: kithra_test }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kithra_test" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: 'npm'}
+      - run: npm ci
+      - run: npm run test:integration:d1
+      - run: npm run test:integration:postgres
+        env:
+          DATABASE_URL: postgresql://kithra_test:test_only_password@localhost:5432/kithra_test
+      - run: npm run test:migration
+  browser:
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: 'npm'}
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run test:a11y
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: test-evidence, path: 'playwright-report/'}

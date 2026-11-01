@@ -1,0 +1,1 @@
+Blueprint – A React-based UI toolkit for the web Blueprint A React-based UI toolkit for the web Documentation GitHub Blueprint is an open source project developed at Palantir. We’re hiring designers and engineers! View openings © 2014–2018 Palantir Technologies Licensed under Apache-2.0

@@ -1,0 +1,151 @@
+id,epic,feature,delivery,cloudflare_test,server_test,security_test,e2e_test,signoff,notes
+FP-001,Identity & Trust,email/password,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-002,Identity & Trust,Google OAuth,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-003,Identity & Trust,verified email,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-004,Identity & Trust,password reset,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-005,Identity & Trust,optional phone factor,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-006,Identity & Trust,adult assurance,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-007,Identity & Trust,account recovery,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-008,Identity & Trust,session revocation,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-009,Identity & Trust,login rate limits,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-010,Identity & Trust,security settings,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-011,Mode Separation,friend persona,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-012,Mode Separation,dating persona,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-013,Mode Separation,matrimony persona,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-014,Mode Separation,per-mode consent,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-015,Mode Separation,per-mode visibility,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-016,Mode Separation,per-mode search,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-017,Mode Separation,per-mode notifications,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-018,Mode Separation,cross-mode leak prevention,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-019,Profile & Discovery,profile editor,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-020,Profile & Discovery,image upload,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-021,Profile & Discovery,privacy settings,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-022,Profile & Discovery,location radius,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-023,Profile & Discovery,interests,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-024,Profile & Discovery,language support,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-025,Profile & Discovery,saved filters,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-026,Profile & Discovery,hide/mute/block,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-027,Profile & Discovery,discovery availability,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-028,Profile & Discovery,profile verification labels,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-029,Questionnaire,theme catalog,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-030,Questionnaire,100 item bank,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-031,Questionnaire,bank versioning,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-032,Questionnaire,randomized assignment,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-033,Questionnaire,item variants,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-034,Questionnaire,resume and skip,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-035,Questionnaire,responses encryption,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-036,Questionnaire,quality/bias review,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-037,Questionnaire,regrading and version pinning,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-038,Questionnaire,deletion/withdrawal,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-039,Questionnaire,question creator admin,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-040,Questionnaire,placeholder publish guard,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-041,Matching,dimension vector,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-042,Matching,score confidence,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-043,Matching,Mirror lens,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-044,Matching,Counterpoint lens,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-045,Matching,Mosaic Fit lens,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-046,Matching,Resonance index,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-047,Matching,score bands 10-100,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-048,Matching,eligibility and privacy filters,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-049,Matching,why-match explanations,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-050,Matching,no-candidate state,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-051,Matching,mutual invitation,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-052,Matching,matching audit,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-053,deterministic behavioral scenario,separate opt-in,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-054,deterministic behavioral scenario,data provenance,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-055,deterministic behavioral scenario,twin simulation,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-056,deterministic behavioral scenario,twin-to-twin sandbox,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-057,deterministic behavioral scenario,explain synthetic output,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-058,deterministic behavioral scenario,memory editor,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-059,deterministic behavioral scenario,privacy deletion,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-060,deterministic behavioral scenario,AI abuse controls,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-061,deterministic behavioral scenario,model cost quotas,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-062,deterministic behavioral scenario,model safety validation,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-063,Messaging,mutual auth gate,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-064,Messaging,1:1 durable chat,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-065,Messaging,group chat,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-066,Messaging,delivery/read receipts,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-067,Messaging,presence preferences,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-068,Messaging,attachment scanning,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-069,Messaging,block propagation,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-070,Messaging,message reports,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-071,Messaging,history/export deletion,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-072,Messaging,websocket reconnect,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-073,Circles & Events,circle discovery,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-074,Circles & Events,circle create,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-075,Circles & Events,public/private groups,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-076,Circles & Events,group roles,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-077,Circles & Events,threads/replies,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-078,Circles & Events,invites,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-079,Circles & Events,moderated media,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-080,Circles & Events,calendar activities,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-081,Circles & Events,event attendance consent,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-082,Circles & Events,city and culture localization,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-083,Payments,free entitlement,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-084,Payments,monthly membership,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-085,Payments,quarterly membership,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-086,Payments,half-yearly membership,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-087,Payments,annual membership,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-088,Payments,payment checkout,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-089,Payments,signed webhook,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-090,Payments,ledger reconciliation,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-091,Payments,invoices and tax,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-092,Payments,cancellation,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-093,Payments,refund,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-094,Payments,chargeback support,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-095,User safety & compliance,consent receipts,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-096,User safety & compliance,privacy notices,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-097,User safety & compliance,data access/export,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-098,User safety & compliance,correction,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-099,User safety & compliance,withdraw consent,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-100,User safety & compliance,deletion and backup policy,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-101,User safety & compliance,report/block,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-102,User safety & compliance,complaints and appeals,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-103,User safety & compliance,legal holds,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-104,User safety & compliance,breach response,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-105,User safety & compliance,child safety,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-106,User safety & compliance,abuse prevention,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-107,Admin platform,closed staff login,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-108,Admin platform,mandatory MFA,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-109,Admin platform,role invitations,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-110,Admin platform,RBAC staff scopes,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-111,Admin platform,safety triage,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-112,Admin platform,appeals,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-113,Admin platform,support queue,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-114,Admin platform,grievance SLA,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-115,Admin platform,account restriction,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-116,Admin platform,case evidence governance,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-117,Admin platform,psychometric publishing,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-118,Admin platform,billing and refunds,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-119,Admin platform,analytics,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-120,Admin platform,system alerts,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-121,Admin platform,data rights,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-122,Admin platform,audit trail,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-123,Admin platform,staff offboarding,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-124,UI UX Quality,responsive landing,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-125,UI UX Quality,Framer Motion transitions,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-126,UI UX Quality,reduced motion,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-127,UI UX Quality,color/theme tokens,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-128,UI UX Quality,keyboard support,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-129,UI UX Quality,screen reader support,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-130,UI UX Quality,all mode-specific screens,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-131,UI UX Quality,empty/loading/error states,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-132,UI UX Quality,support and privacy screens,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-133,UI UX Quality,admin sidebar visibility,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-134,UI UX Quality,mobile admin fallback,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-135,Platform portability,Cloudflare Worker API,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-136,Platform portability,Cloudflare D1 migrations,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-137,Platform portability,Cloudflare R2 private,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-138,Platform portability,Cloudflare DO,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-139,Platform portability,Cloudflare Queues/Cron,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-140,Platform portability,server Hono Node,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-141,Platform portability,PostgreSQL migrations,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-142,Platform portability,Redis WS/Budeterministic behavioral scenarioQ,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-143,Platform portability,server S3 compatible,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-144,Platform portability,Docker Compose,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-145,Platform portability,Jenkins pipeline,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-146,Platform portability,backup restore,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-147,Platform portability,Cloudflare-to-server migration,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-148,Platform portability,two-target contract suite,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-149,Platform portability,monitoring and alerts,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package
+FP-150,Platform portability,spend caps,FULL_PRODUCT_REQUIRED,,,,,,Not implemented by this documentation package

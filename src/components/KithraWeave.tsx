@@ -48,13 +48,13 @@ export const KithraWeave: React.FC<KithraWeaveProps> = ({
     reduced
       ? { initial: false as const, animate: { pathLength: 1, opacity: 1 } }
       : {
-          initial: { pathLength: 0, opacity: 0 },
-          animate: { pathLength: 1, opacity: 1 },
-          transition: {
-            pathLength: { duration: 0.95, delay, ease },
-            opacity: { duration: 0.12, delay },
-          },
-        };
+        initial: { pathLength: 0, opacity: 0 },
+        animate: { pathLength: 1, opacity: 1 },
+        transition: {
+          pathLength: { duration: 0.95, delay, ease },
+          opacity: { duration: 0.12, delay },
+        },
+      };
 
   // Each strand = background-coloured halo (creates the woven gap) + stroke.
   const strand = (

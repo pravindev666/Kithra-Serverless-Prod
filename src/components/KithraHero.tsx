@@ -85,3 +85,4 @@ export const KithraHero: React.FC<KithraHeroProps> = ({
     </section>
   );
 };
+

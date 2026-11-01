@@ -40,6 +40,7 @@ import {
 import { MemberShell } from './components/MemberViews';
 import { AdminLoginView, AdminShell } from './components/AdminViews';
 import { SystemStatesView } from './components/SystemStatesView';
+import { memberStore } from './domain/memberStore';
 
 function resolveInitialPathname(): string {
   const { pathname, search } = window.location;
@@ -52,7 +53,7 @@ function resolveInitialPathname(): string {
   if (viewParam === 'join') return '/join';
   if (viewParam === 'onboarding') return '/onboarding';
   if (viewParam === 'pricing') return '/pricing';
-  if (viewParam === 'member') return '/member/discover';
+  if (viewParam === 'member') return '/member/home';
   if (viewParam === 'admin') return '/admin/overview';
   if (viewParam === 'states') return '/__preview';
   return pathname || '/';
@@ -138,6 +139,9 @@ export default function App() {
   const [intentionFilter, setIntentionFilter] = useState<IntentionId | 'all'>('all');
 
   // Interactive application state
+  const [activeMemberId, setActiveMemberId] = useState<string>(() =>
+    memberStore.getActiveMemberId()
+  );
   const [activeIntentions, setActiveIntentions] = useState<IntentionId[]>([
     'friendship',
     'matrimony',
@@ -145,12 +149,20 @@ export default function App() {
   const [pacePreference, setPacePreference] = useState<string>(
     'Reflective evening messages before meeting for coffee'
   );
-  const [profiles, setProfiles] = useState<MemberProfile[]>(INITIAL_MEMBER_PROFILES);
+  const [profiles, setProfiles] = useState<MemberProfile[]>(() =>
+    memberStore.getDynamicMatchesForActiveMember(
+      memberStore.getActiveMemberId(),
+      'all'
+    )
+  );
   const [photos, setPhotos] = useState<MemberPhoto[]>(INITIAL_MEMBER_PHOTOS);
-  const [assessmentAnswers, setAssessmentAnswers] = useState<Record<string, string>>({
-    'q-pace': 'opt-slow',
-    'q-disagreement': 'opt-curiosity',
-  });
+  const [assessmentAnswers, setAssessmentAnswers] = useState<Record<string, string>>(() =>
+    memberStore.getMemberRawAnswers(
+      memberStore.getActiveMemberId(),
+      'member_self',
+      memberStore.getActiveMemberId()
+    )
+  );
   const [conversations, setConversations] =
     useState<ConversationThread[]>(INITIAL_CONVERSATIONS);
   const [circles, setCircles] = useState<CommunityCircle[]>(INITIAL_CIRCLES);
@@ -272,6 +284,51 @@ export default function App() {
     });
   };
 
+  // Sync dynamic matches whenever active member or intention filter changes
+  useEffect(() => {
+    const dynamicCandidates = memberStore.getDynamicMatchesForActiveMember(
+      activeMemberId,
+      intentionFilter
+    );
+    setProfiles(dynamicCandidates);
+  }, [activeMemberId, intentionFilter]);
+
+  const handleSelectAssessmentAnswer = (questionId: string, optionId: string) => {
+    memberStore.saveMemberAnswer(activeMemberId, questionId, optionId);
+    setAssessmentAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+    const dynamicCandidates = memberStore.getDynamicMatchesForActiveMember(
+      activeMemberId,
+      intentionFilter
+    );
+    setProfiles(dynamicCandidates);
+  };
+
+  const handleSwitchActiveMember = (newMemberId: string) => {
+    memberStore.setActiveMemberId(newMemberId);
+    setActiveMemberId(newMemberId);
+    const answers = memberStore.getMemberRawAnswers(
+      newMemberId,
+      'member_self',
+      newMemberId
+    );
+    setAssessmentAnswers(answers);
+    const dynamicCandidates = memberStore.getDynamicMatchesForActiveMember(
+      newMemberId,
+      intentionFilter
+    );
+    setProfiles(dynamicCandidates);
+  };
+
+  const handleDeleteAssessmentData = () => {
+    memberStore.deleteMemberAssessmentData(activeMemberId);
+    setAssessmentAnswers({});
+    const dynamicCandidates = memberStore.getDynamicMatchesForActiveMember(
+      activeMemberId,
+      intentionFilter
+    );
+    setProfiles(dynamicCandidates);
+  };
+
   const handleSendMessage = (conversationId: string, text: string) => {
     setConversations((prev) =>
       prev.map((conv) => {
@@ -328,17 +385,74 @@ export default function App() {
     ]);
   };
 
-  const isMemberContext = route.section === 'member';
+  const isAppWorkspace = route.section === 'member' || route.section === 'admin';
   const showDevPreviewLink =
     import.meta.env.DEV || import.meta.env.VITE_APP_ENV !== 'production';
 
+  if (isAppWorkspace) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)]">
+        <div className="topline-gradient w-full shrink-0" aria-hidden="true" />
+        <div ref={mainRef as React.RefObject<HTMLDivElement>} className="flex-1 flex flex-col">
+          {route.section === 'member' ? (
+            <MemberShell
+              activeTab={route.memberTab}
+              matchMemberId={route.matchMemberId}
+              onNavigateMemberPath={handleNavigatePath}
+              intentionFilter={intentionFilter}
+              onChangeIntentionFilter={setIntentionFilter}
+              profiles={profiles}
+              onUpdateProfiles={setProfiles}
+              photos={photos}
+              onUpdatePhotos={setPhotos}
+              questions={ASSESSMENT_QUESTIONS}
+              assessmentAnswers={assessmentAnswers}
+              onSelectAssessmentAnswer={handleSelectAssessmentAnswer}
+              conversations={conversations}
+              onSendMessage={handleSendMessage}
+              circles={circles}
+              onToggleCircleJoin={handleToggleCircleJoin}
+              activeIntentions={activeIntentions}
+              onToggleActiveIntention={handleToggleActiveIntention}
+              pacePreference={pacePreference}
+              onChangePacePreference={setPacePreference}
+              isDark={isDark}
+              onToggleTheme={() => setIsDark((prev) => !prev)}
+              manualReduceMotion={manualReduceMotion}
+              onToggleReduceMotion={() => setManualReduceMotion((prev) => !prev)}
+              activeMemberId={activeMemberId}
+              onSwitchActiveMember={handleSwitchActiveMember}
+              onDeleteAssessmentData={handleDeleteAssessmentData}
+            />
+          ) : (
+            <AdminShell
+              activeTab={route.adminTab}
+              onNavigateAdminPath={handleNavigatePath}
+              cases={staffCases}
+              onUpdateCases={setStaffCases}
+              photoReviews={photoReviews}
+              onUpdatePhotoReviews={setPhotoReviews}
+              auditLog={auditLog}
+              onAppendAudit={handleAppendAudit}
+              profiles={profiles}
+              circles={circles}
+              isDark={isDark}
+              onToggleTheme={() => setIsDark((prev) => !prev)}
+              manualReduceMotion={manualReduceMotion}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)]">
+    <div className="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)] overflow-x-hidden">
       {/* Coromandel Topline */}
       <div className="topline-gradient w-full shrink-0" aria-hidden="true" />
 
       <div className="w-[min(1160px,calc(100%-32px))] sm:w-[min(1160px,calc(100%-48px))] mx-auto flex-1 flex flex-col">
-        {/* CONSUMER HEADER (No public Design preview switcher or Staff links per P0.1 & P0.2) */}
+        {/* CONSUMER HEADER */}
         <header className="flex items-center justify-between gap-4 sm:gap-8 min-h-[76px] border-b border-[var(--line)]">
           {/* Zone 1: Wordmark */}
           <a
@@ -355,138 +469,60 @@ export default function App() {
           {/* Zone 2: Desktop Primary Navigation */}
           <nav
             aria-label="Primary"
-            className="hidden md:flex items-center gap-6 lg:gap-7 text-[13px] font-semibold text-[var(--muted)]"
+            className="hidden lg:flex items-center gap-6 lg:gap-7 text-[13px] font-semibold text-[var(--muted)]"
           >
-            {isMemberContext ? (
-              <>
-                <a
-                  href="/member"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavigatePath('/member');
-                  }}
-                  aria-current={route.memberTab === 'home' ? 'page' : undefined}
-                  className={`hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0 ${
-                    route.memberTab === 'home' ? 'text-[var(--heading)] font-bold' : ''
-                  }`}
-                >
-                  Member home
-                </a>
-                <a
-                  href="/member/discover"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavigatePath('/member/discover');
-                  }}
-                  aria-current={
-                    route.memberTab === 'discover' || route.memberTab === 'match'
-                      ? 'page'
-                      : undefined
-                  }
-                  className={`hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0 ${
-                    route.memberTab === 'discover' || route.memberTab === 'match'
-                      ? 'text-[var(--heading)] font-bold'
-                      : ''
-                  }`}
-                >
-                  Discover
-                </a>
-                <a
-                  href="/member/photos"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavigatePath('/member/photos');
-                  }}
-                  aria-current={route.memberTab === 'photos' ? 'page' : undefined}
-                  className={`hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0 ${
-                    route.memberTab === 'photos' ? 'text-[var(--heading)] font-bold' : ''
-                  }`}
-                >
-                  Your photos
-                </a>
-                <a
-                  href="/member/assessments"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavigatePath('/member/assessments');
-                  }}
-                  aria-current={route.memberTab === 'assessments' ? 'page' : undefined}
-                  className={`hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0 ${
-                    route.memberTab === 'assessments'
-                      ? 'text-[var(--heading)] font-bold'
-                      : ''
-                  }`}
-                >
-                  Reflections
-                </a>
-                <a
-                  href="/pricing"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavigatePath('/pricing');
-                  }}
-                  className="hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0"
-                >
-                  Membership
-                </a>
-              </>
-            ) : (
-              <>
-                <a
-                  href="/#intentions"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavigatePath('/#intentions');
-                  }}
-                  className="hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0"
-                >
-                  Intentions
-                </a>
-                <a
-                  href="/#how-it-works"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavigatePath('/#how-it-works');
-                  }}
-                  className="hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0"
-                >
-                  How it works
-                </a>
-                <a
-                  href="/#compatibility"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavigatePath('/#compatibility');
-                  }}
-                  className="hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0"
-                >
-                  Compatibility
-                </a>
-                <a
-                  href="/pricing"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavigatePath('/pricing');
-                  }}
-                  aria-current={route.section === 'pricing' ? 'page' : undefined}
-                  className={`hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0 ${
-                    route.section === 'pricing' ? 'text-[var(--heading)] font-bold' : ''
-                  }`}
-                >
-                  Membership
-                </a>
-                <a
-                  href="/member/discover"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavigatePath('/member/discover');
-                  }}
-                  className="hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0"
-                >
-                  Explore member shell
-                </a>
-              </>
-            )}
+            <a
+              href="/#intentions"
+              onClick={(e) => {
+                e.preventDefault();
+                handleNavigatePath('/#intentions');
+              }}
+              className="hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0"
+            >
+              Intentions
+            </a>
+            <a
+              href="/#how-it-works"
+              onClick={(e) => {
+                e.preventDefault();
+                handleNavigatePath('/#how-it-works');
+              }}
+              className="hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0"
+            >
+              How it works
+            </a>
+            <a
+              href="/#compatibility"
+              onClick={(e) => {
+                e.preventDefault();
+                handleNavigatePath('/#compatibility');
+              }}
+              className="hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0"
+            >
+              Compatibility
+            </a>
+            <a
+              href="/pricing"
+              onClick={(e) => {
+                e.preventDefault();
+                handleNavigatePath('/pricing');
+              }}
+              aria-current={route.section === 'pricing' ? 'page' : undefined}
+              className={`hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0 ${route.section === 'pricing' ? 'text-[var(--heading)] font-bold' : ''
+                }`}
+            >
+              Membership
+            </a>
+            <a
+              href="/member/home"
+              onClick={(e) => {
+                e.preventDefault();
+                handleNavigatePath('/member/home');
+              }}
+              className="hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0"
+            >
+              Member home
+            </a>
           </nav>
 
           {/* Zone 3: Theme Switcher, Primary CTA & Mobile Drawer Trigger */}
@@ -512,12 +548,10 @@ export default function App() {
 
             <button
               type="button"
-              onClick={() =>
-                handleNavigatePath(isMemberContext ? '/member/photos' : '/signin')
-              }
+              onClick={() => handleNavigatePath('/signin')}
               className="hidden sm:inline-flex items-center justify-center min-h-[42px] rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] border border-[var(--primary)] px-4 py-2 text-[13px] font-bold hover:brightness-105 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
-              {isMemberContext ? 'Photo studio' : 'Sign in / Join'}
+              Sign in / Join
             </button>
 
             {/* Mobile Menu Button (>=44px touch target) */}
@@ -527,7 +561,7 @@ export default function App() {
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-nav-drawer"
               aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-              className="md:hidden min-h-[44px] min-w-[44px] rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[var(--heading)] inline-flex items-center justify-center cursor-pointer"
+              className="lg:hidden min-h-[44px] min-w-[44px] rounded-[10px] border border-[var(--line)] bg-[var(--surface)] text-[var(--heading)] inline-flex items-center justify-center cursor-pointer"
             >
               {mobileMenuOpen ? (
                 <X className="w-5 h-5" aria-hidden="true" />
@@ -543,17 +577,17 @@ export default function App() {
           <nav
             id="mobile-nav-drawer"
             aria-label="Mobile navigation"
-            className="md:hidden bg-[var(--surface)] border-b border-[var(--line)] py-4 px-3 space-y-1.5 shadow-sm"
+            className="lg:hidden bg-[var(--surface)] border-b border-[var(--line)] py-4 px-3 space-y-1.5 shadow-sm"
           >
             {[
               { label: 'Kithra Home', path: '/' },
               { label: 'Three Intentions', path: '/#intentions' },
               { label: 'How It Works', path: '/#how-it-works' },
-              { label: 'Echo, Counterpoint & Mosaic Fit', path: '/#compatibility' },
-              { label: 'Unified Membership & Pricing', path: '/pricing' },
-              { label: 'Member Discovery Workspace', path: '/member/discover' },
-              { label: 'Photo Studio & Visibility', path: '/member/photos' },
-              { label: '100-Question Reflection Map', path: '/member/assessments' },
+              { label: 'Compatibility & Fit', path: '/#compatibility' },
+              { label: 'Frequently Asked Questions', path: '/#faq' },
+              { label: 'Membership & Pricing', path: '/pricing' },
+              { label: 'Member Home', path: '/member/home' },
+              { label: 'Discover People', path: '/member/discover' },
               { label: 'Sign in / Create account', path: '/signin' },
             ].map((item) => (
               <a
@@ -609,16 +643,16 @@ export default function App() {
             route.section === 'recover' ||
             route.section === 'verify-email' ||
             route.section === 'locked') && (
-            <AuthView
-              initialMode={route.section}
-              onNavigatePath={handleNavigatePath}
-              activeIntentions={activeIntentions}
-              onToggleActiveIntention={handleToggleActiveIntention}
-              pacePreference={pacePreference}
-              onChangePacePreference={setPacePreference}
-              manualReduceMotion={manualReduceMotion}
-            />
-          )}
+              <AuthView
+                initialMode={route.section}
+                onNavigatePath={handleNavigatePath}
+                activeIntentions={activeIntentions}
+                onToggleActiveIntention={handleToggleActiveIntention}
+                pacePreference={pacePreference}
+                onChangePacePreference={setPacePreference}
+                manualReduceMotion={manualReduceMotion}
+              />
+            )}
 
           {route.section === 'onboarding' && (
             <OnboardingView
@@ -642,54 +676,8 @@ export default function App() {
             />
           )}
 
-          {route.section === 'member' && (
-            <MemberShell
-              activeTab={route.memberTab}
-              matchMemberId={route.matchMemberId}
-              onNavigateMemberPath={handleNavigatePath}
-              intentionFilter={intentionFilter}
-              onChangeIntentionFilter={setIntentionFilter}
-              profiles={profiles}
-              onUpdateProfiles={setProfiles}
-              photos={photos}
-              onUpdatePhotos={setPhotos}
-              questions={ASSESSMENT_QUESTIONS}
-              assessmentAnswers={assessmentAnswers}
-              onSelectAssessmentAnswer={(qId, optId) =>
-                setAssessmentAnswers((prev) => ({ ...prev, [qId]: optId }))
-              }
-              conversations={conversations}
-              onSendMessage={handleSendMessage}
-              circles={circles}
-              onToggleCircleJoin={handleToggleCircleJoin}
-              activeIntentions={activeIntentions}
-              onToggleActiveIntention={handleToggleActiveIntention}
-              pacePreference={pacePreference}
-              onChangePacePreference={setPacePreference}
-              isDark={isDark}
-              onToggleTheme={() => setIsDark((prev) => !prev)}
-              manualReduceMotion={manualReduceMotion}
-              onToggleReduceMotion={() => setManualReduceMotion((prev) => !prev)}
-            />
-          )}
-
           {route.section === 'admin-login' && (
             <AdminLoginView onNavigatePath={handleNavigatePath} />
-          )}
-
-          {route.section === 'admin' && (
-            <AdminShell
-              activeTab={route.adminTab}
-              onNavigateAdminPath={handleNavigatePath}
-              cases={staffCases}
-              onUpdateCases={setStaffCases}
-              photoReviews={photoReviews}
-              onUpdatePhotoReviews={setPhotoReviews}
-              auditLog={auditLog}
-              onAppendAudit={handleAppendAudit}
-              profiles={profiles}
-              circles={circles}
-            />
           )}
 
           {(route.section === 'states' || route.section === 'dev-preview') && (
@@ -709,7 +697,7 @@ export default function App() {
           <div>
             <span>© Kithra · Coromandel Indigo & Ochre</span>
             <span aria-hidden="true"> · </span>
-            <span>One account · Three intentions · Frontend shell specification</span>
+            <span>One account · Three intentions</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -721,7 +709,7 @@ export default function App() {
               }}
               className="hover:text-[var(--heading)] hover:underline cursor-pointer"
             >
-              Unified membership
+              Membership
             </a>
             <span aria-hidden="true">·</span>
             <a
@@ -736,14 +724,14 @@ export default function App() {
             </a>
             <span aria-hidden="true">·</span>
             <a
-              href="/member/photos"
+              href="/member/home"
               onClick={(e) => {
                 e.preventDefault();
-                handleNavigatePath('/member/photos');
+                handleNavigatePath('/member/home');
               }}
               className="hover:text-[var(--heading)] hover:underline cursor-pointer"
             >
-              Photo studio
+              Member home
             </a>
             <span aria-hidden="true">·</span>
             <a

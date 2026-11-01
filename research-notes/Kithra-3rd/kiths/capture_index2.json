@@ -1,0 +1,82 @@
+{
+ "hinge_home": {
+  "url": "https://hinge.co/",
+  "status": 200,
+  "text_len": 2077
+ },
+ "okcupid_home": {
+  "url": "https://www.okcupid.com/",
+  "status": 200,
+  "text_len": 81
+ },
+ "jeevansathi_home": {
+  "url": "https://www.jeevansathi.com/",
+  "status": 200,
+  "text_len": 5274
+ },
+ "betterhalf_home": {
+  "url": "https://www.betterhalf.ai/",
+  "status": 200,
+  "text_len": 1758
+ },
+ "meetup_home": {
+  "url": "https://www.meetup.com/",
+  "status": 200,
+  "text_len": 5777
+ },
+ "timeleft_home": {
+  "url": "https://www.timeleft.com/",
+  "status": 200,
+  "text_len": 7000
+ },
+ "slowly_home": {
+  "url": "https://slowly.app/",
+  "status": 200,
+  "text_len": 3840
+ },
+ "dimensional_home": {
+  "url": "https://www.dimensional.me/",
+  "status": 200,
+  "text_len": 1256
+ },
+ "konvo_home": {
+  "url": "https://konvo.space/",
+  "status": 200,
+  "text_len": 7000
+ },
+ "bumble_home": {
+  "url": "https://bumble.com/",
+  "status": 200,
+  "text_len": 2632
+ },
+ "aisle_about": {
+  "url": "https://www.aisle.co/about-us/",
+  "status": 404,
+  "text_len": 67
+ },
+ "blueprintjs_home": {
+  "url": "https://blueprintjs.com/",
+  "status": 200,
+  "text_len": 287
+ },
+ "palantir_oe": {
+  "url": "https://www.palantir.com/docs/foundry/object-explorer/overview",
+  "status": 200,
+  "text_len": 7000
+ },
+ "nng_progdisc": {
+  "url": "https://www.nngroup.com/articles/progressive-disclosure/",
+  "status": 200,
+  "text_len": 7000
+ },
+ "wcag_target": {
+  "url": "https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html",
+  "status": 403,
+  "text_len": 58
+ },
+ "eaIle_play": {
+  "url": "https://play.google.com/store/apps/details?id=com.aisle.app&hl=en_IN",
+  "status": 200,
+  "text_len": 7000
+ }
+}

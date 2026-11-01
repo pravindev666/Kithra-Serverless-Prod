@@ -1,0 +1,6 @@
+{
+  "name": "Kithra - Human Compatibility Operating System",
+  "description": "The world's first Human Compatibility Operating System. Kithra helps you understand yourself before introducing you to another human.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

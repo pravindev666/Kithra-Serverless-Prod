@@ -1,0 +1,48 @@
+# Template: requires real Wrangler config paths, secrets, code, and protected GitHub Environments.
+name: Cloudflare protected release
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Staging or production
+        required: true
+        type: choice
+        options: [staging, production]
+permissions:
+  contents: read
+concurrency:
+  group: cf-${{ inputs.target }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    environment: ${{ inputs.target }} # MUST require human reviewers for production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: 'npm'}
+      - run: npm ci
+      - run: npm run typecheck && npm run test:contracts && npm run test:security && npm run build
+      - name: Require Cloudflare secrets
+        shell: bash
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CF_TOKEN" && test -n "$CF_ACCOUNT" || exit 1
+      - name: Deploy API Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config infra/cloudflare/wrangler.api.jsonc --env '${{ inputs.target }}'
+      - name: Deploy member assets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config infra/cloudflare/wrangler.web.jsonc --env '${{ inputs.target }}'
+      - name: Deploy admin assets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config infra/cloudflare/wrangler.admin.jsonc --env '${{ inputs.target }}'
+      - run: npm run smoke:cloudflare

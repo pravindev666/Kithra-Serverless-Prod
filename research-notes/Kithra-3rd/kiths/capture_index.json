@@ -1,0 +1,52 @@
+{
+ "bumble_bff": {
+  "url": "https://bumble.com/bff-us/",
+  "status": 404,
+  "text_len": 1402
+ },
+ "bumble_bff_play": {
+  "url": "https://play.google.com/store/apps/details?id=com.genevachat.prod&hl=en",
+  "status": 200,
+  "text_len": 6000
+ },
+ "hinge_brand": {
+  "url": "https://hinge.co/brand-resources",
+  "status": 200,
+  "text_len": 3320
+ },
+ "boo_home": {
+  "url": "https://boo.world/",
+  "status": 200,
+  "text_len": 3322
+ },
+ "boo_faq": {
+  "url": "https://boo.world/faq",
+  "status": 200,
+  "text_len": 6000
+ },
+ "we3_how": {
+  "url": "https://www.we3app.com/how-it-works/",
+  "status": 200,
+  "text_len": 2538
+ },
+ "we3_features": {
+  "url": "https://www.we3app.com/features/",
+  "status": 200,
+  "text_len": 2869
+ },
+ "aisle_home": {
+  "url": "https://www.aisle.co/",
+  "status": 200,
+  "text_len": 504
+ },
+ "trulymadly_home": {
+  "url": "https://trulymadly.com/",
+  "status": 200,
+  "text_len": 5626
+ },
+ "boo_play": {
+  "url": "https://play.google.com/store/apps/details?id=enterprises.dating.boo&hl=en",
+  "status": 200,
+  "text_len": 6000
+ }
+}

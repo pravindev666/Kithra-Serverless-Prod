@@ -5,11 +5,11 @@ import {
   Check,
   ChevronDown,
   Eye,
+  EyeOff,
   Lock,
   MailCheck,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
 } from 'lucide-react';
 import {
   IntentionId,
@@ -48,37 +48,37 @@ const VOCABULARY_ITEMS: {
   detail: string;
   exampleCardNote: string;
 }[] = [
-  {
-    kind: 'echo',
-    number: '01',
-    title: 'Echo — Measured similarities',
-    subtitle: 'Where your questionnaire answers closely align',
-    detail:
-      'When two members share similar instincts on conversational pace, weekend restoration, or conflict repair, Kithra highlights an Echo. It is a starting point for ease—never a guarantee of chemistry.',
-    exampleCardNote:
-      'Sample Echo: "Both of you prefer 2–3 thoughtful evening messages a week and calm, private repair when perspectives differ."',
-  },
-  {
-    kind: 'counterpoint',
-    number: '02',
-    title: 'Counterpoint — Significant differences',
-    subtitle: 'Surfaced early with candour rather than hidden behind a score',
-    detail:
-      'Every real friendship or partnership involves differences. Instead of penalizing a match silently, Kithra names Counterpoints—such as an early riser meeting a late-night reader, or a planned weekend walker meeting a spontaneous host—so you can talk about them openly.',
-    exampleCardNote:
-      'Sample Counterpoint: "Aarav plans Sunday morning walks early in the week, whereas you prefer keeping one weekend day unscheduled."',
-  },
-  {
-    kind: 'mosaic',
-    number: '03',
-    title: 'Mosaic Fit — Useful complementarity',
-    subtitle: 'Different habits that can work well together with mutual respect',
-    detail:
-      'Sometimes two different answers complement one another—for example, someone who loves cooking elaborate coastal recipes paired with someone who loves hosting conversation and music around the table.',
-    exampleCardNote:
-      'Sample Mosaic Fit: "Your archival research background and his architectural fieldwork offer complementary ways of exploring a city."',
-  },
-];
+    {
+      kind: 'echo',
+      number: '01',
+      title: 'Similar to Me',
+      subtitle: 'Discover people who share your traits, interests and values.',
+      detail:
+        'When two members share similar instincts on conversational pace, weekend restoration, or conflict repair, Kithra highlights Similar to Me. It is a starting point for ease—never a guarantee of chemistry.',
+      exampleCardNote:
+        'Sample Similar to Me: "Both of you prefer 2–3 thoughtful evening messages a week and calm, private repair when perspectives differ."',
+    },
+    {
+      kind: 'counterpoint',
+      number: '02',
+      title: 'Different from Me',
+      subtitle: 'Meet people who see or experience the world differently.',
+      detail:
+        'Every real friendship or partnership involves differences. Instead of penalizing a match silently, Kithra names Different from Me—such as an early riser meeting a late-night reader, or a planned weekend walker meeting a spontaneous host—so you can explore different perspectives openly.',
+      exampleCardNote:
+        'Sample Different from Me: "Aarav plans Sunday morning walks early in the week, whereas you prefer keeping one weekend day unscheduled."',
+    },
+    {
+      kind: 'mosaic',
+      number: '03',
+      title: 'We Balance Each Other',
+      subtitle: 'Find people whose strengths and preferences may complement yours.',
+      detail:
+        'Sometimes two different answers complement one another—for example, someone who loves cooking elaborate coastal recipes paired with someone who loves hosting conversation and music around the table.',
+      exampleCardNote:
+        'Sample We Balance Each Other: "Your archival research background and his architectural fieldwork offer complementary ways of exploring a city."',
+    },
+  ];
 
 export const LandingView: React.FC<PublicNavigateProps> = ({
   onNavigatePath,
@@ -86,6 +86,7 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
 }) => {
   const [selectedSignal, setSelectedSignal] = useState<RelationshipSignalKind>('echo');
   const [pricingDisplayMode, setPricingDisplayMode] = useState<'illustrative' | 'coming-soon'>('illustrative');
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -183,26 +184,26 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
           {[
             {
               step: '01. Choose your intention',
-              body: 'Enable Friendship, Dating, or Matrimony independently. You choose which intention scope to enter before viewing discovery.',
-              actionLabel: 'Open intention setup →',
+              body: 'Enable Friendship, Dating, or Matrimony independently. You decide which intention to browse at any time.',
+              actionLabel: 'Set up your intentions →',
               onClick: () => onNavigatePath('/onboarding'),
             },
             {
-              step: '02. Answer reflection prompts',
-              body: 'Explore our 100-question reflection bank at your own pace—save and return anytime with partial completion.',
-              actionLabel: 'Browse 100-question map →',
+              step: '02. Answer at your pace',
+              body: 'Respond to thoughtful questions about daily life, communication, and values—save and return whenever you like.',
+              actionLabel: 'Explore questions →',
               onClick: () => onNavigatePath('/member/assessments'),
             },
             {
-              step: '03. Set per-intention photo rules',
-              body: 'Crop a 4:5 primary portrait and toggle Friendship, Dating, and Matrimony visibility separately with zero crossover.',
-              actionLabel: 'Open Photo Manager →',
+              step: '03. Control photo visibility',
+              body: 'Frame your portrait and choose whether each photo is visible in Friendship, Dating, or Matrimony separately.',
+              actionLabel: 'Manage photos →',
               onClick: () => onNavigatePath('/member/photos'),
             },
             {
-              step: '04. Read Echo & Counterpoint',
-              body: 'Review measured similarities (Echo), honest differences (Counterpoint), and complementarity (Mosaic Fit) before saying hello.',
-              actionLabel: 'Inspect match vocabulary →',
+              step: '04. Explore three honest lenses',
+              body: 'Review Similar to Me, Different from Me, and We Balance Each Other across the full 0–100 similarity spectrum before saying hello.',
+              actionLabel: 'See compatibility example →',
               onClick: () => onNavigatePath('/member/match/member-aarav'),
             },
           ].map((item) => (
@@ -230,21 +231,21 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
         </div>
       </section>
 
-      {/* 4. COMPATIBILITY EXPLAINED: ECHO, COUNTERPOINT & MOSAIC FIT */}
+      {/* 4. COMPATIBILITY EXPLAINED: SIMILAR TO ME, DIFFERENT FROM ME & WE BALANCE EACH OTHER */}
       <section className="py-12 md:py-16 border-b border-[var(--line)]" id="compatibility">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-5">
             <p className="uppercase tracking-[2.3px] text-xs font-bold text-[var(--ochre-text)]">
-              Relationship design vocabulary
+              Three discovery &amp; compatibility lenses
             </p>
             <h2
               className="font-serif-editorial text-[var(--heading)] font-semibold mt-2 mb-3"
               style={{ fontSize: 'clamp(2.15rem, 3.8vw, 3.1rem)', lineHeight: 1.06, textWrap: 'balance' }}
             >
-              Echo, Counterpoint, and Mosaic Fit.
+              Similar to Me, Different from Me, and We Balance Each Other.
             </h2>
             <p className="text-base text-[var(--muted)] leading-relaxed mb-5">
-              Questionnaire answers cannot predict a soulmate or guarantee a marriage. Instead, Kithra organizes your reflection signals into three honest lenses so you can have better first conversations.
+              Questionnaire answers cannot predict a soulmate or guarantee a marriage. Instead, Kithra organizes your reflection signals into three everyday lenses and lets you explore the entire 0–100 Attribute Similarity spectrum.
             </p>
 
             {/* Restrained SVG Line-Linking Diagram */}
@@ -329,9 +330,8 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
               return (
                 <div
                   key={item.kind}
-                  className={`bg-[var(--surface)] border rounded-[14px] overflow-hidden transition-colors ${
-                    isOpen ? 'border-[var(--heading)]' : 'border-[var(--line)]'
-                  }`}
+                  className={`bg-[var(--surface)] border rounded-[14px] overflow-hidden transition-colors ${isOpen ? 'border-[var(--heading)]' : 'border-[var(--line)]'
+                    }`}
                 >
                   <button
                     type="button"
@@ -346,9 +346,8 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
                       <p className="text-sm text-[var(--muted)] mt-1">{item.subtitle}</p>
                     </div>
                     <ChevronDown
-                      className={`w-4 h-4 text-[var(--muted)] shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180' : ''
-                      }`}
+                      className={`w-4 h-4 text-[var(--muted)] shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''
+                        }`}
                       aria-hidden="true"
                     />
                   </button>
@@ -499,22 +498,20 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
             <button
               type="button"
               onClick={() => setPricingDisplayMode('illustrative')}
-              className={`px-3.5 py-2 text-xs rounded-[7px] transition-colors cursor-pointer whitespace-nowrap ${
-                pricingDisplayMode === 'illustrative'
-                  ? 'bg-[var(--surface)] text-[var(--heading)] font-bold'
-                  : 'text-[var(--muted)]'
-              }`}
+              className={`px-3.5 py-2 text-xs rounded-[7px] transition-colors cursor-pointer whitespace-nowrap ${pricingDisplayMode === 'illustrative'
+                ? 'bg-[var(--surface)] text-[var(--heading)] font-bold'
+                : 'text-[var(--muted)]'
+                }`}
             >
               Illustrative pricing
             </button>
             <button
               type="button"
               onClick={() => setPricingDisplayMode('coming-soon')}
-              className={`px-3.5 py-2 text-xs rounded-[7px] transition-colors cursor-pointer whitespace-nowrap ${
-                pricingDisplayMode === 'coming-soon'
-                  ? 'bg-[var(--surface)] text-[var(--heading)] font-bold'
-                  : 'text-[var(--muted)]'
-              }`}
+              className={`px-3.5 py-2 text-xs rounded-[7px] transition-colors cursor-pointer whitespace-nowrap ${pricingDisplayMode === 'coming-soon'
+                ? 'bg-[var(--surface)] text-[var(--heading)] font-bold'
+                : 'text-[var(--muted)]'
+                }`}
             >
               Coming soon view
             </button>
@@ -530,9 +527,9 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
               cadence: 'Always available across all intentions',
               features: [
                 'Enable Friendship, Dating, or Matrimony independently',
-                'Complete the 100-question reflection bank at your pace',
+                'Answer 100 values and lifestyle questions at your own pace',
                 'Per-intention photo visibility & safety controls',
-                'Read Echo, Counterpoint & Mosaic Fit summaries',
+                'Read Similar to Me, Different from Me & We Balance Each Other summaries',
               ],
             },
             {
@@ -603,6 +600,69 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
           ))}
         </div>
 
+        {/* 7. FREQUENTLY ASKED QUESTIONS */}
+        <div className="mb-12 pt-10 border-t border-[var(--line)]" id="faq">
+          <div className="max-w-[680px] mb-6">
+            <p className="uppercase tracking-[2.3px] text-xs font-bold text-[var(--ochre-text)]">
+              Common questions
+            </p>
+            <h2
+              className="font-serif-editorial text-[var(--heading)] font-semibold mt-2"
+              style={{ fontSize: 'clamp(2rem, 3.5vw, 2.75rem)', lineHeight: 1.08 }}
+            >
+              Clear answers before you begin.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              {
+                q: 'Can people in Dating or Matrimony see my Friendship profile?',
+                a: 'No. Each intention has its own visibility switch and photo permissions. If you only enable Friendship, your profile and photos never appear in Dating or Matrimony searches.',
+              },
+              {
+                q: 'Does Kithra use AI to score or rank people?',
+                a: 'Never. Kithra uses your direct questionnaire answers to highlight shared habits (Similar to Me), honest differences (Different from Me), and complementary strengths (We Balance Each Other). There are no AI twins or artificial soulmate scores.',
+              },
+              {
+                q: 'Do I have to answer all 100 questions before meeting people?',
+                a: 'Not at all. You can start with a handful of questions during onboarding and continue answering across the five themes whenever you have a quiet moment.',
+              },
+              {
+                q: 'Do I need separate subscriptions for Friendship, Dating, and Matrimony?',
+                a: 'No. One unified membership covers your entire account across whichever intentions you choose to enable, and core safety and privacy controls are always free.',
+              },
+            ].map((faq, idx) => {
+              const isOpen = openFaqIndex === idx;
+              return (
+                <div
+                  key={faq.q}
+                  className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-5"
+                >
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                    className="w-full flex items-start justify-between gap-3 text-left cursor-pointer"
+                  >
+                    <span className="text-base font-bold text-[var(--heading)]">{faq.q}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-[var(--muted)] shrink-0 mt-1 transition-transform ${isOpen ? 'rotate-180' : ''
+                        }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                  {isOpen && (
+                    <p className="text-sm text-[var(--muted)] leading-relaxed mt-3 pt-3 border-t border-[var(--line)]">
+                      {faq.a}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* FINAL CTA */}
         <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[16px] p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="max-w-[580px]">
@@ -613,23 +673,23 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
               Choose the intention that fits your life today.
             </h2>
             <p className="text-base text-[var(--muted)] mt-2">
-              Start with Friendship, Dating, or Matrimony—or explore the simulated member workspace directly.
+              Start with Friendship, Dating, or Matrimony—or preview the member experience directly.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
               type="button"
-              onClick={() => onNavigatePath('/onboarding')}
+              onClick={() => onNavigatePath('/join')}
               className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] border border-[var(--primary)] px-5 py-3.5 text-sm font-bold hover:brightness-105 transition-all cursor-pointer whitespace-nowrap min-h-[44px]"
             >
-              Start intention onboarding
+              Get started
             </button>
             <button
               type="button"
-              onClick={() => onNavigatePath('/member/discover')}
+              onClick={() => onNavigatePath('/member/home')}
               className="rounded-[9px] border border-[var(--line)] text-[var(--heading)] hover:bg-[var(--surface2)] px-4 py-3.5 text-sm font-bold transition-colors cursor-pointer whitespace-nowrap min-h-[44px]"
             >
-              Browse simulated discovery
+              Explore member home
             </button>
           </div>
         </div>
@@ -648,12 +708,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode, onNavigatePath 
   );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [acceptedPolicy, setAcceptedPolicy] = useState(true);
   const [fullName, setFullName] = useState('');
   const [city, setCity] = useState('Bengaluru');
   const [verificationCode, setVerificationCode] = useState('');
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [statusMessage, setStatusMessage] = useState<string>(
-    'Frontend UI preview: Sign-in, verification, and account creation are simulated locally until AGY backend authentication is connected.'
+    'Demonstration mode: Sign-in, verification, and account creation states are interactive frontend previews.'
   );
 
   React.useEffect(() => {
@@ -749,23 +811,23 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode, onNavigatePath 
               {mode === 'signin'
                 ? 'Good to see you.'
                 : mode === 'join'
-                ? 'Begin at your pace.'
-                : mode === 'recover'
-                ? 'Reset your password.'
-                : mode === 'verify-email'
-                ? 'Check your inbox.'
-                : 'Account access paused.'}
+                  ? 'Begin at your pace.'
+                  : mode === 'recover'
+                    ? 'Reset your password.'
+                    : mode === 'verify-email'
+                      ? 'Check your inbox.'
+                      : 'Account access paused.'}
             </h1>
             <p className="text-base text-[var(--muted)] mt-2 mb-6">
               {mode === 'signin'
                 ? 'A calm place to begin, at your own pace.'
                 : mode === 'join'
-                ? 'One account for Friendship, Dating, and Matrimony—with separate visibility.'
-                : mode === 'recover'
-                ? 'Enter the email address associated with your Kithra profile.'
-                : mode === 'verify-email'
-                ? 'Enter the 6-digit verification code to confirm your email address (Simulated UI state).'
-                : 'For your safety, sign-in attempts on this account are temporarily paused after repeated unsuccessful tries.'}
+                  ? 'One account for Friendship, Dating, and Matrimony—with separate visibility.'
+                  : mode === 'recover'
+                    ? 'Enter the email address associated with your Kithra profile.'
+                    : mode === 'verify-email'
+                      ? 'Enter the 6-digit verification code to confirm your email address (Simulated UI state).'
+                      : 'For your safety, sign-in attempts on this account are temporarily paused after repeated unsuccessful tries.'}
             </p>
 
             {/* Primary Mode Tabs */}
@@ -789,11 +851,10 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode, onNavigatePath 
                   role="tab"
                   aria-selected={mode === tab.id}
                   onClick={() => switchAuthRoute(tab.id)}
-                  className={`flex-1 py-2 px-2 text-xs rounded-[7px] transition-colors cursor-pointer whitespace-nowrap min-h-[38px] ${
-                    mode === tab.id
-                      ? 'bg-[var(--surface)] text-[var(--heading)] font-bold'
-                      : 'text-[var(--muted)] hover:text-[var(--heading)]'
-                  }`}
+                  className={`flex-1 py-2 px-2 text-xs rounded-[7px] transition-colors cursor-pointer whitespace-nowrap min-h-[38px] ${mode === tab.id
+                    ? 'bg-[var(--surface)] text-[var(--heading)] font-bold'
+                    : 'text-[var(--muted)] hover:text-[var(--heading)]'
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -988,23 +1049,51 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode, onNavigatePath 
                               </button>
                             )}
                           </div>
-                          <input
-                            id="auth-password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Enter your password"
-                            autoComplete={
-                              mode === 'signin' ? 'current-password' : 'new-password'
-                            }
-                            className="w-full h-[48px] bg-[var(--surface)] border border-[var(--line)] text-[var(--heading)] rounded-[9px] px-3.5 text-base"
-                          />
+                          <div className="relative">
+                            <input
+                              id="auth-password"
+                              type={showPassword ? 'text' : 'password'}
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              placeholder="Enter your password"
+                              autoComplete={
+                                mode === 'signin' ? 'current-password' : 'new-password'
+                              }
+                              className="w-full h-[48px] bg-[var(--surface)] border border-[var(--line)] text-[var(--heading)] rounded-[9px] pl-3.5 pr-11 text-base"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword((prev) => !prev)}
+                              aria-label={showPassword ? 'Hide password' : 'Show password'}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-[7px] inline-flex items-center justify-center text-[var(--muted)] hover:text-[var(--heading)] cursor-pointer"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-4 h-4" aria-hidden="true" />
+                              ) : (
+                                <Eye className="w-4 h-4" aria-hidden="true" />
+                              )}
+                            </button>
+                          </div>
                           {errors.password && (
                             <p role="alert" className="text-sm text-[var(--danger)] mt-1">
                               {errors.password}
                             </p>
                           )}
                         </div>
+                      )}
+
+                      {mode === 'join' && (
+                        <label className="flex items-start gap-2.5 text-xs text-[var(--muted)] cursor-pointer pt-1">
+                          <input
+                            type="checkbox"
+                            checked={acceptedPolicy}
+                            onChange={(e) => setAcceptedPolicy(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 accent-[var(--ochre)] shrink-0"
+                          />
+                          <span>
+                            I agree to Kithra&apos;s community guidelines and understand that each relationship intention (Friendship, Dating, Matrimony) uses separate visibility controls.
+                          </span>
+                        </label>
                       )}
 
                       <button
@@ -1014,8 +1103,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode, onNavigatePath 
                         {mode === 'signin'
                           ? 'Sign in'
                           : mode === 'join'
-                          ? 'Create preview account'
-                          : 'Send reset instructions'}
+                            ? 'Create preview account'
+                            : 'Send reset instructions'}
                       </button>
                     </form>
                   </>
@@ -1029,21 +1118,46 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode, onNavigatePath 
               className="text-sm text-[var(--muted)] bg-[var(--surface2)] border border-[var(--line)] p-4 rounded-[9px] mt-5 leading-relaxed"
             >
               <p>{statusMessage}</p>
-              <div className="flex flex-wrap items-center gap-3 mt-3 pt-2.5 border-t border-[var(--line)]">
+              <div className="flex flex-wrap items-center gap-2 mt-3 pt-2.5 border-t border-[var(--line)] text-xs">
+                <span className="text-[var(--muted)] font-semibold">Demo states:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrors({
+                      password:
+                        'We could not match that email and password. Try again or reset your password.',
+                    });
+                    setStatusMessage(
+                      'Demonstration state: Invalid credentials error shown inline above.'
+                    );
+                  }}
+                  className="underline text-[var(--heading)] font-semibold cursor-pointer"
+                >
+                  Invalid credentials
+                </button>
+                <span aria-hidden="true">·</span>
+                <button
+                  type="button"
+                  onClick={() => onNavigatePath('/410')}
+                  className="underline text-[var(--heading)] font-semibold cursor-pointer"
+                >
+                  Expired link
+                </button>
+                <span aria-hidden="true">·</span>
                 <button
                   type="button"
                   onClick={() => onNavigatePath('/onboarding')}
                   className="font-bold text-[var(--heading)] underline cursor-pointer"
                 >
-                  Open 5-step onboarding
+                  Onboarding
                 </button>
                 <span aria-hidden="true">·</span>
                 <button
                   type="button"
-                  onClick={() => onNavigatePath('/member/discover')}
+                  onClick={() => onNavigatePath('/member/home')}
                   className="font-bold text-[var(--heading)] underline cursor-pointer"
                 >
-                  Enter simulated member shell
+                  Member home
                 </button>
               </div>
             </div>
@@ -1087,12 +1201,12 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
             {step === 1
               ? 'One account. Three independent intentions.'
               : step === 2
-              ? 'Where are you based, and which languages feel like home?'
-              : step === 3
-              ? 'Visibility permissions & conversational pace.'
-              : step === 4
-              ? 'Optional photo setup & 4:5 crop rules.'
-              : 'Short reflection preview.'}
+                ? 'Where are you based, and which languages feel like home?'
+                : step === 3
+                  ? 'Visibility permissions & conversational pace.'
+                  : step === 4
+                    ? 'Optional photo setup & 4:5 crop rules.'
+                    : 'Short reflection preview.'}
           </h1>
         </div>
         <div
@@ -1106,9 +1220,8 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
               type="button"
               onClick={() => setStep(idx as 1 | 2 | 3 | 4 | 5)}
               aria-label={`Go to onboarding step ${idx}`}
-              className={`h-2.5 rounded-full transition-all cursor-pointer ${
-                step === idx ? 'w-8 bg-[var(--ochre)]' : 'w-2.5 bg-[var(--line)]'
-              }`}
+              className={`h-2.5 rounded-full transition-all cursor-pointer ${step === idx ? 'w-8 bg-[var(--ochre)]' : 'w-2.5 bg-[var(--line)]'
+                }`}
             />
           ))}
         </div>
@@ -1137,11 +1250,10 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
                     type="button"
                     aria-pressed={isSelected}
                     onClick={() => onToggleActiveIntention(intentKey)}
-                    className={`text-left rounded-[15px] p-5 border transition-all cursor-pointer flex flex-col justify-between min-h-[220px] ${
-                      isSelected
-                        ? 'bg-[var(--surface)] border-[var(--heading)] ring-1 ring-[var(--heading)]'
-                        : 'bg-[var(--surface)]/65 border-[var(--line)] opacity-85 hover:opacity-100'
-                    }`}
+                    className={`text-left rounded-[15px] p-5 border transition-all cursor-pointer flex flex-col justify-between min-h-[220px] ${isSelected
+                      ? 'bg-[var(--surface)] border-[var(--heading)] ring-1 ring-[var(--heading)]'
+                      : 'bg-[var(--surface)]/65 border-[var(--line)] opacity-85 hover:opacity-100'
+                      }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-5">
@@ -1225,11 +1337,10 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
                       type="button"
                       aria-pressed={active}
                       onClick={() => toggleLanguage(cleanKey)}
-                      className={`px-3.5 py-2 rounded-[8px] border text-sm font-medium cursor-pointer min-h-[42px] ${
-                        active
-                          ? 'bg-[var(--surface2)] border-[var(--heading)] text-[var(--heading)] font-bold'
-                          : 'border-[var(--line)] text-[var(--muted)]'
-                      }`}
+                      className={`px-3.5 py-2 rounded-[8px] border text-sm font-medium cursor-pointer min-h-[42px] ${active
+                        ? 'bg-[var(--surface2)] border-[var(--heading)] text-[var(--heading)] font-bold'
+                        : 'border-[var(--line)] text-[var(--muted)]'
+                        }`}
                     >
                       {active ? `✓ ${lang}` : lang}
                     </button>
@@ -1277,11 +1388,10 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
                     type="button"
                     aria-pressed={selected}
                     onClick={() => onChangePacePreference(opt.id)}
-                    className={`w-full text-left p-5 rounded-[14px] border transition-colors cursor-pointer ${
-                      selected
-                        ? 'bg-[var(--surface)] border-[var(--heading)]'
-                        : 'bg-[var(--surface)] border-[var(--line)] hover:bg-[var(--surface2)]/40'
-                    }`}
+                    className={`w-full text-left p-5 rounded-[14px] border transition-colors cursor-pointer ${selected
+                      ? 'bg-[var(--surface)] border-[var(--heading)]'
+                      : 'bg-[var(--surface)] border-[var(--line)] hover:bg-[var(--surface2)]/40'
+                      }`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="font-serif-editorial text-[26px] font-semibold text-[var(--heading)]">
@@ -1361,18 +1471,17 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
                   type="button"
                   aria-pressed={sampleAnswer === opt.id}
                   onClick={() => setSampleAnswer(opt.id)}
-                  className={`w-full text-left p-4 rounded-[11px] border text-sm cursor-pointer ${
-                    sampleAnswer === opt.id
-                      ? 'bg-[var(--surface2)] border-[var(--heading)] font-bold text-[var(--heading)]'
-                      : 'border-[var(--line)] text-[var(--text)]'
-                  }`}
+                  className={`w-full text-left p-4 rounded-[11px] border text-sm cursor-pointer ${sampleAnswer === opt.id
+                    ? 'bg-[var(--surface2)] border-[var(--heading)] font-bold text-[var(--heading)]'
+                    : 'border-[var(--line)] text-[var(--text)]'
+                    }`}
                 >
                   {sampleAnswer === opt.id ? `✓ ${opt.label}` : opt.label}
                 </button>
               ))}
             </div>
             <p className="text-xs text-[var(--muted)] pt-2">
-              This response helps shape qualitative Echo and Counterpoint notes in your enabled intentions ({activeIntentions.map((i) => INTENTION_METADATA[i].label).join(' · ')}).
+              This response helps shape qualitative Similar to Me and Different from Me notes in your enabled intentions ({activeIntentions.map((i) => INTENTION_METADATA[i].label).join(' · ')}).
             </p>
           </motion.div>
         )}
@@ -1468,7 +1577,7 @@ export const PricingView: React.FC<PublicNavigateProps> = ({ onNavigatePath }) =
                 connect: 'Always free',
               },
               {
-                feature: '100-question reflection bank & Echo / Counterpoint summaries',
+                feature: '100-question reflection bank & Similar to Me / Different from Me / We Balance Each Other summaries',
                 free: 'Included',
                 plus: 'Included + full dimension bands',
                 connect: 'Included + full dimension bands',

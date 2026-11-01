@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kithra placeholder question bank schema",
+  "description": "Placeholder bank only. Must not administer or score pending approval.",
+  "type": "object",
+  "required": [
+    "theme",
+    "bankVersion",
+    "set",
+    "status",
+    "questions"
+  ],
+  "properties": {
+    "theme": {
+      "type": "string"
+    },
+    "bankVersion": {
+      "type": "string"
+    },
+    "set": {
+      "enum": [
+        "A",
+        "B"
+      ]
+    },
+    "status": {
+      "const": "placeholder"
+    },
+    "locale": {
+      "type": "string",
+      "default": "en-IN"
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 100,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "ordinal",
+          "body",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "body": {
+            "type": "string",
+            "pattern": "^\\[PLACEHOLDER"
+          },
+          "status": {
+            "const": "placeholder"
+          },
+          "constructs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "responseType": {
+            "enum": [
+              "unassigned",
+              "likert",
+              "forced_choice",
+              "scenario"
+            ]
+          },
+          "reviewRequired": {
+            "const": true
+          }
+        }
+      }
+    }
+  }
+}

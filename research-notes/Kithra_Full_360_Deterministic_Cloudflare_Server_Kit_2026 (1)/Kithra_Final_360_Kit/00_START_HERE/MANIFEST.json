@@ -1,0 +1,26 @@
+{
+  "version": "3.0",
+  "date": "2026-11-01",
+  "concept_source": "Kithra-main.zip",
+  "AI_runtime": false,
+  "matching": "deterministic questionnaire/scenarios",
+  "product_scope": [
+    "friendship",
+    "dating",
+    "matrimony"
+  ],
+  "deployed": false,
+  "scope_contract": "complete product dual-target",
+  "source_docs": [
+    "00_START_HERE/SCOPE_CORRECTIONS_AND_README.md",
+    "01_PRODUCT/KITHRA_FULL_BRD_PRD_FRS.md",
+    "03_MATCHING/DETERMINISTIC_BEHAVIOURAL_ENGINE.md",
+    "02_DESIGN/UX_UI_DESIGN_AUTHORITY.md",
+    "04_ENGINEERING/DUAL_RUNTIME_ENGINEERING_AUTHORITY.md",
+    "05_SECURITY_LEGAL/ADMIN_RBAC_TRUST_COMPLIANCE_LEGAL.md",
+    "06_QA_DEVOPS/TESTING_RELEASE_AND_GITHUB_ACTIONS.md",
+    "07_FINANCE/FIN_RD_COSTS_PRICING_TEAM.md",
+    "08_REFERENCE/SOURCES_AND_PROVENANCE.md"
+  ],
+  "feature_rows": 150
+}

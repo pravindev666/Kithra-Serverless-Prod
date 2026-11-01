@@ -1,0 +1,17 @@
+{
+  // TEMPLATE: replace placeholder database_id and resource names after provisioning.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kithra-api",
+  "main": "apps/api/src/worker.ts",
+  "compatibility_date": "2026-10-30",
+  "d1_databases": [{"binding":"DB","database_name":"kithra-staging","database_id":"REPLACE-WITH-REAL-UUID"}],
+  "r2_buckets": [{"binding":"MEDIA","bucket_name":"kithra-private-staging"}],
+  "queues": {"producers":[{"binding":"JOBS","queue":"kithra-jobs-staging"}]},
+  "durable_objects": {"bindings":[{"name":"CHAT_ROOMS","class_name":"ChatRoom"}]},
+  "migrations": [{"tag":"v1","new_sqlite_classes":["ChatRoom"]}],
+  "vars": {"ENVIRONMENT":"staging"},
+  "env": {
+    "staging": {"vars":{"ENVIRONMENT":"staging"}},
+    "production": {"vars":{"ENVIRONMENT":"production"}}
+  }
+}

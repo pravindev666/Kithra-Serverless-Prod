@@ -1,6 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Filter, ShieldAlert, KeyRound, X } from 'lucide-react';
+import {
+  CreditCard,
+  FileClock,
+  Filter,
+  HelpCircle,
+  Image as ImageIcon,
+  KeyRound,
+  LayoutDashboard,
+  Lock,
+  ShieldAlert,
+  ShieldCheck,
+  UserCog,
+  Users,
+  X,
+} from 'lucide-react';
+import { AppShell, ShellNavGroup } from './AppShell';
 import {
   AdminTab,
   AuditLogEntry,
@@ -9,6 +24,11 @@ import {
   PhotoModerationItem,
   StaffCase,
 } from '../types/kithra';
+import { ASSESSMENT_QUESTIONS } from '../data/mockFixtures';
+import {
+  authorizeRawAnswerAccess,
+  PSYCHOLOGY_ENGINE_VERSION,
+} from '../domain/psychologyEngine';
 import { filterStaffCases } from '../utils/kithraLogic';
 import { EditorialImage } from './EditorialImage';
 import { EditorialVariant } from '../utils/editorialMedia';
@@ -138,20 +158,12 @@ interface AdminShellProps {
   onAppendAudit: (action: string, target: string, detail: string) => void;
   profiles: MemberProfile[];
   circles: CommunityCircle[];
+  isDark?: boolean;
+  onToggleTheme?: () => void;
+  manualReduceMotion?: boolean;
 }
 
-const ADMIN_NAV_ITEMS: { id: AdminTab; label: string; path: string }[] = [
-  { id: 'overview', label: 'Overview', path: '/admin/overview' },
-  { id: 'reports', label: 'Reports & safety', path: '/admin/reports' },
-  { id: 'photos', label: 'Photo review', path: '/admin/photos' },
-  { id: 'users', label: 'Users', path: '/admin/users' },
-  { id: 'groups', label: 'Groups', path: '/admin/groups' },
-  { id: 'support', label: 'Support', path: '/admin/support' },
-  { id: 'subscriptions', label: 'Subscriptions', path: '/admin/subscriptions' },
-  { id: 'privacy', label: 'Privacy', path: '/admin/privacy' },
-  { id: 'staff', label: 'Staff & roles', path: '/admin/staff' },
-  { id: 'audit', label: 'Audit trail', path: '/admin/audit' },
-];
+type StaffRoleFilter = 'all' | 'trust-safety' | 'photo-reviewer' | 'circle-steward';
 
 export const AdminShell: React.FC<AdminShellProps> = ({
   activeTab,
@@ -164,7 +176,11 @@ export const AdminShell: React.FC<AdminShellProps> = ({
   onAppendAudit,
   profiles,
   circles,
+  isDark = false,
+  onToggleTheme = () => { },
+  manualReduceMotion = false,
 }) => {
+  const [staffRole, setStaffRole] = useState<StaffRoleFilter>('all');
   const [priorityFilter, setPriorityFilter] = useState<'All' | 'High' | 'Normal'>('All');
   const [statusFilter, setStatusFilter] = useState<'All' | StaffCase['status']>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -240,14 +256,138 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     triggerToast(`Photo ${itemId} marked "${nextStatus}".`);
   };
 
+  const pendingPhotosCount = photoReviews.filter((p) => p.status === 'Awaiting review').length;
+  const openCasesCount = cases.filter((c) => c.status !== 'Resolved (Preview)').length;
+
+  const allAdminGroups: ShellNavGroup[] = [
+    {
+      id: 'queues',
+      label: 'Moderation & Queues',
+      items: [
+        { id: 'overview', label: 'Overview', path: '/admin/overview', icon: LayoutDashboard },
+        {
+          id: 'reports',
+          label: 'Reports & safety',
+          path: '/admin/reports',
+          icon: ShieldCheck,
+          badge: openCasesCount,
+          badgeLabel: `${openCasesCount} open reports`,
+        },
+        {
+          id: 'photos',
+          label: 'Photo review',
+          path: '/admin/photos',
+          icon: ImageIcon,
+          badge: pendingPhotosCount || undefined,
+          badgeLabel: `${pendingPhotosCount} photos awaiting review`,
+        },
+        { id: 'users', label: 'Users', path: '/admin/users', icon: Users },
+        { id: 'groups', label: 'Circles & groups', path: '/admin/groups', icon: Users },
+      ],
+    },
+    {
+      id: 'operations',
+      label: 'Operations & Governance',
+      items: [
+        {
+          id: 'questions',
+          label: 'Questions & quality',
+          path: '/admin/questions',
+          icon: HelpCircle,
+        },
+        { id: 'support', label: 'Support', path: '/admin/support', icon: HelpCircle, badge: 3 },
+        {
+          id: 'subscriptions',
+          label: 'Subscriptions',
+          path: '/admin/subscriptions',
+          icon: CreditCard,
+        },
+        { id: 'privacy', label: 'Privacy requests', path: '/admin/privacy', icon: Lock },
+        { id: 'staff', label: 'Staff & RBAC', path: '/admin/staff', icon: UserCog },
+        { id: 'audit', label: 'Audit trail', path: '/admin/audit', icon: FileClock },
+      ],
+    },
+  ];
+
+  const rolePermittedTabs: Record<StaffRoleFilter, AdminTab[]> = {
+    all: [
+      'overview',
+      'reports',
+      'photos',
+      'users',
+      'groups',
+      'questions',
+      'support',
+      'subscriptions',
+      'privacy',
+      'staff',
+      'audit',
+    ],
+    'trust-safety': ['overview', 'reports', 'users', 'questions', 'privacy', 'staff', 'audit'],
+    'photo-reviewer': ['overview', 'photos', 'staff', 'audit'],
+    'circle-steward': ['overview', 'groups', 'support', 'staff', 'audit'],
+  };
+
+  const visibleAdminGroups: ShellNavGroup[] = allAdminGroups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => rolePermittedTabs[staffRole].includes(i.id as AdminTab)),
+    }))
+    .filter((g) => g.items.length > 0);
+
   return (
-    <div className="py-7 md:py-9 min-h-[640px] font-sans-ui">
+    <AppShell
+      storageKey="kithra-admin-sidebar"
+      navLabel="Staff navigation"
+      brandSuffix="Staff"
+      homePath="/admin/overview"
+      groups={visibleAdminGroups}
+      activeId={activeTab}
+      onNavigate={onNavigateAdminPath}
+      isDark={isDark}
+      onToggleTheme={onToggleTheme}
+      manualReduceMotion={manualReduceMotion}
+      contentMaxWidth="100%"
+      renderSidebarTop={() => (
+        <div className="p-2.5 rounded-[10px] bg-[var(--surface2)] border border-[var(--line)]">
+          <label
+            htmlFor="admin-role-select"
+            className="block text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-1"
+          >
+            Role-aware nav scope
+          </label>
+          <select
+            id="admin-role-select"
+            value={staffRole}
+            onChange={(e) => setStaffRole(e.target.value as StaffRoleFilter)}
+            className="w-full h-9 rounded-[7px] border border-[var(--line)] bg-[var(--surface)] text-[var(--heading)] px-2 text-xs font-semibold"
+          >
+            <option value="all">All Staff Queues (Lead)</option>
+            <option value="trust-safety">Trust &amp; Safety Specialist</option>
+            <option value="photo-reviewer">Photo Reviewer</option>
+            <option value="circle-steward">Circle Steward</option>
+          </select>
+        </div>
+      )}
+      renderSidebarFooter={({ collapsed, tip }) => (
+        <button
+          type="button"
+          onClick={() => onNavigateAdminPath('/')}
+          {...(collapsed ? tip('Return to public site') : {})}
+          className={`w-full flex items-center gap-2 min-h-[40px] rounded-[9px] text-xs font-semibold text-[var(--muted)] hover:text-[var(--heading)] hover:bg-[var(--surface2)]/60 cursor-pointer ${collapsed ? 'justify-center px-0' : 'px-3'
+            }`}
+        >
+          <span aria-hidden="true">←</span>
+          {!collapsed && <span>Return to public site</span>}
+        </button>
+      )}
+    >
       {/* Unprivileged Staff Preview Banner */}
       <div className="mb-5 rounded-[12px] bg-[var(--surface2)] border border-[var(--ochre)] px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 text-xs sm:text-sm text-[var(--heading)]">
           <ShieldAlert className="w-4 h-4 text-[var(--ochre-text)] shrink-0" aria-hidden="true" />
           <span>
-            <strong>Simulated Staff Workspace (Unauthenticated UI Spec):</strong> No real member records, MFA session, or moderation mutations are connected.
+            <strong>Staff Console (Frontend Specification):</strong> Role-aware navigation, moderation queues, and case drawers update local preview state.
           </span>
         </div>
         <button
@@ -276,610 +416,679 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[225px_1fr] gap-6 items-start">
-        {/* STAFF SIDEBAR */}
-        <aside
-          aria-label="Staff navigation"
-          className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-2.5 lg:p-4 flex lg:flex-col gap-1 overflow-x-auto"
-        >
-          <div className="hidden lg:block px-2.5 pt-1 pb-4 text-[18px] font-bold tracking-tight text-[var(--heading)]">
-            Kithra Staff
-          </div>
-          {ADMIN_NAV_ITEMS.map((item) => {
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onNavigateAdminPath(item.path)}
-                aria-current={isActive ? 'page' : undefined}
-                className={`text-left px-3 py-2.5 min-h-[44px] rounded-[9px] text-[13px] transition-colors cursor-pointer whitespace-nowrap shrink-0 lg:w-full ${
-                  isActive
-                    ? 'bg-[var(--surface2)] text-[var(--heading)] font-bold'
-                    : 'text-[var(--muted)] hover:text-[var(--heading)] hover:bg-[var(--surface2)]/50'
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </aside>
-
-        {/* STAFF MAIN WORKSPACE (DM Sans operational typography) */}
-        <div className="min-w-0">
-          {(activeTab === 'overview' || activeTab === 'reports') && (
-            <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
-                <div>
-                  <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
-                    Staff interface · Mock data
-                  </p>
-                  <h1
-                    tabIndex={-1}
-                    className="font-sans-ui text-[28px] sm:text-[32px] font-bold tracking-tight text-[var(--heading)] mt-1 outline-none"
-                  >
-                    {activeTab === 'overview' ? 'Reports overview.' : 'Reports & safety queue.'}
-                  </h1>
-                  <p className="text-sm text-[var(--muted)] mt-1">
-                    A calm operational workspace for safety and support. Click any case row to open the triage drawer.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowQueueFilters((prev) => !prev)}
-                  aria-expanded={showQueueFilters}
-                  className="inline-flex items-center gap-1.5 min-h-[44px] rounded-[9px] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)] text-[var(--heading)] px-3.5 py-2.5 text-xs font-bold cursor-pointer self-start whitespace-nowrap"
+      <div className="min-w-0">
+        {(activeTab === 'overview' || activeTab === 'reports') && (
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+              <div>
+                <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                  Staff interface · Mock data
+                </p>
+                <h1
+                  tabIndex={-1}
+                  className="font-sans-ui text-[28px] sm:text-[32px] font-bold tracking-tight text-[var(--heading)] mt-1 outline-none"
                 >
-                  <Filter className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>Queue filters ▾</span>
-                </button>
+                  {activeTab === 'overview' ? 'Reports overview.' : 'Reports & safety queue.'}
+                </h1>
+                <p className="text-sm text-[var(--muted)] mt-1">
+                  A calm operational workspace for safety and support. Click any case row to open the triage drawer.
+                </p>
               </div>
 
-              {showQueueFilters && (
-                <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[13px] p-4 mb-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label
-                      htmlFor="staff-priority-filter"
-                      className="block text-xs font-bold text-[var(--heading)] mb-1"
-                    >
-                      Priority
-                    </label>
-                    <select
-                      id="staff-priority-filter"
-                      value={priorityFilter}
-                      onChange={(e) =>
-                        setPriorityFilter(e.target.value as 'All' | 'High' | 'Normal')
-                      }
-                      className="w-full min-h-[42px] rounded-[8px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-2.5 text-xs"
-                    >
-                      <option value="All">All priorities</option>
-                      <option value="High">High priority</option>
-                      <option value="Normal">Normal priority</option>
-                    </select>
-                  </div>
+              <button
+                type="button"
+                onClick={() => setShowQueueFilters((prev) => !prev)}
+                aria-expanded={showQueueFilters}
+                className="inline-flex items-center gap-1.5 min-h-[44px] rounded-[9px] border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)] text-[var(--heading)] px-3.5 py-2.5 text-xs font-bold cursor-pointer self-start whitespace-nowrap"
+              >
+                <Filter className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Queue filters ▾</span>
+              </button>
+            </div>
 
-                  <div>
-                    <label
-                      htmlFor="staff-status-filter"
-                      className="block text-xs font-bold text-[var(--heading)] mb-1"
-                    >
-                      Status
-                    </label>
-                    <select
-                      id="staff-status-filter"
-                      value={statusFilter}
-                      onChange={(e) =>
-                        setStatusFilter(e.target.value as 'All' | StaffCase['status'])
-                      }
-                      className="w-full min-h-[42px] rounded-[8px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-2.5 text-xs"
-                    >
-                      <option value="All">All statuses</option>
-                      <option value="Awaiting review">Awaiting review</option>
-                      <option value="In queue">In queue</option>
-                      <option value="Assigned">Assigned</option>
-                      <option value="Resolved (Preview)">Resolved (Preview)</option>
-                    </select>
-                  </div>
+            {showQueueFilters && (
+              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[13px] p-4 mb-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label
+                    htmlFor="staff-priority-filter"
+                    className="block text-xs font-bold text-[var(--heading)] mb-1"
+                  >
+                    Priority
+                  </label>
+                  <select
+                    id="staff-priority-filter"
+                    value={priorityFilter}
+                    onChange={(e) =>
+                      setPriorityFilter(e.target.value as 'All' | 'High' | 'Normal')
+                    }
+                    className="w-full min-h-[42px] rounded-[8px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-2.5 text-xs"
+                  >
+                    <option value="All">All priorities</option>
+                    <option value="High">High priority</option>
+                    <option value="Normal">Normal priority</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label
-                      htmlFor="staff-case-search"
-                      className="block text-xs font-bold text-[var(--heading)] mb-1"
-                    >
-                      Case ID or category
-                    </label>
-                    <input
-                      id="staff-case-search"
-                      type="search"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="e.g. K-101, impersonation..."
-                      className="w-full min-h-[42px] rounded-[8px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-2.5 text-xs"
-                    />
-                  </div>
+                <div>
+                  <label
+                    htmlFor="staff-status-filter"
+                    className="block text-xs font-bold text-[var(--heading)] mb-1"
+                  >
+                    Status
+                  </label>
+                  <select
+                    id="staff-status-filter"
+                    value={statusFilter}
+                    onChange={(e) =>
+                      setStatusFilter(e.target.value as 'All' | StaffCase['status'])
+                    }
+                    className="w-full min-h-[42px] rounded-[8px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-2.5 text-xs"
+                  >
+                    <option value="All">All statuses</option>
+                    <option value="Awaiting review">Awaiting review</option>
+                    <option value="In queue">In queue</option>
+                    <option value="Assigned">Assigned</option>
+                    <option value="Resolved (Preview)">Resolved (Preview)</option>
+                  </select>
                 </div>
-              )}
 
-              {/* Operational Summary Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-6">
-                <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-5">
-                  <strong className="block text-[32px] leading-none font-bold text-[var(--heading)] tabular-nums">
-                    12
-                  </strong>
-                  <p className="text-xs sm:text-sm text-[var(--muted)] mt-2">
-                    Sample open reports
-                  </p>
-                </div>
-                <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-5">
-                  <strong className="block text-[32px] leading-none font-bold text-[var(--heading)] tabular-nums">
-                    {photoReviews.filter((p) => p.status === 'Awaiting review').length + 2}
-                  </strong>
-                  <p className="text-xs sm:text-sm text-[var(--muted)] mt-2">Photo reviews</p>
-                </div>
-                <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-5">
-                  <strong className="block text-[32px] leading-none font-bold text-[var(--heading)] tabular-nums">
-                    3
-                  </strong>
-                  <p className="text-xs sm:text-sm text-[var(--muted)] mt-2">
-                    Support requests
-                  </p>
+                <div>
+                  <label
+                    htmlFor="staff-case-search"
+                    className="block text-xs font-bold text-[var(--heading)] mb-1"
+                  >
+                    Case ID or category
+                  </label>
+                  <input
+                    id="staff-case-search"
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="e.g. K-101, impersonation..."
+                    className="w-full min-h-[42px] rounded-[8px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-2.5 text-xs"
+                  />
                 </div>
               </div>
+            )}
 
-              {/* Case Triage Table */}
-              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
-                <table className="w-full border-collapse text-xs sm:text-sm">
-                  <thead>
-                    <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
-                      <th className="p-3.5 font-bold">Case</th>
-                      <th className="p-3.5 font-bold">Category</th>
-                      <th className="p-3.5 font-bold">Priority</th>
-                      <th className="p-3.5 font-bold">Status</th>
-                      <th className="p-3.5 font-bold text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredCases.map((c) => (
-                      <tr
-                        key={c.id}
-                        className="border-t border-[var(--line)] hover:bg-[var(--surface2)]/40 transition-colors"
-                      >
-                        <td className="p-3.5 font-bold text-[var(--heading)] tabular-nums">
-                          {c.id}
-                        </td>
-                        <td className="p-3.5">
-                          <span className="font-semibold text-[var(--heading)] block">
-                            {c.category}
-                          </span>
-                          <span className="text-xs text-[var(--muted)]">
-                            {c.reportedContext}
-                          </span>
-                        </td>
-                        <td
-                          className={`p-3.5 font-bold ${
-                            c.priority === 'High'
-                              ? 'text-[var(--danger)]'
-                              : 'text-[var(--text)]'
+            {/* Operational Summary Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-6">
+              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-5">
+                <strong className="block text-[32px] leading-none font-bold text-[var(--heading)] tabular-nums">
+                  12
+                </strong>
+                <p className="text-xs sm:text-sm text-[var(--muted)] mt-2">
+                  Sample open reports
+                </p>
+              </div>
+              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-5">
+                <strong className="block text-[32px] leading-none font-bold text-[var(--heading)] tabular-nums">
+                  {photoReviews.filter((p) => p.status === 'Awaiting review').length + 2}
+                </strong>
+                <p className="text-xs sm:text-sm text-[var(--muted)] mt-2">Photo reviews</p>
+              </div>
+              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-5">
+                <strong className="block text-[32px] leading-none font-bold text-[var(--heading)] tabular-nums">
+                  3
+                </strong>
+                <p className="text-xs sm:text-sm text-[var(--muted)] mt-2">
+                  Support requests
+                </p>
+              </div>
+            </div>
+
+            {/* Case Triage Table */}
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
+              <table className="w-full border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
+                    <th className="p-3.5 font-bold">Case</th>
+                    <th className="p-3.5 font-bold">Category</th>
+                    <th className="p-3.5 font-bold">Priority</th>
+                    <th className="p-3.5 font-bold">Status</th>
+                    <th className="p-3.5 font-bold text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCases.map((c) => (
+                    <tr
+                      key={c.id}
+                      className="border-t border-[var(--line)] hover:bg-[var(--surface2)]/40 transition-colors"
+                    >
+                      <td className="p-3.5 font-bold text-[var(--heading)] tabular-nums">
+                        {c.id}
+                      </td>
+                      <td className="p-3.5">
+                        <span className="font-semibold text-[var(--heading)] block">
+                          {c.category}
+                        </span>
+                        <span className="text-xs text-[var(--muted)]">
+                          {c.reportedContext}
+                        </span>
+                      </td>
+                      <td
+                        className={`p-3.5 font-bold ${c.priority === 'High'
+                          ? 'text-[var(--danger)]'
+                          : 'text-[var(--text)]'
                           }`}
+                      >
+                        {c.priority}
+                      </td>
+                      <td className="p-3.5 text-[var(--text)]">{c.status}</td>
+                      <td className="p-3.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCaseId(c.id)}
+                          className="min-h-[38px] rounded-[7px] border border-[var(--line)] px-3 py-1.5 text-xs font-bold text-[var(--heading)] hover:bg-[var(--surface2)] cursor-pointer whitespace-nowrap"
                         >
-                          {c.priority}
-                        </td>
-                        <td className="p-3.5 text-[var(--text)]">{c.status}</td>
-                        <td className="p-3.5 text-right">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedCaseId(c.id)}
-                            className="min-h-[38px] rounded-[7px] border border-[var(--line)] px-3 py-1.5 text-xs font-bold text-[var(--heading)] hover:bg-[var(--surface2)] cursor-pointer whitespace-nowrap"
-                          >
-                            Inspect case
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                          Inspect case
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-              <p className="text-xs text-[var(--muted)] mt-3">
-                This is visual sample data; no real cases, MFA, roles, moderation or audit logging are active until AGY backend integration.
+            <p className="text-xs text-[var(--muted)] mt-3">
+              This is visual sample data; no real cases, MFA, roles, moderation or audit logging are active until AGY backend integration.
+            </p>
+          </div>
+        )}
+
+        {/* TAB: PHOTO REVIEW */}
+        {activeTab === 'photos' && (
+          <div className="space-y-5">
+            <div>
+              <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                Staff interface · Photo guidelines queue
+              </p>
+              <h1
+                tabIndex={-1}
+                className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+              >
+                Photo review queue.
+              </h1>
+              <p className="text-sm text-[var(--muted)] mt-1">
+                Reviewing 4:5 primary crop framing, solo portrait clarity, and requested intention visibility.
               </p>
             </div>
-          )}
 
-          {/* TAB: PHOTO REVIEW */}
-          {activeTab === 'photos' && (
-            <div className="space-y-5">
-              <div>
-                <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
-                  Staff interface · Photo guidelines queue
-                </p>
-                <h1
-                  tabIndex={-1}
-                  className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {photoReviews.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-5 flex flex-col justify-between"
                 >
-                  Photo review queue.
-                </h1>
-                <p className="text-sm text-[var(--muted)] mt-1">
-                  Reviewing 4:5 primary crop framing, solo portrait clarity, and requested intention visibility.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {photoReviews.map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-5 flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-3">
-                        <span className="font-bold text-[var(--heading)] tabular-nums">
-                          {item.id} · {item.memberHandle}
-                        </span>
-                        <span className="text-[var(--muted)]">{item.submittedAt}</span>
-                      </div>
-                      <div className="h-[240px] mb-3">
-                        <EditorialImage
-                          variant={item.variant as EditorialVariant}
-                          alt={item.caption}
-                          aspectClass="w-full h-full"
-                        />
-                      </div>
-                      <p className="text-sm font-bold text-[var(--heading)]">
-                        Caption: &ldquo;{item.caption}&rdquo;
-                      </p>
-                      <p className="text-xs text-[var(--muted)] mt-1">
-                        Requested visibility: {item.requestedVisibility.join(' · ')} · Frame:{' '}
-                        {item.aspectRatio}
-                      </p>
-                      <p className="text-xs text-[var(--muted)] mt-1">
-                        Check: {item.guidelineCheck}
-                      </p>
-                      <p className="text-xs font-semibold text-[var(--ochre-text)] mt-2">
-                        Status: {item.status}
-                      </p>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-[var(--line)] flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handlePhotoReviewAction(item.id, 'Approved (Preview)')
-                        }
-                        className="flex-1 min-h-[42px] rounded-[8px] bg-[var(--primary)] text-[var(--on-primary)] py-2 text-xs font-bold cursor-pointer"
-                      >
-                        Approve (Preview)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handlePhotoReviewAction(item.id, 'Replacement requested')
-                        }
-                        className="flex-1 min-h-[42px] rounded-[8px] border border-[var(--line)] text-[var(--heading)] hover:bg-[var(--surface2)] py-2 text-xs font-bold cursor-pointer"
-                      >
-                        Request clearer crop
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB: USERS */}
-          {activeTab === 'users' && (
-            <div className="space-y-4">
-              <div>
-                <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
-                  Staff interface · Fictional directory
-                </p>
-                <h1
-                  tabIndex={-1}
-                  className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
-                >
-                  Member directory lookup.
-                </h1>
-              </div>
-
-              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
-                <table className="w-full border-collapse text-xs sm:text-sm">
-                  <thead>
-                    <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
-                      <th className="p-3.5 font-bold">Member</th>
-                      <th className="p-3.5 font-bold">City</th>
-                      <th className="p-3.5 font-bold">Enabled intentions</th>
-                      <th className="p-3.5 font-bold">Languages</th>
-                      <th className="p-3.5 font-bold">Account state</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {profiles.map((p) => (
-                      <tr key={p.id} className="border-t border-[var(--line)]">
-                        <td className="p-3.5 font-bold text-[var(--heading)]">{p.name}</td>
-                        <td className="p-3.5">{p.city}</td>
-                        <td className="p-3.5">{p.intentions.join(' · ')}</td>
-                        <td className="p-3.5 text-[var(--muted)]">
-                          {p.languages.join(' · ')}
-                        </td>
-                        <td className="p-3.5">Active (Sample fixture)</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: GROUPS */}
-          {activeTab === 'groups' && (
-            <div className="space-y-4">
-              <div>
-                <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
-                  Staff interface · Community stewardship
-                </p>
-                <h1
-                  tabIndex={-1}
-                  className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
-                >
-                  Circles & small gatherings.
-                </h1>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {circles.map((c) => (
-                  <div
-                    key={c.id}
-                    className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-5"
-                  >
-                    <p className="text-xs font-bold text-[var(--ochre-text)]">
-                      {c.city} · {c.format}
-                    </p>
-                    <h2 className="text-base font-bold text-[var(--heading)] mt-1">
-                      {c.title}
-                    </h2>
-                    <p className="text-xs text-[var(--muted)] mt-1 tabular-nums">
-                      {c.memberCount} members · {c.cadence}
-                    </p>
-                    <p className="text-sm text-[var(--text)] mt-2 leading-relaxed">
-                      {c.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB: SUPPORT */}
-          {activeTab === 'support' && (
-            <div className="space-y-4">
-              <div>
-                <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
-                  Staff interface · Member assistance
-                </p>
-                <h1
-                  tabIndex={-1}
-                  className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
-                >
-                  Support requests.
-                </h1>
-              </div>
-              <div className="space-y-3">
-                {[
-                  {
-                    id: 'SUP-301',
-                    topic: 'How do I hide my Dating profile while keeping Matrimony active?',
-                    member: 'Member #4102 · Bengaluru',
-                    status: 'Guidance template ready',
-                  },
-                  {
-                    id: 'SUP-302',
-                    topic: 'Changing primary city from Mumbai to Pune next month',
-                    member: 'Member #4219 · Mumbai',
-                    status: 'Awaiting reply',
-                  },
-                  {
-                    id: 'SUP-303',
-                    topic: 'Hosting a neighbourhood Carnatic listening Circle in Mylapore',
-                    member: 'Member #4380 · Chennai',
-                    status: 'Assigned to Circle Steward',
-                  },
-                ].map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm"
-                  >
-                    <div>
+                  <div>
+                    <div className="flex items-center justify-between text-xs mb-3">
                       <span className="font-bold text-[var(--heading)] tabular-nums">
-                        {ticket.id}
+                        {item.id} · {item.memberHandle}
                       </span>
-                      <span className="text-[var(--muted)]"> · {ticket.member}</span>
-                      <p className="font-semibold text-[var(--heading)] mt-1">
-                        {ticket.topic}
-                      </p>
+                      <span className="text-[var(--muted)]">{item.submittedAt}</span>
                     </div>
-                    <span className="text-[var(--muted)] shrink-0">{ticket.status}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB: SUBSCRIPTIONS */}
-          {activeTab === 'subscriptions' && (
-            <div className="space-y-4">
-              <div>
-                <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
-                  Staff interface · Unified membership overview
-                </p>
-                <h1
-                  tabIndex={-1}
-                  className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
-                >
-                  Subscriptions (Illustrative preview).
-                </h1>
-                <p className="text-sm text-[var(--muted)] mt-1">
-                  Single membership ladder across Friendship, Dating, and Matrimony. No live billing is connected.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  { tier: 'Free', note: 'Core access across all 3 intentions', price: '₹0 (Illustrative)' },
-                  { tier: 'Plus', note: 'Circles RSVP & extended city filters', price: '₹650 / mo (Illustrative)' },
-                  { tier: 'Connect', note: 'Priority human review & partnership guides', price: '₹1,450 / mo (Illustrative)' },
-                ].map((t) => (
-                  <div
-                    key={t.tier}
-                    className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-5"
-                  >
-                    <h2 className="text-lg font-bold text-[var(--heading)]">{t.tier}</h2>
-                    <p className="text-sm font-bold text-[var(--ochre-text)] mt-1 tabular-nums">
-                      {t.price}
+                    <div className="h-[240px] mb-3">
+                      <EditorialImage
+                        variant={item.variant as EditorialVariant}
+                        alt={item.caption}
+                        aspectClass="w-full h-full"
+                      />
+                    </div>
+                    <p className="text-sm font-bold text-[var(--heading)]">
+                      Caption: &ldquo;{item.caption}&rdquo;
                     </p>
-                    <p className="text-xs sm:text-sm text-[var(--muted)] mt-2">{t.note}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB: PRIVACY */}
-          {activeTab === 'privacy' && (
-            <div className="space-y-4">
-              <div>
-                <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
-                  Staff interface · DPDP & GDPR workflow preview
-                </p>
-                <h1
-                  tabIndex={-1}
-                  className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
-                >
-                  Privacy & data requests.
-                </h1>
-              </div>
-              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-5 space-y-3 text-xs sm:text-sm">
-                <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
-                  <div>
-                    <p className="font-bold text-[var(--heading)]">
-                      Request #DP-09 · Portable JSON archive export
+                    <p className="text-xs text-[var(--muted)] mt-1">
+                      Requested visibility: {item.requestedVisibility.join(' · ')} · Frame:{' '}
+                      {item.aspectRatio}
                     </p>
-                    <p className="text-[var(--muted)]">
-                      Includes profile text, reflection answers, and per-intention photo visibility log
+                    <p className="text-xs text-[var(--muted)] mt-1">
+                      Check: {item.guidelineCheck}
+                    </p>
+                    <p className="text-xs font-semibold text-[var(--ochre-text)] mt-2">
+                      Status: {item.status}
                     </p>
                   </div>
-                  <span className="font-semibold text-[var(--heading)]">Sample ready</span>
+                  <div className="mt-4 pt-3 border-t border-[var(--line)] flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handlePhotoReviewAction(item.id, 'Approved (Preview)')
+                      }
+                      className="flex-1 min-h-[42px] rounded-[8px] bg-[var(--primary)] text-[var(--on-primary)] py-2 text-xs font-bold cursor-pointer"
+                    >
+                      Approve (Preview)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handlePhotoReviewAction(item.id, 'Replacement requested')
+                      }
+                      className="flex-1 min-h-[42px] rounded-[8px] border border-[var(--line)] text-[var(--heading)] hover:bg-[var(--surface2)] py-2 text-xs font-bold cursor-pointer"
+                    >
+                      Request clearer crop
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB: USERS */}
+        {activeTab === 'users' && (
+          <div className="space-y-4">
+            <div>
+              <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                Staff interface · Fictional directory
+              </p>
+              <h1
+                tabIndex={-1}
+                className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+              >
+                Member directory lookup.
+              </h1>
+            </div>
+
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
+              <table className="w-full border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
+                    <th className="p-3.5 font-bold">Member</th>
+                    <th className="p-3.5 font-bold">City</th>
+                    <th className="p-3.5 font-bold">Enabled intentions</th>
+                    <th className="p-3.5 font-bold">Languages</th>
+                    <th className="p-3.5 font-bold">Account state</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {profiles.map((p) => (
+                    <tr key={p.id} className="border-t border-[var(--line)]">
+                      <td className="p-3.5 font-bold text-[var(--heading)]">{p.name}</td>
+                      <td className="p-3.5">{p.city}</td>
+                      <td className="p-3.5">{p.intentions.join(' · ')}</td>
+                      <td className="p-3.5 text-[var(--muted)]">
+                        {p.languages.join(' · ')}
+                      </td>
+                      <td className="p-3.5">Active (Sample fixture)</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: GROUPS */}
+        {activeTab === 'groups' && (
+          <div className="space-y-4">
+            <div>
+              <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                Staff interface · Community stewardship
+              </p>
+              <h1
+                tabIndex={-1}
+                className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+              >
+                Circles & small gatherings.
+              </h1>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {circles.map((c) => (
+                <div
+                  key={c.id}
+                  className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-5"
+                >
+                  <p className="text-xs font-bold text-[var(--ochre-text)]">
+                    {c.city} · {c.format}
+                  </p>
+                  <h2 className="text-base font-bold text-[var(--heading)] mt-1">
+                    {c.title}
+                  </h2>
+                  <p className="text-xs text-[var(--muted)] mt-1 tabular-nums">
+                    {c.memberCount} members · {c.cadence}
+                  </p>
+                  <p className="text-sm text-[var(--text)] mt-2 leading-relaxed">
+                    {c.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB: SUPPORT */}
+        {activeTab === 'support' && (
+          <div className="space-y-4">
+            <div>
+              <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                Staff interface · Member assistance
+              </p>
+              <h1
+                tabIndex={-1}
+                className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+              >
+                Support requests.
+              </h1>
+            </div>
+            <div className="space-y-3">
+              {[
+                {
+                  id: 'SUP-301',
+                  topic: 'How do I hide my Dating profile while keeping Matrimony active?',
+                  member: 'Member #4102 · Bengaluru',
+                  status: 'Guidance template ready',
+                },
+                {
+                  id: 'SUP-302',
+                  topic: 'Changing primary city from Mumbai to Pune next month',
+                  member: 'Member #4219 · Mumbai',
+                  status: 'Awaiting reply',
+                },
+                {
+                  id: 'SUP-303',
+                  topic: 'Hosting a neighbourhood Carnatic listening Circle in Mylapore',
+                  member: 'Member #4380 · Chennai',
+                  status: 'Assigned to Circle Steward',
+                },
+              ].map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm"
+                >
                   <div>
-                    <p className="font-bold text-[var(--heading)]">
-                      Request #DP-10 · Intention history clear (Dating only)
-                    </p>
-                    <p className="text-[var(--muted)]">
-                      Removes Dating responses while preserving Friendship and Matrimony data
+                    <span className="font-bold text-[var(--heading)] tabular-nums">
+                      {ticket.id}
+                    </span>
+                    <span className="text-[var(--muted)]"> · {ticket.member}</span>
+                    <p className="font-semibold text-[var(--heading)] mt-1">
+                      {ticket.topic}
                     </p>
                   </div>
-                  <span className="text-[var(--muted)]">In review (Preview)</span>
+                  <span className="text-[var(--muted)] shrink-0">{ticket.status}</span>
                 </div>
-              </div>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* TAB: STAFF & ROLES (READ-ONLY RBAC MATRIX) */}
-          {activeTab === 'staff' && (
-            <div className="space-y-4">
-              <div>
-                <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
-                  Staff interface · Read-only role boundaries
-                </p>
-                <h1
-                  tabIndex={-1}
-                  className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+        {/* TAB: SUBSCRIPTIONS */}
+        {activeTab === 'subscriptions' && (
+          <div className="space-y-4">
+            <div>
+              <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                Staff interface · Unified membership overview
+              </p>
+              <h1
+                tabIndex={-1}
+                className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+              >
+                Subscriptions (Illustrative preview).
+              </h1>
+              <p className="text-sm text-[var(--muted)] mt-1">
+                Single membership ladder across Friendship, Dating, and Matrimony. No live billing is connected.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { tier: 'Free', note: 'Core access across all 3 intentions', price: '₹0 (Illustrative)' },
+                { tier: 'Plus', note: 'Circles RSVP & extended city filters', price: '₹650 / mo (Illustrative)' },
+                { tier: 'Connect', note: 'Priority human review & partnership guides', price: '₹1,450 / mo (Illustrative)' },
+              ].map((t) => (
+                <div
+                  key={t.tier}
+                  className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-5"
                 >
-                  Staff & roles specification.
-                </h1>
-                <p className="text-sm text-[var(--muted)] mt-1">
-                  Read-only reference for AGY backend RBAC enforcement. Public role-switching and pretend privileged actions are intentionally omitted.
-                </p>
+                  <h2 className="text-lg font-bold text-[var(--heading)]">{t.tier}</h2>
+                  <p className="text-sm font-bold text-[var(--ochre-text)] mt-1 tabular-nums">
+                    {t.price}
+                  </p>
+                  <p className="text-xs sm:text-sm text-[var(--muted)] mt-2">{t.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TAB: PRIVACY */}
+        {activeTab === 'privacy' && (
+          <div className="space-y-4">
+            <div>
+              <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                Staff interface · DPDP & GDPR workflow preview
+              </p>
+              <h1
+                tabIndex={-1}
+                className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+              >
+                Privacy & data requests.
+              </h1>
+            </div>
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-5 space-y-3 text-xs sm:text-sm">
+              <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+                <div>
+                  <p className="font-bold text-[var(--heading)]">
+                    Request #DP-09 · Portable JSON archive export
+                  </p>
+                  <p className="text-[var(--muted)]">
+                    Includes profile text, reflection answers, and per-intention photo visibility log
+                  </p>
+                </div>
+                <span className="font-semibold text-[var(--heading)]">Sample ready</span>
               </div>
-              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
-                <table className="w-full border-collapse text-xs sm:text-sm">
-                  <thead>
-                    <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
-                      <th className="p-3.5 font-bold">Role</th>
-                      <th className="p-3.5 font-bold">Permitted queues</th>
-                      <th className="p-3.5 font-bold">Restricted data</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-t border-[var(--line)]">
-                      <td className="p-3.5 font-bold text-[var(--heading)]">Photo Reviewer</td>
-                      <td className="p-3.5">4:5 portrait crop & caption queue only</td>
-                      <td className="p-3.5 text-[var(--muted)]">Private messages, billing, email address</td>
-                    </tr>
-                    <tr className="border-t border-[var(--line)]">
-                      <td className="p-3.5 font-bold text-[var(--heading)]">Circle Steward</td>
-                      <td className="p-3.5">Circle venue logistics & RSVP capacities</td>
-                      <td className="p-3.5 text-[var(--muted)]">Safety reports, private 1:1 threads</td>
-                    </tr>
-                    <tr className="border-t border-[var(--line)]">
-                      <td className="p-3.5 font-bold text-[var(--heading)]">Trust & Safety Specialist</td>
-                      <td className="p-3.5">Impersonation & boundary reports (flagged context only)</td>
-                      <td className="p-3.5 text-[var(--muted)]">Unreported member conversations</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-[var(--heading)]">
+                    Request #DP-10 · Intention history clear (Dating only)
+                  </p>
+                  <p className="text-[var(--muted)]">
+                    Removes Dating responses while preserving Friendship and Matrimony data
+                  </p>
+                </div>
+                <span className="text-[var(--muted)]">In review (Preview)</span>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* TAB: AUDIT TRAIL */}
-          {activeTab === 'audit' && (
-            <div className="space-y-4">
-              <div>
-                <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
-                  Staff interface · Sample chronological records
-                </p>
-                <h1
-                  tabIndex={-1}
-                  className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
-                >
-                  Sample audit trail.
-                </h1>
-                <p className="text-sm text-[var(--muted)] mt-1">
-                  Actions you test in the Case Triage Drawer or Photo Review queue append a local preview entry below.
-                </p>
-              </div>
+        {/* TAB: STAFF & ROLES (READ-ONLY RBAC MATRIX) */}
+        {activeTab === 'staff' && (
+          <div className="space-y-4">
+            <div>
+              <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                Staff interface · Read-only role boundaries
+              </p>
+              <h1
+                tabIndex={-1}
+                className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+              >
+                Staff & roles specification.
+              </h1>
+              <p className="text-sm text-[var(--muted)] mt-1">
+                Read-only reference for AGY backend RBAC enforcement. Public role-switching and pretend privileged actions are intentionally omitted.
+              </p>
+            </div>
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
+              <table className="w-full border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
+                    <th className="p-3.5 font-bold">Role</th>
+                    <th className="p-3.5 font-bold">Permitted queues</th>
+                    <th className="p-3.5 font-bold">Restricted data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-[var(--line)]">
+                    <td className="p-3.5 font-bold text-[var(--heading)]">Photo Reviewer</td>
+                    <td className="p-3.5">4:5 portrait crop & caption queue only</td>
+                    <td className="p-3.5 text-[var(--muted)]">Private messages, billing, email address</td>
+                  </tr>
+                  <tr className="border-t border-[var(--line)]">
+                    <td className="p-3.5 font-bold text-[var(--heading)]">Circle Steward</td>
+                    <td className="p-3.5">Circle venue logistics & RSVP capacities</td>
+                    <td className="p-3.5 text-[var(--muted)]">Safety reports, private 1:1 threads</td>
+                  </tr>
+                  <tr className="border-t border-[var(--line)]">
+                    <td className="p-3.5 font-bold text-[var(--heading)]">Trust & Safety Specialist</td>
+                    <td className="p-3.5">Impersonation & boundary reports (flagged context only)</td>
+                    <td className="p-3.5 text-[var(--muted)]">Unreported member conversations</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
-              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
-                <table className="w-full border-collapse text-xs sm:text-sm">
-                  <thead>
-                    <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
-                      <th className="p-3.5 font-bold">Timestamp</th>
-                      <th className="p-3.5 font-bold">Actor</th>
-                      <th className="p-3.5 font-bold">Action</th>
-                      <th className="p-3.5 font-bold">Target</th>
-                      <th className="p-3.5 font-bold">Detail</th>
+        {/* TAB: QUESTIONS & QUALITY GOVERNANCE */}
+        {activeTab === 'questions' && (
+          <div className="space-y-5">
+            <div>
+              <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                Staff interface · Item bank governance &amp; privacy-preserving quality monitoring
+              </p>
+              <h1
+                tabIndex={-1}
+                className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+              >
+                Question bank &amp; response quality ({PSYCHOLOGY_ENGINE_VERSION}).
+              </h1>
+              <p className="text-sm text-[var(--muted)] mt-1">
+                Pilot items are explicitly marked ORIGINAL / UNVALIDATED until empirical calibration. Raw member questionnaire answers are strictly isolated from staff and support roles.
+              </p>
+            </div>
+
+            {/* Raw Answer Access Control Verification Card */}
+            <div className="p-4 rounded-[12px] bg-[var(--surface2)] border border-[var(--line)] text-xs sm:text-sm space-y-1.5">
+              <p className="font-bold text-[var(--heading)]">
+                Zero Raw-Answer Staff Exposure Check:
+              </p>
+              <p className="text-[var(--muted)]">
+                {authorizeRawAnswerAccess('admin_support').reason}
+              </p>
+            </div>
+
+            {/* Pilot Item Bank Table */}
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
+              <table className="w-full border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
+                    <th className="p-3.5 font-bold">Item ID</th>
+                    <th className="p-3.5 font-bold">Module &amp; Prompt</th>
+                    <th className="p-3.5 font-bold">Format &amp; Construct</th>
+                    <th className="p-3.5 font-bold">Stage &amp; Scope</th>
+                    <th className="p-3.5 font-bold">Validation Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ASSESSMENT_QUESTIONS.map((q) => (
+                    <tr key={q.id} className="border-t border-[var(--line)]">
+                      <td className="p-3.5 font-bold text-[var(--heading)] tabular-nums whitespace-nowrap">
+                        {q.id} (#{q.questionNumber})
+                      </td>
+                      <td className="p-3.5">
+                        <span className="font-semibold text-[var(--heading)] block">
+                          {q.module}
+                        </span>
+                        <span className="text-xs text-[var(--muted)]">{q.prompt}</span>
+                      </td>
+                      <td className="p-3.5 text-xs">
+                        <span className="font-semibold text-[var(--heading)] block">
+                          {q.formatType ?? 'direct_preference'}
+                        </span>
+                        <span className="text-[var(--muted)]">{q.constructId ?? '—'}</span>
+                      </td>
+                      <td className="p-3.5 text-xs">
+                        <span className="font-semibold text-[var(--heading)] block">
+                          Stage {q.stage ?? 1}
+                        </span>
+                        <span className="text-[var(--muted)]">
+                          {q.applicableIntentions.join(', ')}
+                        </span>
+                      </td>
+                      <td className="p-3.5 text-xs font-bold text-[var(--ochre-text)] whitespace-nowrap">
+                        {q.validationStatus ?? 'ORIGINAL / UNVALIDATED'}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {auditLog.map((entry) => (
-                      <tr key={entry.id} className="border-t border-[var(--line)]">
-                        <td className="p-3.5 text-[var(--muted)] tabular-nums whitespace-nowrap">
-                          {entry.timestamp}
-                        </td>
-                        <td className="p-3.5 font-semibold text-[var(--heading)]">
-                          {entry.actor}
-                        </td>
-                        <td className="p-3.5">{entry.action}</td>
-                        <td className="p-3.5 font-bold text-[var(--heading)] tabular-nums">
-                          {entry.target}
-                        </td>
-                        <td className="p-3.5 text-[var(--muted)]">{entry.detail}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Sample Minimal Quality Events (Zero Raw Answers) */}
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-5 space-y-3 text-xs sm:text-sm">
+              <h2 className="text-base font-bold text-[var(--heading)]">
+                Privacy-Preserving Response Quality Events (No Raw Answers)
+              </h2>
+              <p className="text-[var(--muted)]">
+                Multi-signal quality checks never label a member dishonest or automatically suspend accounts. When ultra-fast straight-lining AND contradictory anchor pairs coincide, only a minimal metadata event is emitted:
+              </p>
+              <div className="p-3.5 rounded-[10px] bg-[var(--surface2)] border border-[var(--line)] font-mono text-xs text-[var(--text)]">
+                {JSON.stringify(
+                  {
+                    eventType: 'assessment_quality_review_recommended',
+                    sessionId: 'sess-sample-902',
+                    qualityState: 'low_confidence_validity',
+                    reasonCodes: ['ultra_fast_completion', 'uniform_display_position_pattern'],
+                    recommendedAction: 'invite_calm_reconfirmation_without_accusation',
+                    rawAnswersIncluded: false,
+                  },
+                  null,
+                  2
+                )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* TAB: AUDIT TRAIL */}
+        {activeTab === 'audit' && (
+          <div className="space-y-4">
+            <div>
+              <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                Staff interface · Sample chronological records
+              </p>
+              <h1
+                tabIndex={-1}
+                className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+              >
+                Sample audit trail.
+              </h1>
+              <p className="text-sm text-[var(--muted)] mt-1">
+                Actions you test in the Case Triage Drawer or Photo Review queue append a local preview entry below.
+              </p>
+            </div>
+
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
+              <table className="w-full border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
+                    <th className="p-3.5 font-bold">Timestamp</th>
+                    <th className="p-3.5 font-bold">Actor</th>
+                    <th className="p-3.5 font-bold">Action</th>
+                    <th className="p-3.5 font-bold">Target</th>
+                    <th className="p-3.5 font-bold">Detail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLog.map((entry) => (
+                    <tr key={entry.id} className="border-t border-[var(--line)]">
+                      <td className="p-3.5 text-[var(--muted)] tabular-nums whitespace-nowrap">
+                        {entry.timestamp}
+                      </td>
+                      <td className="p-3.5 font-semibold text-[var(--heading)]">
+                        {entry.actor}
+                      </td>
+                      <td className="p-3.5">{entry.action}</td>
+                      <td className="p-3.5 font-bold text-[var(--heading)] tabular-nums">
+                        {entry.target}
+                      </td>
+                      <td className="p-3.5 text-[var(--muted)]">{entry.detail}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* SLIDE-OVER CASE TRIAGE DRAWER */}
@@ -1005,6 +1214,6 @@ export const AdminShell: React.FC<AdminShellProps> = ({
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </AppShell>
   );
 };
