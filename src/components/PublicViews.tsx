@@ -23,7 +23,7 @@ import {
   SIGNAL_VOCABULARY_METADATA,
 } from '../data/mockFixtures';
 import { EditorialImage } from './EditorialImage';
-import { CoromandelThreadsHero } from './CoromandelThreadsHero';
+import { KithraHero } from './KithraHero';
 import { validateAuthForm } from '../utils/kithraLogic';
 
 interface PublicNavigateProps {
@@ -96,10 +96,10 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
 
   return (
     <div>
-      {/* 1. HERO WITH 2.5D COROMANDEL THREADS */}
-      <CoromandelThreadsHero
+      {/* 1. HERO — The Kithra Weave */}
+      <KithraHero
         manualReduceMotion={manualReduceMotion}
-        onPrimaryAction={() => onNavigatePath('/onboarding')}
+        onPrimaryAction={() => onNavigatePath('/join')}
         onSecondaryScrollToHowItWorks={() => scrollToSection('how-it-works')}
       />
 

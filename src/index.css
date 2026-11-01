@@ -19,6 +19,14 @@
   --marry: #823F4E;
   --danger: #9E3E28;
   --success: #2E6B49;
+  /* Kithra Weave artwork palette */
+  --weave-indigo: #1F2F46;
+  --weave-teal: #4F8A84;
+  --weave-clay: #C4876A;
+  --weave-ochre: #C9962E;
+  /* App shell */
+  --sidebar-expanded: 248px;
+  --sidebar-collapsed: 72px;
 }
 
 html.dark,
@@ -40,6 +48,10 @@ body.dark {
   --marry: #D48A9B;
   --danger: #F4BBA4;
   --success: #7AD19D;
+  --weave-indigo: #8EA4C8;
+  --weave-teal: #6FB0A9;
+  --weave-clay: #D9A083;
+  --weave-ochre: #D9A640;
 }
 
 * {
