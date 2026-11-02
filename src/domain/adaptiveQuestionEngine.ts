@@ -4,31 +4,38 @@
  * 
  * KITHRA ADAPTIVE QUESTION SELECTION ENGINE
  * 
- * Version: 2026.11-adaptive-v1.0 (Deterministic & Reproducible)
+ * Version: 2026.11-adaptive-v2.0 (Response-Aware, Triangulation-Linked & Fatigue-Aware)
  * 
  * Implements:
  * 1. Fixed Starter Battery (Items 1–5): Calm, non-threatening entry pacing.
  * 2. Stage A Essential Gate Prioritization: Automatically prioritizes non-negotiable
  *    commitment (Q38), children (Q50), and partner lifestyle requirements (Q63)
  *    when Dating or Matrimony intentions are selected.
- * 3. Construct Coverage & Uncertainty Reduction: Prioritizes construct layers with the lowest
- *    coverage count to build a balanced, multidimensional profile without clustering.
- * 4. Contextual Follow-Up: Pairs anchor items and validates consistency gracefully.
- * 5. Full Determinism: Reproducible given the same history and intentions.
+ * 3. Response-Aware Follow-Up & Triangulation: Discovers when a member's answer
+ *    calls for a contextual pair (e.g. confidentiality in friendship vs workplace)
+ *    to measure situational nuance rather than making assumptions.
+ * 4. Section-Focused Progression: Supports directed module completion (Naukri-style)
+ *    while preserving cross-construct uncertainty reduction.
+ * 5. Fatigue & Session Pacing Guardrails: Flags gentle break recommendations after
+ *    10 consecutive questions in a single sitting without penalizing readiness.
+ * 6. Explicit Skip Respect: Never badgers the user with questions they chose to skip.
+ * 7. Full Determinism: Reproducible given the same history, answers, and intentions.
  */
 
 import {
   AssessmentQuestion,
   ConstructLayerId,
   IntentionId,
+  ProfileSectionId,
   QuestionFormatType,
 } from '../types/kithra';
 import {
+  EXPANDED_PILOT_QUESTION_BANK,
   PILOT_60_QUESTION_BANK,
-  RESEARCH_PILOT_QUESTION_BANK,
 } from '../data/pilotQuestionBank';
+import { TRIANGULATION_CLUSTERS } from './triangulationEngine';
 
-export const ADAPTIVE_ENGINE_VERSION = '2026.11-adaptive-v1.0';
+export const ADAPTIVE_ENGINE_VERSION = '2026.11-adaptive-v2.0';
 
 /**
  * Fixed Starter Battery: Administered to all members in exact order (Items 1–5)
@@ -55,10 +62,22 @@ export const ESSENTIAL_GATE_QUESTION_IDS: readonly string[] = [
 export type AdaptiveSelectionReason =
   | 'starter_battery'
   | 'essential_boundary_gate'
+  | 'response_triangulation_pair'
   | 'construct_coverage_gap'
   | 'contextual_follow_up'
+  | 'section_progression'
   | 'stage_advancement'
   | 'bank_exhausted';
+
+export interface AdaptiveSelectionContext {
+  answeredQuestionIds: Iterable<string>;
+  memberAnswers?: Record<string, unknown>;
+  intentions?: readonly IntentionId[] | IntentionId[];
+  questionBank?: AssessmentQuestion[];
+  targetSectionId?: ProfileSectionId;
+  sessionAnswersCount?: number;
+  skippedQuestionIds?: Iterable<string>;
+}
 
 export interface AdaptiveSelectionResult {
   nextQuestion: AssessmentQuestion | null;
@@ -68,6 +87,9 @@ export interface AdaptiveSelectionResult {
   totalAnswered: number;
   coverageByConstruct: Record<string, number>;
   unansweredCount: number;
+  breakRecommended?: boolean;
+  breakAdvisory?: string;
+  activeClusterId?: string;
 }
 
 const CONSTRUCT_CANONICAL_ORDER: ConstructLayerId[] = [
@@ -96,40 +118,91 @@ const FORMAT_DISCRIMINATIVE_PRIORITY: Record<QuestionFormatType, number> = {
 };
 
 /**
- * Select the next adaptive question for a member given their current answered set
- * and active relationship intentions.
+ * Normalized helper to extract string/record values safely.
+ */
+function getAnswerOptionId(raw: unknown): string | null {
+  if (!raw) return null;
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object' && raw !== null) {
+    const rec = raw as Record<string, unknown>;
+    if (typeof rec.optionId === 'string') return rec.optionId;
+    if (typeof rec.semanticId === 'string') return rec.semanticId;
+  }
+  return null;
+}
+
+/**
+ * Select the next adaptive question for a member given their current answered set,
+ * actual responses, active intentions, and session state.
  */
 export function selectNextAdaptiveQuestion(
-  answeredQuestionIds: Iterable<string>,
-  intentions: IntentionId[] = ['friendship'],
-  questionBank: AssessmentQuestion[] = RESEARCH_PILOT_QUESTION_BANK
+  contextOrAnsweredIds: Iterable<string> | AdaptiveSelectionContext,
+  maybeIntentions?: IntentionId[],
+  maybeQuestionBank?: AssessmentQuestion[]
 ): AdaptiveSelectionResult {
+  let answeredQuestionIds: Iterable<string>;
+  let memberAnswers: Record<string, unknown> = {};
+  let intentions: readonly IntentionId[] = ['friendship'];
+  let questionBank: AssessmentQuestion[] = EXPANDED_PILOT_QUESTION_BANK;
+  let targetSectionId: ProfileSectionId | undefined;
+  let sessionAnswersCount = 0;
+  let skippedSet = new Set<string>();
+
+  if (
+    contextOrAnsweredIds &&
+    typeof contextOrAnsweredIds === 'object' &&
+    'answeredQuestionIds' in contextOrAnsweredIds
+  ) {
+    const ctx = contextOrAnsweredIds as AdaptiveSelectionContext;
+    answeredQuestionIds = ctx.answeredQuestionIds;
+    memberAnswers = ctx.memberAnswers ?? {};
+    intentions = ctx.intentions ?? ['friendship'];
+    questionBank = ctx.questionBank ?? EXPANDED_PILOT_QUESTION_BANK;
+    targetSectionId = ctx.targetSectionId;
+    sessionAnswersCount = ctx.sessionAnswersCount ?? 0;
+    if (ctx.skippedQuestionIds) {
+      skippedSet = new Set(ctx.skippedQuestionIds);
+    }
+  } else {
+    answeredQuestionIds = contextOrAnsweredIds as Iterable<string>;
+    intentions = maybeIntentions ?? ['friendship'];
+    questionBank = maybeQuestionBank ?? EXPANDED_PILOT_QUESTION_BANK;
+  }
+
   const answeredSet = new Set(answeredQuestionIds);
   const totalAnswered = answeredSet.size;
 
-  // 1. Check Starter Battery (Questions 1–5)
+  // Fatigue guardrail: recommend break after 10 questions in current active sitting
+  const breakRecommended = sessionAnswersCount >= 10;
+  const breakAdvisory = breakRecommended
+    ? "You've answered 10 thoughtful questions in this session. Taking a break is completely okay and your answers are saved."
+    : undefined;
+
+  // 1. Check Starter Battery (Questions 1–5) in exact order
   for (const starterId of STARTER_BATTERY_QUESTION_IDS) {
-    if (!answeredSet.has(starterId)) {
+    if (!answeredSet.has(starterId) && !skippedSet.has(starterId)) {
       const q = questionBank.find((item) => item.id === starterId);
       if (q) {
         return {
           nextQuestion: q,
           selectionReason: 'starter_battery',
-          rationale: `Starter Battery item ${q.questionNumber} of 5 (${q.facetId ?? q.id}) administered for consistent initial calibration.`,
+          rationale: `Starter Battery item ${q.questionNumber} of 5 (${q.facetId ?? q.id}) administered for calm, consistent initial onboarding.`,
           engineVersion: ADAPTIVE_ENGINE_VERSION,
           totalAnswered,
           coverageByConstruct: computeConstructCoverage(answeredSet, questionBank),
           unansweredCount: questionBank.length - totalAnswered,
+          breakRecommended,
+          breakAdvisory,
         };
       }
     }
   }
 
-  // 2. Filter Candidate Pool: Only applicable intentions & not yet answered
+  // 2. Filter Candidate Pool: Active intention match & not answered or skipped
   const intentionSet = new Set(intentions);
   const eligibleCandidates = questionBank.filter((q) => {
     if (answeredSet.has(q.id)) return false;
-    // Check if applicable to any of member's selected intentions
+    if (skippedSet.has(q.id)) return false;
     return q.applicableIntentions.some((intent) => intentionSet.has(intent));
   });
 
@@ -137,19 +210,21 @@ export function selectNextAdaptiveQuestion(
     return {
       nextQuestion: null,
       selectionReason: 'bank_exhausted',
-      rationale: 'All applicable questions for your selected intentions have been answered.',
+      rationale: 'All applicable questions for your selected intentions have been answered or skipped.',
       engineVersion: ADAPTIVE_ENGINE_VERSION,
       totalAnswered,
       coverageByConstruct: computeConstructCoverage(answeredSet, questionBank),
       unansweredCount: 0,
+      breakRecommended,
+      breakAdvisory,
     };
   }
 
-  // 3. Essential Gates for Romantic Intentions (Dating & Matrimony)
+  // 3. Stage A Essential Gates for Romantic Intentions (Dating & Matrimony)
   const isRomantic = intentionSet.has('dating') || intentionSet.has('matrimony');
   if (isRomantic) {
     for (const gateId of ESSENTIAL_GATE_QUESTION_IDS) {
-      if (!answeredSet.has(gateId)) {
+      if (!answeredSet.has(gateId) && !skippedSet.has(gateId)) {
         const gateQuestion = eligibleCandidates.find((q) => q.id === gateId);
         if (gateQuestion) {
           return {
@@ -160,18 +235,93 @@ export function selectNextAdaptiveQuestion(
             totalAnswered,
             coverageByConstruct: computeConstructCoverage(answeredSet, questionBank),
             unansweredCount: eligibleCandidates.length,
+            breakRecommended,
+            breakAdvisory,
           };
         }
       }
     }
   }
 
-  // 4. Construct Coverage & Uncertainty Optimization
+  // 4. Response-Aware Follow-Up & Triangulation Pairing
+  // If the member answered an item that has a pairedFollowUpId or belongs to a cluster
+  // where a contextual counterpart is unanswered, trigger that pair next.
+  for (const answeredId of answeredSet) {
+    const rawAnswer = memberAnswers[answeredId];
+    if (!rawAnswer) continue;
+
+    const baseQuestion = questionBank.find((q) => q.id === answeredId);
+    if (!baseQuestion) continue;
+
+    // Check explicit pairedFollowUpIds
+    if (baseQuestion.pairedFollowUpIds && baseQuestion.pairedFollowUpIds.length > 0) {
+      for (const followUpId of baseQuestion.pairedFollowUpIds) {
+        if (!answeredSet.has(followUpId) && !skippedSet.has(followUpId)) {
+          const followUpQ = eligibleCandidates.find((q) => q.id === followUpId);
+          if (followUpQ) {
+            return {
+              nextQuestion: followUpQ,
+              selectionReason: 'response_triangulation_pair',
+              rationale: `Contextual follow-up triggered by response to ${baseQuestion.id}: testing situational variation in ${followUpQ.facetId ?? followUpQ.id}.`,
+              engineVersion: ADAPTIVE_ENGINE_VERSION,
+              totalAnswered,
+              coverageByConstruct: computeConstructCoverage(answeredSet, questionBank),
+              unansweredCount: eligibleCandidates.length,
+              breakRecommended,
+              breakAdvisory,
+              activeClusterId: followUpQ.triangulationClusterId,
+            };
+          }
+        }
+      }
+    }
+
+    // Check cluster counterparts if baseQuestion has a triangulationClusterId
+    if (baseQuestion.triangulationClusterId) {
+      const cluster = TRIANGULATION_CLUSTERS.find((c) => c.id === baseQuestion.triangulationClusterId);
+      if (cluster) {
+        // Count how many answered in this cluster
+        const answeredInCluster = cluster.questionIds.filter((qId) => answeredSet.has(qId));
+        if (answeredInCluster.length === 1) {
+          // Exactly 1 answered in this cluster -> pick the second item to establish triangulation
+          const secondId = cluster.questionIds.find((qId) => !answeredSet.has(qId) && !skippedSet.has(qId));
+          if (secondId) {
+            const counterpartQ = eligibleCandidates.find((q) => q.id === secondId);
+            if (counterpartQ) {
+              return {
+                nextQuestion: counterpartQ,
+                selectionReason: 'response_triangulation_pair',
+                rationale: `Triangulation companion item for cluster '${cluster.name}': measuring situational consistency vs adaptive nuance.`,
+                engineVersion: ADAPTIVE_ENGINE_VERSION,
+                totalAnswered,
+                coverageByConstruct: computeConstructCoverage(answeredSet, questionBank),
+                unansweredCount: eligibleCandidates.length,
+                breakRecommended,
+                breakAdvisory,
+                activeClusterId: cluster.id,
+              };
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 5. Target Section Focus (if member chose a specific section in Naukri-style dashboard)
+  let candidatePool = eligibleCandidates;
+  if (targetSectionId) {
+    const sectionCandidates = eligibleCandidates.filter((q) => q.sectionId === targetSectionId);
+    if (sectionCandidates.length > 0) {
+      candidatePool = sectionCandidates;
+    }
+  }
+
+  // 6. Construct Coverage & Uncertainty Optimization
   const coverage = computeConstructCoverage(answeredSet, questionBank);
 
-  // Group eligible candidate questions by constructId
+  // Group candidate questions by constructId
   const candidatesByConstruct = new Map<ConstructLayerId, AssessmentQuestion[]>();
-  for (const q of eligibleCandidates) {
+  for (const q of candidatePool) {
     const cId = (q.constructId ?? 'communication') as ConstructLayerId;
     if (!candidatesByConstruct.has(cId)) {
       candidatesByConstruct.set(cId, []);
@@ -193,17 +343,15 @@ export function selectNextAdaptiveQuestion(
     }
   }
 
-  // Fallback to any available construct if canonical list doesn't match
   if (!targetConstruct && candidatesByConstruct.size > 0) {
     targetConstruct = candidatesByConstruct.keys().next().value ?? null;
   }
 
   const constructCandidates = targetConstruct
-    ? candidatesByConstruct.get(targetConstruct) ?? eligibleCandidates
-    : eligibleCandidates;
+    ? candidatesByConstruct.get(targetConstruct) ?? candidatePool
+    : candidatePool;
 
-  // 5. Item Selection within target construct:
-  // Sort deterministically by:
+  // 7. Deterministic Sort:
   // - Stage (lowest stage first)
   // - Discriminative Format priority
   // - Question Number (lowest first)
@@ -223,12 +371,16 @@ export function selectNextAdaptiveQuestion(
 
   return {
     nextQuestion,
-    selectionReason: 'construct_coverage_gap',
-    rationale: `Selected from construct '${nextQuestion.constructId}' (current coverage: ${minCoverage} answered) to balance multidimensional measurement accuracy.`,
+    selectionReason: targetSectionId ? 'section_progression' : 'construct_coverage_gap',
+    rationale: targetSectionId
+      ? `Selected item from section '${targetSectionId}' to complete chosen profile module.`
+      : `Selected from construct '${nextQuestion.constructId}' (current coverage: ${minCoverage} answered) to balance multidimensional measurement accuracy.`,
     engineVersion: ADAPTIVE_ENGINE_VERSION,
     totalAnswered,
     coverageByConstruct: coverage,
     unansweredCount: eligibleCandidates.length,
+    breakRecommended,
+    breakAdvisory,
   };
 }
 
@@ -252,4 +404,3 @@ export function computeConstructCoverage(
 
   return coverage;
 }
-

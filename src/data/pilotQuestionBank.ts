@@ -4,6 +4,10 @@ import {
   IntentionId,
   QuestionFormatType,
 } from '../types/kithra';
+import {
+  EXPANDED_CANDIDATE_ITEMS,
+  PROPOSED_240_ITEM_RESEARCH_SPEC,
+} from './expandedCandidateBank';
 
 export interface QuestionAuditIssue {
   questionId: string;
@@ -2885,6 +2889,7 @@ export const PILOT_60_QUESTION_BANK: AssessmentQuestion[] = RAW_60_ITEMS.map(
     stage,
     reverseKeyed: reverseKeyed ?? false,
     validationStatus: 'ORIGINAL / UNVALIDATED',
+    isApprovedForMembers: true,
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt,
     translations: { ta, hi },
@@ -2928,6 +2933,7 @@ export const LIFESTYLE_SMOKING_VAPING_ITEMS: AssessmentQuestion[] = [
     stage: 1,
     reverseKeyed: false,
     validationStatus: 'ORIGINAL / UNVALIDATED',
+    isApprovedForMembers: true,
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'How would you describe your personal lifestyle regarding smoking or vaping?',
     translations: {
@@ -3016,6 +3022,7 @@ export const LIFESTYLE_SMOKING_VAPING_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'ORIGINAL / UNVALIDATED',
+    isApprovedForMembers: true,
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'What is your comfort level being around smoke or aerosol in shared spaces?',
     translations: {
@@ -3092,6 +3099,7 @@ export const LIFESTYLE_SMOKING_VAPING_ITEMS: AssessmentQuestion[] = [
     stage: 1,
     reverseKeyed: false,
     validationStatus: 'ORIGINAL / UNVALIDATED',
+    isApprovedForMembers: true,
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: "Do you have a personal preference or requirement regarding a partner's smoking habits in Dating or Matrimony?",
     translations: {
@@ -3160,6 +3168,13 @@ export const RESEARCH_PILOT_QUESTION_BANK: AssessmentQuestion[] = [
   ...PILOT_60_QUESTION_BANK,
   ...LIFESTYLE_SMOKING_VAPING_ITEMS,
 ];
+
+export const EXPANDED_PILOT_QUESTION_BANK: AssessmentQuestion[] = [
+  ...RESEARCH_PILOT_QUESTION_BANK,
+  ...EXPANDED_CANDIDATE_ITEMS,
+];
+
+export { EXPANDED_CANDIDATE_ITEMS, PROPOSED_240_ITEM_RESEARCH_SPEC };
 
 /**
  * TASK 4: Programmatic Verification & Psychometric Audit of the 60-Question Pilot Bank.

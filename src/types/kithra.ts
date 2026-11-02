@@ -411,6 +411,55 @@ export interface AssessmentQuestion {
   measurementLimitations?: string;
   targetFacetName?: string;
   optionTranslationsReviewStatus?: 'machine_translation_pending_human_review' | 'human_reviewed';
+  /** Admin publication workflow: unapproved candidate items are never administered to members */
+  isApprovedForMembers?: boolean;
+  /** Follow-up item links for adaptive response-aware branching and contextual triangulation */
+  pairedFollowUpIds?: string[];
+  /** Expected participant time burden in milliseconds (e.g. 15000) */
+  completionBurdenMs?: number;
+  /** Notes on cultural suitability and regional nuances (South Asian / Indian urban contexts) */
+  culturalSuitabilityNotes?: string;
+  /** Progressive profile section identifier */
+  sectionId?: ProfileSectionId;
+  /** Cluster identifier for multi-scenario psychological triangulation */
+  triangulationClusterId?: string;
+}
+
+export type ProfileSectionId =
+  | 'basic_profile'
+  | 'relationship_intentions'
+  | 'communication_style'
+  | 'everyday_values'
+  | 'social_energy'
+  | 'emotional_repair'
+  | 'independence_finances'
+  | 'lifestyle_health'
+  | 'relational_boundaries'
+  | 'family_future';
+
+export interface ProfileSectionStatus {
+  sectionId: ProfileSectionId;
+  title: string;
+  shortLabel: string;
+  category: 'core_account' | 'essential_preferences' | 'personality_traits' | 'deeper_reflection';
+  status: 'completed' | 'in_progress' | 'not_started' | 'optional_available';
+  answeredCount: number;
+  targetCount: number;
+  estimatedMinutesRemaining: number;
+  description: string;
+  privacyBadge: string;
+  constructId?: ConstructLayerId;
+  questionIds: string[];
+}
+
+export interface ProfileReadinessBreakdown {
+  accountProfileReadiness: number;
+  relationshipPreferenceReadiness: number;
+  psychologicalAssessmentCoverage: number;
+  optionalAssessmentDepth: number;
+  isReadyForDiscovery: boolean;
+  headlineSummary: string;
+  nextRecommendedSection: ProfileSectionId;
 }
 
 export interface MessageItem {

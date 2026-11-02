@@ -12,7 +12,10 @@ import {
   RouteInventoryItem,
   StaffCase,
 } from '../types/kithra';
-import { PILOT_60_QUESTION_BANK } from './pilotQuestionBank';
+import {
+  EXPANDED_PILOT_QUESTION_BANK,
+  PILOT_60_QUESTION_BANK,
+} from './pilotQuestionBank';
 
 export const INTENTION_METADATA: Record<
   IntentionId,
@@ -725,7 +728,7 @@ export const INITIAL_MEMBER_PHOTOS: MemberPhoto[] = [
   },
 ];
 
-export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = PILOT_60_QUESTION_BANK;
+export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = EXPANDED_PILOT_QUESTION_BANK;
 
 export const INITIAL_CONVERSATIONS: ConversationThread[] = [
   {

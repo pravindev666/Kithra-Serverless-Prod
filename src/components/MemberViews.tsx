@@ -24,6 +24,11 @@ import {
   User,
   Users,
   X,
+  AlertCircle,
+  Check,
+  Clock,
+  Coffee,
+  Sparkles,
 } from 'lucide-react';
 import { AppShell, ShellNavGroup, ShellNavItem } from './AppShell';
 import {
@@ -35,6 +40,9 @@ import {
   MemberPhoto,
   MemberProfile,
   MemberTab,
+  ProfileReadinessBreakdown,
+  ProfileSectionId,
+  ProfileSectionStatus,
   RelationshipSignalKind,
   SimilarityPresetId,
 } from '../types/kithra';
@@ -156,6 +164,10 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   // Assessments states
   const [activeQuestionIndex, setActiveQuestionIndex] = useState<number>(0);
   const [selectedThemeId, setSelectedThemeId] = useState<string>('all');
+  const [selectedSectionId, setSelectedSectionId] = useState<ProfileSectionId | 'all'>('all');
+  const [sessionAnsweredCount, setSessionAnsweredCount] = useState<number>(0);
+  const [showBreakModal, setShowBreakModal] = useState<boolean>(false);
+  const [showTriangulationModal, setShowTriangulationModal] = useState<boolean>(false);
   const [simulatedStageAnsweredCount, setSimulatedStageAnsweredCount] = useState<number>(5);
   const [questionLanguage, setQuestionLanguage] = useState<'en' | 'ta' | 'hi'>('en');
   const [shuffleOptionsEnabled, setShuffleOptionsEnabled] = useState<boolean>(false);
@@ -256,7 +268,15 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   const selectedPhoto = photos.find((p) => p.id === selectedPhotoId) ?? photos[0];
   const assessmentProgress = computeAssessmentProgress(questions, assessmentAnswers);
   const totalBankCompleted = assessmentProgress.answeredCount;
-  const currentQuestion = questions[activeQuestionIndex] ?? questions[0];
+  const visibleQuestions =
+    selectedSectionId === 'all'
+      ? questions
+      : questions.filter((q) => q.sectionId === selectedSectionId);
+  const currentQuestion =
+    visibleQuestions[activeQuestionIndex] ??
+    visibleQuestions[0] ??
+    questions[activeQuestionIndex] ??
+    questions[0];
 
   const matchTargetProfile =
     profiles.find((p) => p.id === matchMemberId) ?? profiles[0];
@@ -2076,6 +2096,180 @@ export const MemberShell: React.FC<MemberShellProps> = ({
               </div>
             </div>
 
+            {/* Naukri-Style Progressive Profile Readiness & Completion Dashboard */}
+            {(() => {
+              const activeMemberKey = activeSelfMember?.id ?? 'member-kavya';
+              const readiness = memberStore.getMemberProfileReadiness(activeMemberKey, questions);
+              const sections = memberStore.getMemberProfileSectionsStatus(activeMemberKey, questions);
+              const triangulations = memberStore.getMemberTriangulationResults(activeMemberKey, questions);
+
+              return (
+                <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[16px] p-6 space-y-6">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[var(--line)]">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="uppercase tracking-[2px] text-xs font-bold text-[var(--ochre-text)]">
+                          Profile Readiness &amp; Progressive Completion
+                        </span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${readiness.isReadyForDiscovery
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                          : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                          }`}>
+                          {readiness.isReadyForDiscovery ? '✓ Ready for Discovery' : 'Setup in Progress'}
+                        </span>
+                      </div>
+                      <h2 className="font-serif-editorial text-[28px] sm:text-[32px] font-semibold text-[var(--heading)] mt-1">
+                        Your Profile Completion Journey
+                      </h2>
+                      <p className="text-sm text-[var(--muted)] mt-0.5">
+                        {readiness.headlineSummary}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowTriangulationModal(true)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[9px] border border-[var(--line)] bg-[var(--surface2)] hover:bg-[var(--surface2)]/80 text-xs font-bold text-[var(--heading)] cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-[var(--ochre-text)]" />
+                        Triangulation Insights ({Object.keys(triangulations).length} Clusters)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 4 Readiness Progress Bars */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="p-4 rounded-[12px] bg-[var(--bg)] border border-[var(--line)] space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-[var(--heading)]">Basic Profile</span>
+                        <span className="tabular-nums text-[var(--ochre-text)]">{readiness.accountProfileReadiness}%</span>
+                      </div>
+                      <div className="w-full bg-[var(--surface2)] h-2 rounded-full overflow-hidden">
+                        <div className="bg-[var(--primary)] h-full transition-all duration-300" style={{ width: `${readiness.accountProfileReadiness}%` }} />
+                      </div>
+                      <p className="text-[11px] text-[var(--muted)] leading-tight">
+                        Name, city, bio, intentions, and photo. Reach 100% without 240 questions.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-[12px] bg-[var(--bg)] border border-[var(--line)] space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-[var(--heading)]">Relationship Gates</span>
+                        <span className="tabular-nums text-[var(--ochre-text)]">{readiness.relationshipPreferenceReadiness}%</span>
+                      </div>
+                      <div className="w-full bg-[var(--surface2)] h-2 rounded-full overflow-hidden">
+                        <div className="bg-[var(--ochre)] h-full transition-all duration-300" style={{ width: `${readiness.relationshipPreferenceReadiness}%` }} />
+                      </div>
+                      <p className="text-[11px] text-[var(--muted)] leading-tight">
+                        Monogamy, family plans, and non-negotiables for safe mutual discovery.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-[12px] bg-[var(--bg)] border border-[var(--line)] space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-[var(--heading)]">Core Personality</span>
+                        <span className="tabular-nums text-[var(--ochre-text)]">{readiness.psychologicalAssessmentCoverage}%</span>
+                      </div>
+                      <div className="w-full bg-[var(--surface2)] h-2 rounded-full overflow-hidden">
+                        <div className="bg-teal-600 h-full transition-all duration-300" style={{ width: `${readiness.psychologicalAssessmentCoverage}%` }} />
+                      </div>
+                      <p className="text-[11px] text-[var(--muted)] leading-tight">
+                        Communication pace, repair style, values, and social energy battery.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-[12px] bg-[var(--bg)] border border-[var(--line)] space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-[var(--heading)]">Optional Depth</span>
+                        <span className="tabular-nums text-[var(--ochre-text)]">{readiness.optionalAssessmentDepth}%</span>
+                      </div>
+                      <div className="w-full bg-[var(--surface2)] h-2 rounded-full overflow-hidden">
+                        <div className="bg-purple-600 h-full transition-all duration-300" style={{ width: `${readiness.optionalAssessmentDepth}%` }} />
+                      </div>
+                      <p className="text-[11px] text-[var(--muted)] leading-tight">
+                        Reflective scenarios and lifelong visions. Never penalizes you if skipped.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 10 Progressive Profile Modules (Naukri-Style) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--heading)]">
+                        Structured Profile Modules (10 Discrete Sections)
+                      </h3>
+                      {selectedSectionId !== 'all' && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSectionId('all')}
+                          className="text-xs font-bold text-[var(--ochre-text)] hover:underline cursor-pointer"
+                        >
+                          Show all questions
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                      {sections.map((sec) => {
+                        const isSelected = selectedSectionId === sec.sectionId;
+                        return (
+                          <button
+                            key={sec.sectionId}
+                            type="button"
+                            onClick={() => {
+                              setSelectedSectionId(isSelected ? 'all' : sec.sectionId);
+                              if (sec.questionIds.length > 0) {
+                                const firstQIdx = questions.findIndex((q) => sec.questionIds.includes(q.id));
+                                if (firstQIdx >= 0) setActiveQuestionIndex(firstQIdx);
+                              }
+                            }}
+                            className={`text-left p-3.5 rounded-[12px] border transition-colors cursor-pointer flex flex-col justify-between ${isSelected
+                              ? 'bg-[var(--surface2)] border-[var(--heading)] ring-1 ring-[var(--heading)]'
+                              : 'bg-[var(--bg)] border-[var(--line)] hover:bg-[var(--surface2)]/50'
+                              }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <span className="text-[11px] font-bold text-[var(--muted)]">
+                                  {sec.shortLabel}
+                                </span>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${sec.status === 'completed'
+                                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                    : sec.status === 'in_progress'
+                                      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                                      : sec.status === 'optional_available'
+                                        ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
+                                        : 'bg-[var(--surface2)] text-[var(--muted)]'
+                                  }`}>
+                                  {sec.status === 'completed' ? '✓ Done' : sec.status === 'in_progress' ? 'In progress' : sec.status === 'optional_available' ? 'Optional' : 'Start'}
+                                </span>
+                              </div>
+                              <h4 className="font-bold text-xs text-[var(--heading)] leading-snug line-clamp-1">
+                                {sec.title}
+                              </h4>
+                              <p className="text-[11px] text-[var(--muted)] mt-1 line-clamp-2">
+                                {sec.description}
+                              </p>
+                            </div>
+
+                            <div className="mt-3 pt-2 border-t border-[var(--line)] flex items-center justify-between text-[10px] text-[var(--muted)]">
+                              <span className="font-bold tabular-nums">
+                                {sec.answeredCount}/{sec.targetCount}
+                              </span>
+                              <span className="shrink-0">
+                                ~{sec.estimatedMinutesRemaining}m · {sec.privacyBadge.includes('Public') ? '🌐 Public' : '🔒 Private'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Multi-Stage Provisional Pattern Reflection Banner */}
             {(() => {
               const viewerConstructs = activeSelfMember?.constructProfile ?? [];
@@ -2269,6 +2463,30 @@ export const MemberShell: React.FC<MemberShellProps> = ({
               </div>
             </div>
 
+            {/* Fatigue Guardrail Notice */}
+            {sessionAnsweredCount >= 10 && (
+              <div className="p-4 rounded-[14px] bg-[var(--surface2)] border border-[var(--ochre-line)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Coffee className="w-5 h-5 text-[var(--ochre-text)] shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-bold text-[var(--heading)]">
+                      Pacing Guardrail: Take a mindful break
+                    </h4>
+                    <p className="text-xs text-[var(--muted)]">
+                      You have answered {sessionAnsweredCount} questions in this sitting. There is no rush—your progress is saved in real time.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBreakModal(true)}
+                  className="px-4 py-2 rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] text-xs font-bold cursor-pointer shrink-0"
+                >
+                  Take a break
+                </button>
+              </div>
+            )}
+
             {currentQuestion && (
               <AnimatePresence mode="wait">
                 <motion.div
@@ -2336,15 +2554,16 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                         >
                           <div className="flex items-center justify-between gap-3">
                             <span className="text-base font-bold text-[var(--heading)]">
-                              {opt.label}
+                              {questionLanguage === 'ta' && opt.labelTa
+                                ? opt.labelTa
+                                : questionLanguage === 'hi' && opt.labelHi
+                                  ? opt.labelHi
+                                  : opt.label}
                             </span>
                             <span className="text-xs font-bold text-[var(--ochre-text)] shrink-0">
                               {isChosen ? '✓ Saved' : 'Select'}
                             </span>
                           </div>
-                          <p className="text-sm text-[var(--muted)] mt-1">
-                            {opt.reflection} · <span className="italic">{opt.signalEffect}</span>
-                          </p>
                         </button>
                       );
                     })}
@@ -2368,35 +2587,170 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                       ← Previous question
                     </button>
 
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex flex-wrap items-center gap-2.5">
                       <button
                         type="button"
-                        onClick={() =>
-                          showToast(
-                            'Progress saved locally. Partial completion is active—return whenever you like.'
-                          )
-                        }
+                        onClick={() => {
+                          const activeMemberKey = activeSelfMember?.id ?? 'member-kavya';
+                          memberStore.skipAssessmentQuestion(activeMemberKey, currentQuestion.id);
+                          showToast('Question skipped. This will never penalize your profile readiness.');
+                          if (activeQuestionIndex < questions.length - 1) {
+                            setActiveQuestionIndex((i) => i + 1);
+                          }
+                        }}
+                        className="rounded-[9px] border border-[var(--line)] text-[var(--muted)] hover:text-[var(--heading)] px-3.5 py-2.5 text-xs font-semibold cursor-pointer min-h-[42px]"
+                      >
+                        Skip / Prefer not to say
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowBreakModal(true)}
                         className="rounded-[9px] border border-[var(--line)] text-[var(--heading)] hover:bg-[var(--surface2)] px-4 py-2.5 text-sm font-bold cursor-pointer min-h-[42px]"
                       >
-                        Save &amp; return later
+                        Take a break · Save &amp; return
                       </button>
                       <button
                         type="button"
-                        onClick={() =>
-                          activeQuestionIndex < questions.length - 1
-                            ? setActiveQuestionIndex((i) => i + 1)
-                            : showToast('Sample question set saved to your local preview profile.')
-                        }
+                        onClick={() => {
+                          if (activeQuestionIndex < questions.length - 1) {
+                            setActiveQuestionIndex((i) => i + 1);
+                          } else {
+                            showToast('Assessment module complete. All responses saved.');
+                          }
+                        }}
                         className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] px-4 py-2.5 text-sm font-bold cursor-pointer min-h-[42px]"
                       >
                         {activeQuestionIndex < questions.length - 1
                           ? 'Next question →'
-                          : 'Complete sample set'}
+                          : 'Complete module'}
                       </button>
                     </div>
                   </div>
                 </motion.div>
               </AnimatePresence>
+            )}
+
+            {/* Modal: Mindful Break Confirmation */}
+            {showBreakModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[18px] max-w-md w-full p-6 shadow-2xl space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-full bg-[var(--surface2)] text-[var(--ochre-text)]">
+                      <Coffee className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif-editorial text-[22px] font-semibold text-[var(--heading)]">
+                        Rest Well · Answers Saved
+                      </h3>
+                      <p className="text-xs text-[var(--muted)]">
+                        No time pressure or penalties in Kithra.
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-[var(--text)] leading-relaxed">
+                    Every response you chose has been saved automatically to your profile. You can close this window, browse other members, or return tomorrow. Your readiness will remain exactly where you left it.
+                  </p>
+
+                  <div className="pt-2 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowBreakModal(false)}
+                      className="px-5 py-2.5 rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] text-sm font-bold cursor-pointer"
+                    >
+                      Understood · Close &amp; resume later
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal: Psychological Triangulation & Nuance Explorer */}
+            {showTriangulationModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+                <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[18px] max-w-2xl w-full p-6 shadow-2xl space-y-5 my-8 max-h-[85vh] overflow-y-auto">
+                  <div className="flex items-start justify-between gap-4 pb-3 border-b border-[var(--line)]">
+                    <div>
+                      <span className="uppercase tracking-[2px] text-xs font-bold text-[var(--ochre-text)]">
+                        Scientific Multi-Scenario Triangulation
+                      </span>
+                      <h3 className="font-serif-editorial text-[26px] font-semibold text-[var(--heading)] mt-0.5">
+                        Situational Nuance Across Spheres
+                      </h3>
+                      <p className="text-xs text-[var(--muted)] mt-1">
+                        Distinguishes consistent stances from healthy situational variation (e.g. workplace vs close friendship). Never a lie detector.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowTriangulationModal(false)}
+                      className="p-1.5 rounded-full hover:bg-[var(--surface2)] text-[var(--muted)] hover:text-[var(--heading)] cursor-pointer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {(() => {
+                      const activeMemberKey = activeSelfMember?.id ?? 'member-kavya';
+                      const triangulations = memberStore.getMemberTriangulationResults(activeMemberKey, questions);
+                      return Object.values(triangulations).map((res) => (
+                        <div
+                          key={res.clusterId}
+                          className="p-4 rounded-[12px] bg-[var(--bg)] border border-[var(--line)] space-y-2"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h4 className="font-bold text-sm text-[var(--heading)]">
+                              {res.clusterName}
+                            </h4>
+                            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${res.classification === 'consistent_stance'
+                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                                : res.classification === 'plausible_situational_variation'
+                                  ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                                  : res.classification === 'clarification_needed'
+                                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                    : 'bg-[var(--surface2)] text-[var(--muted)] border border-[var(--line)]'
+                              }`}>
+                              {res.classification === 'consistent_stance'
+                                ? 'Consistent Stance'
+                                : res.classification === 'plausible_situational_variation'
+                                  ? 'Situational Nuance'
+                                  : res.classification === 'clarification_needed'
+                                    ? 'Clarification Opportunity'
+                                    : 'Awaiting Context'}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-[var(--text)] leading-relaxed">
+                            {res.userFacingExplanation}
+                          </p>
+
+                          <div className="pt-1.5 border-t border-[var(--line)]/50 flex flex-wrap items-center justify-between text-[10px] text-[var(--muted)] gap-2">
+                            <span>
+                              Answered: {res.answeredCount}/{res.totalClusterQuestions} scenarios
+                              {typeof res.spread === 'number' ? ` · Spread: ${res.spread} pts` : ''}
+                            </span>
+                            <span className="italic truncate max-w-xs">
+                              {res.scientificReference}
+                            </span>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowTriangulationModal(false)}
+                      className="px-5 py-2.5 rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] text-xs font-bold cursor-pointer"
+                    >
+                      Close explorer
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         )}

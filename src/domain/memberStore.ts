@@ -10,20 +10,33 @@
  */
 
 import {
+  AssessmentQuestion,
   ConstructVectorPoint,
   IntentionId,
   MemberProfile,
   PartnerSmokingRequirement,
+  ProfileReadinessBreakdown,
+  ProfileSectionId,
+  ProfileSectionStatus,
   RelationshipSignalKind,
   SmokingVapingProfile,
 } from '../types/kithra';
 import {
+  EXPANDED_PILOT_QUESTION_BANK,
   PILOT_60_QUESTION_BANK,
   RESEARCH_PILOT_QUESTION_BANK,
 } from '../data/pilotQuestionBank';
 import {
   selectNextAdaptiveQuestion,
 } from './adaptiveQuestionEngine';
+import {
+  computeProfileReadinessBreakdown,
+  computeProfileSectionsStatus,
+} from './progressiveProfileEngine';
+import {
+  evaluateAllTriangulationClusters,
+  TriangulationClusterResult,
+} from './triangulationEngine';
 import {
   AdministeredItemResponse,
   authorizeRawAnswerAccess,
@@ -293,6 +306,7 @@ export interface MemberStoreState {
   members: Record<string, MemberProfile>;
   rawResponses: RawResponsesByMember;
   consents: Record<string, { consentGivenAt: number; withdrawnAt?: number }>;
+  skippedQuestions?: Record<string, string[]>;
 }
 
 let storeState: MemberStoreState = createInitialStoreState();
@@ -782,7 +796,7 @@ export const memberStore = {
       storeState.rawResponses[memberId] = {};
     }
 
-    const qItem = RESEARCH_PILOT_QUESTION_BANK.find((q) => q.id === questionId);
+    const qItem = EXPANDED_PILOT_QUESTION_BANK.find((q) => q.id === questionId);
     const chosenOpt = qItem?.options.find((o) => o.id === optionId);
     const semanticId = chosenOpt?.semanticId ?? optionId;
     const resolvedDisplayedIndex =
@@ -972,14 +986,104 @@ export const memberStore = {
 
   /**
    * Adaptive Question Selection: Predicts and provides the next question
-   * tailored to the member's current answered set and intentions.
+   * tailored to the member's current answered set, responses, intentions, and fatigue state.
    */
-  getNextAdaptiveQuestionForMember(memberId: string) {
+  getNextAdaptiveQuestionForMember(
+    memberId: string,
+    options?: {
+      targetSectionId?: ProfileSectionId;
+      sessionAnswersCount?: number;
+      questionBank?: AssessmentQuestion[];
+    }
+  ) {
     const member = storeState.members[memberId];
     if (!member) throw new Error(`Member not found: ${memberId}`);
     const rawMap = storeState.rawResponses[memberId] ?? {};
     const answeredIds = Object.keys(rawMap);
-    return selectNextAdaptiveQuestion(answeredIds, member.intentions, RESEARCH_PILOT_QUESTION_BANK);
+    const skippedList = storeState.skippedQuestions?.[memberId] ?? [];
+
+    return selectNextAdaptiveQuestion({
+      answeredQuestionIds: answeredIds,
+      memberAnswers: rawMap,
+      intentions: member.intentions,
+      questionBank: options?.questionBank ?? EXPANDED_PILOT_QUESTION_BANK,
+      targetSectionId: options?.targetSectionId,
+      sessionAnswersCount: options?.sessionAnswersCount ?? 0,
+      skippedQuestionIds: skippedList,
+    });
+  },
+
+  /**
+   * Explicitly skips a question for a member so they are never badgered with it again.
+   * Zero penalty on account readiness or compatibility.
+   */
+  skipAssessmentQuestion(memberId: string, questionId: string) {
+    if (!storeState.skippedQuestions) {
+      storeState.skippedQuestions = {};
+    }
+    if (!storeState.skippedQuestions[memberId]) {
+      storeState.skippedQuestions[memberId] = [];
+    }
+    if (!storeState.skippedQuestions[memberId].includes(questionId)) {
+      storeState.skippedQuestions[memberId].push(questionId);
+    }
+    return { success: true, memberId, skippedQuestionId: questionId };
+  },
+
+  /**
+   * Alias for saveMemberAnswer conforming to AssessmentResponse parameter naming.
+   */
+  saveAssessmentResponse(params: {
+    memberId: string;
+    questionId: string;
+    optionId: string;
+    displayedVisualIndex?: number;
+    responseLatencyMs?: number;
+  }) {
+    return memberStore.saveMemberAnswer(
+      params.memberId,
+      params.questionId,
+      params.optionId,
+      params.responseLatencyMs ?? 3000,
+      params.displayedVisualIndex
+    );
+  },
+
+  /**
+   * Computes Naukri-style multidimensional profile readiness breakdown for member.
+   */
+  getMemberProfileReadiness(
+    memberId: string,
+    bank: AssessmentQuestion[] = EXPANDED_PILOT_QUESTION_BANK
+  ): ProfileReadinessBreakdown {
+    const member = storeState.members[memberId];
+    if (!member) throw new Error(`Member not found: ${memberId}`);
+    const rawMap = storeState.rawResponses[memberId] ?? {};
+    return computeProfileReadinessBreakdown(member, Object.keys(rawMap), bank);
+  },
+
+  /**
+   * Computes status and completion metrics for all 10 profile sections.
+   */
+  getMemberProfileSectionsStatus(
+    memberId: string,
+    bank: AssessmentQuestion[] = EXPANDED_PILOT_QUESTION_BANK
+  ): ProfileSectionStatus[] {
+    const member = storeState.members[memberId];
+    if (!member) throw new Error(`Member not found: ${memberId}`);
+    const rawMap = storeState.rawResponses[memberId] ?? {};
+    return computeProfileSectionsStatus(member, Object.keys(rawMap), bank);
+  },
+
+  /**
+   * Evaluates psychological triangulation across all situational clusters.
+   */
+  getMemberTriangulationResults(
+    memberId: string,
+    bank: AssessmentQuestion[] = EXPANDED_PILOT_QUESTION_BANK
+  ): Record<string, TriangulationClusterResult> {
+    const rawMap = storeState.rawResponses[memberId] ?? {};
+    return evaluateAllTriangulationClusters(rawMap, bank);
   },
 
   /**

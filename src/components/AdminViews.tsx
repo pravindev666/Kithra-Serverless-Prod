@@ -189,6 +189,13 @@ export const AdminShell: React.FC<AdminShellProps> = ({
   const [drawerNote, setDrawerNote] = useState<string>('');
   const [adminToast, setAdminToast] = useState<string | null>(null);
 
+  // Question bank governance state
+  const [questionSearch, setQuestionSearch] = useState<string>('');
+  const [constructFilter, setConstructFilter] = useState<string>('all');
+  const [formatFilter, setFormatFilter] = useState<string>('all');
+  const [approvalFilter, setApprovalFilter] = useState<'all' | 'approved' | 'review'>('all');
+  const [approvedOverrides, setApprovedOverrides] = useState<Record<string, boolean>>({});
+
   const triggerToast = (msg: string) => {
     setAdminToast(msg);
     window.setTimeout(() => {
@@ -939,105 +946,269 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         )}
 
         {/* TAB: QUESTIONS & QUALITY GOVERNANCE */}
-        {activeTab === 'questions' && (
-          <div className="space-y-5">
-            <div>
-              <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
-                Staff interface · Item bank governance &amp; privacy-preserving quality monitoring
-              </p>
-              <h1
-                tabIndex={-1}
-                className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
-              >
-                Question bank &amp; response quality ({PSYCHOLOGY_ENGINE_VERSION}).
-              </h1>
-              <p className="text-sm text-[var(--muted)] mt-1">
-                Pilot items are explicitly marked ORIGINAL / UNVALIDATED until empirical calibration. Raw member questionnaire answers are strictly isolated from staff and support roles.
-              </p>
-            </div>
+        {activeTab === 'questions' && (() => {
+          const filteredQuestions = ASSESSMENT_QUESTIONS.filter((q) => {
+            if (questionSearch.trim()) {
+              const qLower = questionSearch.toLowerCase();
+              const matchId = q.id.toLowerCase().includes(qLower);
+              const matchPrompt = q.prompt.toLowerCase().includes(qLower);
+              const matchModule = (q.module ?? '').toLowerCase().includes(qLower);
+              if (!matchId && !matchPrompt && !matchModule) return false;
+            }
+            if (constructFilter !== 'all' && q.constructId !== constructFilter) return false;
+            if (formatFilter !== 'all' && q.formatType !== formatFilter) return false;
+            const isApproved = approvedOverrides[q.id] ?? (q.isApprovedForMembers !== false);
+            if (approvalFilter === 'approved' && !isApproved) return false;
+            if (approvalFilter === 'review' && isApproved) return false;
+            return true;
+          });
 
-            {/* Raw Answer Access Control Verification Card */}
-            <div className="p-4 rounded-[12px] bg-[var(--surface2)] border border-[var(--line)] text-xs sm:text-sm space-y-1.5">
-              <p className="font-bold text-[var(--heading)]">
-                Zero Raw-Answer Staff Exposure Check:
-              </p>
-              <p className="text-[var(--muted)]">
-                {authorizeRawAnswerAccess('admin_support').reason}
-              </p>
-            </div>
+          const totalBankCount = ASSESSMENT_QUESTIONS.length;
+          const approvedCount = ASSESSMENT_QUESTIONS.filter(
+            (q) => (approvedOverrides[q.id] ?? (q.isApprovedForMembers !== false))
+          ).length;
 
-            {/* Pilot Item Bank Table */}
-            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
-              <table className="w-full border-collapse text-xs sm:text-sm">
-                <thead>
-                  <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
-                    <th className="p-3.5 font-bold">Item ID</th>
-                    <th className="p-3.5 font-bold">Module &amp; Prompt</th>
-                    <th className="p-3.5 font-bold">Format &amp; Construct</th>
-                    <th className="p-3.5 font-bold">Stage &amp; Scope</th>
-                    <th className="p-3.5 font-bold">Validation Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ASSESSMENT_QUESTIONS.map((q) => (
-                    <tr key={q.id} className="border-t border-[var(--line)]">
-                      <td className="p-3.5 font-bold text-[var(--heading)] tabular-nums whitespace-nowrap">
-                        {q.id} (#{q.questionNumber})
-                      </td>
-                      <td className="p-3.5">
-                        <span className="font-semibold text-[var(--heading)] block">
-                          {q.module}
-                        </span>
-                        <span className="text-xs text-[var(--muted)]">{q.prompt}</span>
-                      </td>
-                      <td className="p-3.5 text-xs">
-                        <span className="font-semibold text-[var(--heading)] block">
-                          {q.formatType ?? 'direct_preference'}
-                        </span>
-                        <span className="text-[var(--muted)]">{q.constructId ?? '—'}</span>
-                      </td>
-                      <td className="p-3.5 text-xs">
-                        <span className="font-semibold text-[var(--heading)] block">
-                          Stage {q.stage ?? 1}
-                        </span>
-                        <span className="text-[var(--muted)]">
-                          {q.applicableIntentions.join(', ')}
-                        </span>
-                      </td>
-                      <td className="p-3.5 text-xs font-bold text-[var(--ochre-text)] whitespace-nowrap">
-                        {q.validationStatus ?? 'ORIGINAL / UNVALIDATED'}
-                      </td>
+          const toggleApproval = (qId: string) => {
+            const current = approvedOverrides[qId] ?? true;
+            setApprovedOverrides((prev) => ({ ...prev, [qId]: !current }));
+            triggerToast(`Item ${qId} publication status changed to: ${!current ? 'Approved' : 'Pending Review'}`);
+          };
+
+          return (
+            <div className="space-y-5">
+              <div>
+                <p className="uppercase tracking-[2.3px] text-[11px] font-bold text-[var(--ochre-text)]">
+                  Staff interface · Item bank governance &amp; privacy-preserving quality monitoring
+                </p>
+                <h1
+                  tabIndex={-1}
+                  className="text-[28px] font-bold text-[var(--heading)] mt-1 outline-none"
+                >
+                  Question bank &amp; response quality ({PSYCHOLOGY_ENGINE_VERSION}).
+                </h1>
+                <p className="text-sm text-[var(--muted)] mt-1">
+                  Governance dashboard for candidate assessment items ({totalBankCount} total across 12 psychological domains). Raw member questionnaire answers are strictly isolated from all staff roles (HTTP 403 Forbidden).
+                </p>
+              </div>
+
+              {/* Statistics Overview Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div className="p-4 rounded-[12px] bg-[var(--surface)] border border-[var(--line)]">
+                  <span className="text-xs font-bold text-[var(--muted)] block">Total Question Bank</span>
+                  <span className="text-2xl font-bold text-[var(--heading)] mt-1 tabular-nums block">{totalBankCount}</span>
+                  <span className="text-[11px] text-[var(--ochre-text)] font-semibold mt-0.5 block">60 Baseline + 65 Expanded</span>
+                </div>
+                <div className="p-4 rounded-[12px] bg-[var(--surface)] border border-[var(--line)]">
+                  <span className="text-xs font-bold text-[var(--muted)] block">Approved for Members</span>
+                  <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums block">{approvedCount}</span>
+                  <span className="text-[11px] text-[var(--muted)] mt-0.5 block">Eligible for adaptive selection</span>
+                </div>
+                <div className="p-4 rounded-[12px] bg-[var(--surface)] border border-[var(--line)]">
+                  <span className="text-xs font-bold text-[var(--muted)] block">Triangulation Clusters</span>
+                  <span className="text-2xl font-bold text-[var(--heading)] mt-1 tabular-nums block">12</span>
+                  <span className="text-[11px] text-[var(--muted)] mt-0.5 block">Multi-scenario consistency checks</span>
+                </div>
+                <div className="p-4 rounded-[12px] bg-[var(--surface)] border border-[var(--line)]">
+                  <span className="text-xs font-bold text-[var(--muted)] block">Filter Matching Items</span>
+                  <span className="text-2xl font-bold text-[var(--heading)] mt-1 tabular-nums block">{filteredQuestions.length}</span>
+                  <span className="text-[11px] text-[var(--muted)] mt-0.5 block">Showing in current view</span>
+                </div>
+              </div>
+
+              {/* Raw Answer Access Control Verification Card */}
+              <div className="p-4 rounded-[12px] bg-[var(--surface2)] border border-[var(--line)] text-xs sm:text-sm space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    HTTP 403 ENFORCED
+                  </span>
+                  <p className="font-bold text-[var(--heading)]">
+                    Zero Raw-Answer Staff Exposure Check:
+                  </p>
+                </div>
+                <p className="text-[var(--muted)] text-xs">
+                  {authorizeRawAnswerAccess('admin_support').reason}
+                </p>
+              </div>
+
+              {/* Filter & Search Bar */}
+              <div className="p-4 rounded-[14px] bg-[var(--surface)] border border-[var(--line)] space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--heading)] mb-1">
+                      Search Prompt or ID
+                    </label>
+                    <input
+                      type="text"
+                      value={questionSearch}
+                      onChange={(e) => setQuestionSearch(e.target.value)}
+                      placeholder="e.g. confidentiality, q-64..."
+                      className="w-full min-h-[38px] rounded-[8px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--heading)] mb-1">
+                      Construct Domain
+                    </label>
+                    <select
+                      value={constructFilter}
+                      onChange={(e) => setConstructFilter(e.target.value)}
+                      className="w-full min-h-[38px] rounded-[8px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3 text-xs"
+                    >
+                      <option value="all">All Constructs</option>
+                      <option value="communication">Communication</option>
+                      <option value="conflict_repair">Conflict Repair</option>
+                      <option value="personal_values">Personal Values</option>
+                      <option value="social_energy">Social Energy</option>
+                      <option value="finances_independence">Finances</option>
+                      <option value="family_domestic">Family Domestic</option>
+                      <option value="daily_lifestyle">Daily Lifestyle</option>
+                      <option value="relational_boundaries">Relational Boundaries</option>
+                      <option value="intellectual_curiosity">Intellectual Curiosity</option>
+                      <option value="emotional_regulation">Emotional Regulation</option>
+                      <option value="long_term_goals">Long-Term Goals</option>
+                      <option value="romantic_expectations">Romantic Expectations</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--heading)] mb-1">
+                      Question Format
+                    </label>
+                    <select
+                      value={formatFilter}
+                      onChange={(e) => setFormatFilter(e.target.value)}
+                      className="w-full min-h-[38px] rounded-[8px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3 text-xs"
+                    >
+                      <option value="all">All Formats</option>
+                      <option value="direct_preference">Direct Preference</option>
+                      <option value="situational_judgment">Situational Judgment</option>
+                      <option value="values_tradeoff">Values Tradeoff</option>
+                      <option value="forced_choice">Forced Choice</option>
+                      <option value="contextual_trait">Contextual Trait</option>
+                      <option value="importance_boundary">Importance Boundary</option>
+                      <option value="optional_reflection">Optional Reflection</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--heading)] mb-1">
+                      Publication Status
+                    </label>
+                    <select
+                      value={approvalFilter}
+                      onChange={(e) => setApprovalFilter(e.target.value as 'all' | 'approved' | 'review')}
+                      className="w-full min-h-[38px] rounded-[8px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3 text-xs"
+                    >
+                      <option value="all">All Items</option>
+                      <option value="approved">Approved for Members</option>
+                      <option value="review">Pending Review</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pilot Item Bank Table */}
+              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] overflow-x-auto">
+                <table className="w-full border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr className="bg-[var(--surface2)] text-[var(--muted)] text-left">
+                      <th className="p-3.5 font-bold">Item ID</th>
+                      <th className="p-3.5 font-bold">Module &amp; Prompt</th>
+                      <th className="p-3.5 font-bold">Format &amp; Construct</th>
+                      <th className="p-3.5 font-bold">Cluster / Section</th>
+                      <th className="p-3.5 font-bold">Approval &amp; Governance</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredQuestions.map((q) => {
+                      const isApproved = approvedOverrides[q.id] ?? (q.isApprovedForMembers !== false);
+                      return (
+                        <tr key={q.id} className="border-t border-[var(--line)] hover:bg-[var(--surface2)]/40 transition-colors">
+                          <td className="p-3.5 font-bold text-[var(--heading)] tabular-nums whitespace-nowrap">
+                            <div>{q.id}</div>
+                            <span className="text-[11px] text-[var(--muted)] font-normal">#{q.questionNumber} · Stage {q.stage ?? 1}</span>
+                          </td>
+                          <td className="p-3.5 max-w-sm">
+                            <span className="font-semibold text-[var(--heading)] block text-xs">
+                              {q.module}
+                            </span>
+                            <span className="text-xs text-[var(--muted)] line-clamp-2 mt-0.5">{q.prompt}</span>
+                            {q.researchBasis && (
+                              <span className="text-[10px] text-[var(--ochre-text)] italic block mt-1 truncate">
+                                {q.researchBasis}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3.5 text-xs">
+                            <span className="font-semibold text-[var(--heading)] block">
+                              {(q.formatType ?? 'direct_preference').replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-[var(--muted)] text-[11px] block mt-0.5">{q.constructId ?? '—'}</span>
+                            <span className="text-[10px] text-[var(--muted)] block">
+                              Burden: {q.completionBurdenMs ? `${Math.round(q.completionBurdenMs / 1000)}s` : '20s'}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-xs whitespace-nowrap">
+                            <span className="font-semibold text-[var(--heading)] block text-[11px]">
+                              {q.sectionId ? q.sectionId.replace(/_/g, ' ') : 'General'}
+                            </span>
+                            {q.triangulationClusterId ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface2)] text-[var(--ochre-text)] font-semibold inline-block mt-0.5">
+                                {q.triangulationClusterId}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-[var(--muted)] block mt-0.5">—</span>
+                            )}
+                          </td>
+                          <td className="p-3.5 text-xs whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => toggleApproval(q.id)}
+                              className={`px-3 py-1.5 rounded-[8px] font-bold text-xs cursor-pointer transition-colors ${isApproved
+                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
+                                  : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/25'
+                                }`}
+                            >
+                              {isApproved ? '✓ Approved for Members' : '⏳ Pending Review'}
+                            </button>
+                            <span className="text-[10px] text-[var(--muted)] block mt-1">
+                              {q.validationStatus ?? 'PILOT_REVIEWED'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-            {/* Sample Minimal Quality Events (Zero Raw Answers) */}
-            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-5 space-y-3 text-xs sm:text-sm">
-              <h2 className="text-base font-bold text-[var(--heading)]">
-                Privacy-Preserving Response Quality Events (No Raw Answers)
-              </h2>
-              <p className="text-[var(--muted)]">
-                Multi-signal quality checks never label a member dishonest or automatically suspend accounts. When ultra-fast straight-lining AND contradictory anchor pairs coincide, only a minimal metadata event is emitted:
-              </p>
-              <div className="p-3.5 rounded-[10px] bg-[var(--surface2)] border border-[var(--line)] font-mono text-xs text-[var(--text)]">
-                {JSON.stringify(
-                  {
-                    eventType: 'assessment_quality_review_recommended',
-                    sessionId: 'sess-sample-902',
-                    qualityState: 'low_confidence_validity',
-                    reasonCodes: ['ultra_fast_completion', 'uniform_display_position_pattern'],
-                    recommendedAction: 'invite_calm_reconfirmation_without_accusation',
-                    rawAnswersIncluded: false,
-                  },
-                  null,
-                  2
-                )}
+              {/* Sample Minimal Quality Events (Zero Raw Answers) */}
+              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-5 space-y-3 text-xs sm:text-sm">
+                <h2 className="text-base font-bold text-[var(--heading)]">
+                  Privacy-Preserving Response Quality Events (No Raw Answers)
+                </h2>
+                <p className="text-[var(--muted)]">
+                  Multi-signal quality checks never label a member dishonest or automatically suspend accounts. When ultra-fast straight-lining AND contradictory anchor pairs coincide, only a minimal metadata event is emitted:
+                </p>
+                <div className="p-3.5 rounded-[10px] bg-[var(--surface2)] border border-[var(--line)] font-mono text-xs text-[var(--text)]">
+                  {JSON.stringify(
+                    {
+                      eventType: 'assessment_quality_review_recommended',
+                      sessionId: 'sess-sample-902',
+                      qualityState: 'low_confidence_validity',
+                      reasonCodes: ['ultra_fast_completion', 'uniform_display_position_pattern'],
+                      recommendedAction: 'invite_calm_reconfirmation_without_accusation',
+                      rawAnswersIncluded: false,
+                    },
+                    null,
+                    2
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* TAB: AUDIT TRAIL */}
         {activeTab === 'audit' && (
