@@ -445,6 +445,9 @@ export interface AttributeSimilarityEvaluation {
   algorithmVersion: string;
   engineVersion: string;
   scientificDisclaimer: string;
+  measurementUncertaintyMargin?: number;
+  uncomparedConstructsCount?: number;
+  uncomparedConstructNames?: string[];
 }
 
 export function classifySimilarityBand(
@@ -537,6 +540,23 @@ export function computeAttributeSimilarity(
     }
   }
 
+  // Identify constructs answered by one member but not yet comparable
+  const allAnsweredConstructs = new Set<ConstructLayerId>();
+  for (const v of viewerConstructs) {
+    if ((v.itemCount ?? v.answeredItemCount ?? 0) > 0) allAnsweredConstructs.add(v.constructId);
+  }
+  for (const c of candidateConstructs) {
+    if ((c.itemCount ?? c.answeredItemCount ?? 0) > 0) allAnsweredConstructs.add(c.constructId);
+  }
+  const uncomparedConstructNames: string[] = [];
+  for (const cId of allAnsweredConstructs) {
+    const vHas = viewerConstructs.some((v) => v.constructId === cId && (v.itemCount ?? v.answeredItemCount ?? 0) > 0);
+    const cHas = candidateMap.has(cId);
+    if (!vHas || !cHas) {
+      uncomparedConstructNames.push(formatConstructLayerName(cId));
+    }
+  }
+
   if (
     comparableConstructCount < MIN_COMPARABLE_CONSTRUCTS_FOR_SCORE ||
     totalWeight <= 0
@@ -557,6 +577,9 @@ export function computeAttributeSimilarity(
       engineVersion: PSYCHOLOGY_ENGINE_VERSION,
       scientificDisclaimer:
         'Not enough overlapping questions have been answered yet to compute a reliable attribute similarity score.',
+      measurementUncertaintyMargin: undefined,
+      uncomparedConstructsCount: uncomparedConstructNames.length,
+      uncomparedConstructNames,
     };
   }
 
@@ -569,6 +592,9 @@ export function computeAttributeSimilarity(
       : comparableConstructCount >= 4
         ? 'moderate'
         : 'provisional';
+
+  const measurementUncertaintyMargin =
+    confidence === 'high' ? 5 : confidence === 'moderate' ? 9 : 15;
 
   return {
     status: 'computed',
@@ -586,6 +612,9 @@ export function computeAttributeSimilarity(
     engineVersion: PSYCHOLOGY_ENGINE_VERSION,
     scientificDisclaimer:
       'Provisional measured attribute similarity (0–100) across answered constructs. Not a probability of attraction, friendship, or marriage success.',
+    measurementUncertaintyMargin,
+    uncomparedConstructsCount: uncomparedConstructNames.length,
+    uncomparedConstructNames,
   };
 }
 
@@ -1441,6 +1470,12 @@ export interface ResponseQualityEvaluationResult {
   neutralMemberPrompt: string | null;
   adminQualityEvent: AdminQualityReviewEvent | null;
   adminEvent: AdminQualityReviewEvent | null;
+  /** Longest streak of selecting the identical screen position (e.g. repeated Option B) */
+  maxDisplayPositionStreak: number;
+  /** Proportion of responses answered faster than 750ms */
+  fastClickRatio: number;
+  /** Behavioral integrity signals detected across converging metrics */
+  flaggedSignals?: string[];
 }
 
 function hashSeedInput(seed: number | string): number {
@@ -1561,6 +1596,9 @@ export function evaluateResponseQuality(
       identicalDisplayPositionRatio: 0,
       identicalSemanticEndorsementRatio: 0,
       medianResponseTimeMs: 0,
+      maxDisplayPositionStreak: responses.length,
+      fastClickRatio: 0,
+      flaggedSignals: [],
       neutralMemberPrompt: null,
       adminQualityEvent: null,
       adminEvent: null,
@@ -1571,9 +1609,23 @@ export function evaluateResponseQuality(
   const semCounts = new Map<string, number>();
   const times = responses.map((r) => r.responseTimeMs).sort((a, b) => a - b);
 
+  let maxDisplayPositionStreak = 0;
+  let currentStreak = 0;
+  let lastPos = -1;
+
   for (const r of responses) {
     posCounts.set(r.displayedOptionIndex, (posCounts.get(r.displayedOptionIndex) ?? 0) + 1);
     semCounts.set(r.semanticOptionId, (semCounts.get(r.semanticOptionId) ?? 0) + 1);
+
+    if (r.displayedOptionIndex === lastPos) {
+      currentStreak++;
+    } else {
+      currentStreak = 1;
+      lastPos = r.displayedOptionIndex;
+    }
+    if (currentStreak > maxDisplayPositionStreak) {
+      maxDisplayPositionStreak = currentStreak;
+    }
   }
 
   const maxPosCount = Math.max(...Array.from(posCounts.values()));
@@ -1582,13 +1634,17 @@ export function evaluateResponseQuality(
   const identicalDisplayPositionRatio = maxPosCount / responses.length;
   const identicalSemanticEndorsementRatio = maxSemCount / responses.length;
   const medianResponseTimeMs = times[Math.floor(times.length / 2)] ?? 3000;
+  const fastClicks = responses.filter((r) => r.responseTimeMs < 750).length;
+  const fastClickRatio = fastClicks / responses.length;
 
   const isUltraFastClicking = medianResponseTimeMs < 650;
   const isUniformDisplayPosition = identicalDisplayPositionRatio >= 0.85;
+  const isPositionStreakHigh = maxDisplayPositionStreak >= 8;
+  const isThoughtfulPace = medianResponseTimeMs >= 1200;
 
-  // Case 1: Ultra-fast uniform clicking + contradictions (Test E)
+  // Case 1: Ultra-fast uniform clicking + contradictions (Test E & Case D)
   if (
-    (isUltraFastClicking && isUniformDisplayPosition) ||
+    (isUltraFastClicking && (isUniformDisplayPosition || isPositionStreakHigh)) ||
     (medianResponseTimeMs < 900 &&
       isUniformDisplayPosition &&
       directContradictionCount >= 1)
@@ -1612,6 +1668,9 @@ export function evaluateResponseQuality(
       identicalDisplayPositionRatio,
       identicalSemanticEndorsementRatio,
       medianResponseTimeMs,
+      maxDisplayPositionStreak,
+      fastClickRatio,
+      flaggedSignals: ['rapid_uniform_position_clicking'],
       neutralMemberPrompt:
         "We noticed that some of your assessment responses were completed very quickly. You can take a break, review your answers, or resume whenever you're ready.",
       adminQualityEvent: evt,
@@ -1619,7 +1678,7 @@ export function evaluateResponseQuality(
     };
   }
 
-  // Case 2: Thoughtful pace but direct anchor contradictions requiring calm clarification (Test D)
+  // Case 2: Thoughtful pace but direct anchor contradictions requiring calm clarification (Test D & Case F)
   if (directContradictionCount >= 1) {
     return {
       qualityState: 'clarification_needed',
@@ -1630,6 +1689,9 @@ export function evaluateResponseQuality(
       identicalDisplayPositionRatio,
       identicalSemanticEndorsementRatio,
       medianResponseTimeMs,
+      maxDisplayPositionStreak,
+      fastClickRatio,
+      flaggedSignals: ['direct_contextual_contradiction'],
       neutralMemberPrompt:
         'A couple of your responses point in different directions. Would you like to clarify which feels closer to your everyday preference?',
       adminQualityEvent: null,
@@ -1637,7 +1699,28 @@ export function evaluateResponseQuality(
     };
   }
 
-  // Case 3: Thoughtful fast reader with varied display positions and coherent semantic choices (Test F)
+  // Case 3: Repeated Option B (or any uniform position) but with thoughtful timing (Case A & Case C)
+  // MUST NEVER flag as low confidence or dishonest! Legitimate consistent preferences are protected.
+  if ((isUniformDisplayPosition || isPositionStreakHigh) && isThoughtfulPace) {
+    return {
+      qualityState: 'valid_moderate_confidence',
+      automaticSuspensionTriggered: false,
+      deceptionAccusationIssued: false,
+      isAccusedOfDishonesty: false,
+      isBlockedOrSuspended: false,
+      identicalDisplayPositionRatio,
+      identicalSemanticEndorsementRatio,
+      medianResponseTimeMs,
+      maxDisplayPositionStreak,
+      fastClickRatio,
+      flaggedSignals: ['uniform_position_thoughtful_pace'],
+      neutralMemberPrompt: null,
+      adminQualityEvent: null,
+      adminEvent: null,
+    };
+  }
+
+  // Case 4: Thoughtful fast reader with varied display positions and coherent semantic choices (Test F & Case C)
   return {
     qualityState: 'valid_high_confidence',
     automaticSuspensionTriggered: false,
@@ -1647,6 +1730,9 @@ export function evaluateResponseQuality(
     identicalDisplayPositionRatio,
     identicalSemanticEndorsementRatio,
     medianResponseTimeMs,
+    maxDisplayPositionStreak,
+    fastClickRatio,
+    flaggedSignals: [],
     neutralMemberPrompt: null,
     adminQualityEvent: null,
     adminEvent: null,
@@ -1805,6 +1891,7 @@ export function deriveConstructProfileFromAnswers(
       flexibilityScores: number[];
       welcomesCount: number;
       itemsAnswered: number;
+      contextTags: Set<string>;
     }
   > = {};
 
@@ -1829,11 +1916,13 @@ export function deriveConstructProfileFromAnswers(
         flexibilityScores: [],
         welcomesCount: 0,
         itemsAnswered: 0,
+        contextTags: new Set<string>(),
       };
     }
 
     buckets[cId].scores.push(finalScore);
     buckets[cId].itemsAnswered += 1;
+    buckets[cId].contextTags.add(question.facetId ?? question.id);
     if (typeof (option as any).measuredFlexibility === 'number') {
       buckets[cId].flexibilityScores.push((option as any).measuredFlexibility);
     }
@@ -1858,6 +1947,12 @@ export function deriveConstructProfileFromAnswers(
         )
         : undefined;
 
+    const measurementUncertainty = Math.round(25 / Math.sqrt(count));
+    const missingInformationNotice =
+      count < 3
+        ? `Provisional measurement: only ${count} scenario${count === 1 ? '' : 's'} answered in ${formatConstructLayerName(constructId as ConstructLayerId)}.`
+        : undefined;
+
     results.push({
       constructId: constructId as ConstructLayerId,
       constructName: formatConstructLayerName(constructId as ConstructLayerId),
@@ -1868,6 +1963,11 @@ export function deriveConstructProfileFromAnswers(
       flexibility: flexAvg,
       welcomesComplementarity: data.welcomesCount > 0 && data.welcomesCount >= Math.ceil(count / 2),
       importance: 'important',
+      contextualBreadth: data.contextTags.size,
+      measurementUncertainty,
+      missingInformationNotice,
+      validationStatus: 'EXPERIMENTAL / UNVALIDATED',
+      engineVersion: PSYCHOLOGY_ENGINE_VERSION,
     });
   }
 

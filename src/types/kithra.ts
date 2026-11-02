@@ -121,6 +121,7 @@ export type AssessmentStage =
 
 export type ResponseQualityState =
   | 'valid_high_confidence'
+  | 'valid_moderate_confidence'
   | 'valid_provisional'
   | 'clarification_needed'
   | 'low_confidence_validity'
@@ -243,6 +244,14 @@ export interface MemberEligibilityRequirements {
   smokingVapingProfile?: SmokingVapingProfile;
 }
 
+export interface AdministeredItemResponse {
+  questionId?: string;
+  itemId?: string;
+  displayedOptionIndex: number;
+  semanticOptionId: string;
+  responseTimeMs: number;
+}
+
 export interface ConstructVectorPoint {
   constructId: ConstructLayerId;
   constructName?: string;
@@ -259,6 +268,13 @@ export interface ConstructVectorPoint {
   itemCount?: number;
   answeredItemCount?: number;
   importance?: ImportanceLevel;
+  /** Multi-context uncertainty & coverage tracking (Phase 7A) */
+  contextTags?: string[];
+  contextualBreadth?: number;
+  measurementUncertainty?: number;
+  missingInformationNotice?: string;
+  validationStatus?: 'EXPERIMENTAL / UNVALIDATED' | 'ORIGINAL / UNVALIDATED' | 'PILOT_REVIEWED' | 'VALIDATED';
+  engineVersion?: string;
 }
 
 export interface MemberProfile {
@@ -559,3 +575,9 @@ export interface RouteInventoryItem {
   targetAdminTab?: AdminTab;
   targetStateCode?: SystemErrorCode;
 }
+
+export type TriangulationClassification =
+  | 'insufficient_information'
+  | 'consistent_stance'
+  | 'plausible_situational_variation'
+  | 'clarification_needed';

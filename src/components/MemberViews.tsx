@@ -170,7 +170,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   const [showTriangulationModal, setShowTriangulationModal] = useState<boolean>(false);
   const [simulatedStageAnsweredCount, setSimulatedStageAnsweredCount] = useState<number>(5);
   const [questionLanguage, setQuestionLanguage] = useState<'en' | 'ta' | 'hi'>('en');
-  const [shuffleOptionsEnabled, setShuffleOptionsEnabled] = useState<boolean>(false);
+  const [shuffleOptionsEnabled, setShuffleOptionsEnabled] = useState<boolean>(true);
 
   // PhotoManager states
   const [selectedPhotoId, setSelectedPhotoId] = useState<string>(photos[0]?.id ?? 'photo-1');
