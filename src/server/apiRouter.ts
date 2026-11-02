@@ -12,10 +12,18 @@
 import { memberStore } from '../domain/memberStore';
 import {
   AuthContext,
+  AuthVerificationResult,
   authorizeAssessmentAccess,
   verifyFirebaseToken,
+  verifyFirebaseTokenCryptographic,
+  initiateStaffLogin,
+  verifyStaffMfaCode,
+  authenticateStaffToken,
+  authorizeStaffRole,
 } from './authMiddleware';
 import { IntentionId } from '../types/kithra';
+import { generateMemberSelfUnderstandingReport } from '../domain/psychologicalInsightsEngine';
+import { generateFounderAnalyticsReport } from '../domain/founderAnalyticsEngine';
 
 export interface ApiResponse<T = unknown> {
   status: number;
@@ -31,16 +39,88 @@ export interface ApiRequest {
   params?: Record<string, string>;
 }
 
+export interface ApiRouterOptions {
+  requireCrypto?: boolean;
+  allowDevTokens?: boolean;
+}
+
 /**
  * Main API Dispatcher
  */
-export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
+export async function handleApiRequest(
+  req: ApiRequest,
+  options: ApiRouterOptions = {}
+): Promise<ApiResponse> {
   const authHeader = req.headers['authorization'] ?? req.headers['Authorization'] ?? '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
+  // Public endpoint 1: Staff Admin Login (Step 1: Credential verification & MFA challenge generation)
+  if (req.method === 'POST' && req.path === '/api/admin/auth/login') {
+    const { email, password } = (req.body as { email?: string; password?: string }) ?? {};
+    if (!email || !password) {
+      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'Staff email and password are required.' } };
+    }
+    const result = await initiateStaffLogin(email, password);
+    if (!result.success) {
+      return { status: 401, body: { error: 'STAFF_AUTH_FAILED', message: result.errorMessage } };
+    }
+    return { status: 200, body: result };
+  }
+
+  // Public endpoint 2: Staff MFA Verification (Step 2: TOTP code validation & session creation)
+  if (req.method === 'POST' && req.path === '/api/admin/auth/verify-mfa') {
+    const { challengeId, mfaCode } = (req.body as { challengeId?: string; mfaCode?: string }) ?? {};
+    if (!challengeId || !mfaCode) {
+      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'challengeId and 6-digit mfaCode are required.' } };
+    }
+    const result = await verifyStaffMfaCode(challengeId, mfaCode);
+    if (!result.success || !result.session) {
+      return { status: 401, body: { error: 'MFA_FAILED', message: result.errorMessage } };
+    }
+    return {
+      status: 200,
+      body: {
+        success: true,
+        session: {
+          staffId: result.session.staffId,
+          email: result.session.email,
+          role: result.session.role,
+          mfaVerified: result.session.mfaVerified,
+          token: result.session.token,
+          expiresAt: result.session.expiresAt,
+        },
+      },
+    };
+  }
+
+  // Privileged Staff Endpoint: Privacy-Preserving Founder Analytics Dashboard
+  if (req.method === 'GET' && req.path === '/api/admin/analytics/aggregate') {
+    const staffAuth = authenticateStaffToken(token);
+    if (!staffAuth.authenticated || !staffAuth.context) {
+      return { status: 401, body: { error: 'UNAUTHORIZED_STAFF', message: staffAuth.errorMessage } };
+    }
+    // Only 'admin' role can access aggregate analytics; 'moderator' is strictly denied
+    const roleAuth = authorizeStaffRole(staffAuth.context, ['admin']);
+    if (!roleAuth.allowed) {
+      return { status: roleAuth.status, body: { error: 'FORBIDDEN_ROLE', message: roleAuth.message } };
+    }
+
+    const report = generateFounderAnalyticsReport();
+    return { status: 200, body: { report } };
+  }
+
+  const authenticate = async (): Promise<AuthVerificationResult> => {
+    if (options.requireCrypto) {
+      return verifyFirebaseTokenCryptographic(token, {
+        allowDevTokens: options.allowDevTokens,
+      });
+    }
+    return verifyFirebaseToken(token);
+  };
+
   // Public endpoint: Session establishment / verification
   if (req.method === 'POST' && req.path === '/api/auth/session') {
-    const auth = verifyFirebaseToken(token);
+    const auth = await authenticate();
     if (!auth.authenticated || !auth.context) {
       return {
         status: 401,
@@ -62,8 +142,9 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
     };
   }
 
+
   // All endpoints below require valid authentication
-  const auth = verifyFirebaseToken(token);
+  const auth = await authenticate();
   if (!auth.authenticated || !auth.context) {
     return {
       status: 401,
@@ -73,6 +154,7 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
 
   const user = auth.context;
 
+
   // GET /api/member/profile
   if (req.method === 'GET' && req.path === '/api/member/profile') {
     const profile = memberStore.getMemberById(user.userId);
@@ -80,6 +162,13 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
       return { status: 404, body: { error: 'PROFILE_NOT_FOUND', message: 'Member profile not found.' } };
     }
     return { status: 200, body: { profile } };
+  }
+
+  // GET /api/member/insights (Member-Controlled Psychological Self-Understanding Report)
+  if (req.method === 'GET' && req.path === '/api/member/insights') {
+    const rawAnswers = memberStore.getMemberRawAnswers(user.userId, 'member_self', user.userId);
+    const report = generateMemberSelfUnderstandingReport(user.userId, rawAnswers);
+    return { status: 200, body: { report } };
   }
 
   // POST /api/member/assessment/answers
@@ -118,7 +207,19 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
     }
   }
 
-  // DELETE /api/member/assessment/delete (Section 27 DPDP Act data erasure)
+  // GET /api/member/assessment/answers (Cross-device resumption for self)
+  if (req.method === 'GET' && req.path === '/api/member/assessment/answers') {
+    const answers = memberStore.getMemberRawAnswers(user.userId, 'member_self', user.userId);
+    return {
+      status: 200,
+      body: {
+        answers,
+        totalAnswered: Object.keys(answers).length,
+      },
+    };
+  }
+
+  // DELETE /api/member/assessment/delete (Section 12 DPDP Act 2023 erasure & Section 6(4) consent withdrawal)
   if (req.method === 'DELETE' && req.path === '/api/member/assessment/delete') {
     const result = memberStore.deleteMemberAssessmentData(user.userId);
     return { status: 200, body: result };

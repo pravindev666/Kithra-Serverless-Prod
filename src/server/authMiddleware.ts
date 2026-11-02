@@ -9,36 +9,36 @@
  * answers from unauthorized extraction.
  */
 
-export const DEFAULT_FIREBASE_PROJECT_ID = 'kithra-prod-auth';
+export const DEFAULT_FIREBASE_PROJECT_ID = 'kithra-d3ae1';
 
-export interface FirebaseJwtPayload {
-  iss: string;
-  aud: string;
-  sub: string;
-  iat: number;
-  exp: number;
-  auth_time: number;
-  email?: string;
-  email_verified?: boolean;
-  name?: string;
-  role?: 'member' | 'moderator' | 'admin' | 'auditor';
-  [key: string]: unknown;
-}
+export {
+  initiateStaffLogin,
+  verifyStaffMfaCode,
+  authenticateStaffToken,
+  authorizeStaffRole,
+} from './adminAuthService';
+export type {
+  StaffRole,
+  StaffSessionContext,
+} from './adminAuthService';
 
-export interface AuthContext {
-  userId: string;
-  email?: string;
-  role: 'member' | 'moderator' | 'admin' | 'auditor';
-  token: string;
-  isAdultVerified?: boolean;
-}
+export {
+  verifyFirebaseTokenCryptographic,
+  injectTestJwk,
+  clearKeyCache,
+  getGooglePublicJwks,
+} from './firebaseAuthVerifier';
+export type {
+  AuthContext,
+  AuthVerificationResult,
+  FirebaseJwtPayload,
+} from './firebaseAuthVerifier';
+import type {
+  AuthContext,
+  AuthVerificationResult,
+  FirebaseJwtPayload,
+} from './firebaseAuthVerifier';
 
-export interface AuthVerificationResult {
-  authenticated: boolean;
-  context?: AuthContext;
-  errorCode?: 'MISSING_TOKEN' | 'MALFORMED_TOKEN' | 'EXPIRED_TOKEN' | 'INVALID_ISSUER' | 'INVALID_AUDIENCE' | 'FORBIDDEN';
-  errorMessage?: string;
-}
 
 /**
  * Base64URL decode helper compatible with browser, worker, and Node environments.
@@ -93,8 +93,19 @@ export function verifyFirebaseToken(
     };
   }
 
-  // Handle development / test mock tokens
+  // Handle development / test mock tokens (strictly disabled in production and staging)
   if (token.startsWith('dev-token-') || token.startsWith('mock-jwt-')) {
+    const env = (process.env.ENVIRONMENT || process.env.KITHRA_ENV || process.env.NODE_ENV || '').toLowerCase();
+    const isProdOrStaging = env === 'production' || env === 'staging';
+    const isExplicitlyDisabled = process.env.ALLOW_DEV_TOKENS === 'false';
+
+    if (isProdOrStaging || isExplicitlyDisabled) {
+      return {
+        authenticated: false,
+        errorCode: 'DEV_TOKENS_DISABLED',
+        errorMessage: 'Mock and dev tokens are strictly disabled in production and staging environments.',
+      };
+    }
     const withoutPrefix = token.replace(/^(dev-token-|mock-jwt-)/, '');
     const lastDashIdx = withoutPrefix.lastIndexOf('-');
     let userId = withoutPrefix;

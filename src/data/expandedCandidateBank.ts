@@ -2612,6 +2612,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'When you meet a potential companion for chai or coffee, what kind of conversation makes you feel truly connected?',
     translations: {
@@ -2622,7 +2623,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Reveals whether you prefer building rapport through deep philosophical sharing or light, unhurried warmth.',
     researchBasis: 'Altman & Taylor (1973) Social Penetration Theory: Depth vs breadth in interpersonal relationship escalation.',
     measurementLimitations: 'Self-reported conversational preference; situational rapport varies widely across settings.',
-    culturalSuitabilityNotes: 'Grounded in Indian social coffee/chai meeting culture across Bangalore, Chennai, and Mumbai.',
+    culturalSuitabilityNotes: 'Grounded in Indian social coffee/chai meeting culture across Bangalore, Chennai, and Mumbai.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'communication_style',
     triangulationClusterId: 'reassurance_vs_space',
@@ -2637,6 +2638,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'व्यक्तिगत जीवन-दर्शन, स्मृतियों और जीवन के गहरे उद्देश्यों पर खुलकर चर्चा करना',
         reflection: 'Values rapid conversational depth and meaningful vulnerability.',
         signalEffect: 'Contributes to Conversational Depth (Similar to Me)',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2648,6 +2650,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'साझा रुचियों, पुस्तकों और काम की बातों से शुरुआत कर धीरे-धीरे गहराई में उतरना',
         reflection: 'Pragmatic, organic pacing from common ground to personal sharing.',
         signalEffect: 'Contributes to Conversational Depth (Similar to Me / We Balance Each Other)',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2659,6 +2662,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'हल्का-फुल्का हास्य, दिनभर की रोचक बातें और शुरुआती मुलाकातों को बिना किसी दबाव के सहज रखना',
         reflection: 'Prioritizes conversational ease, levity, and low-pressure boundaries.',
         signalEffect: 'Contributes to Conversational Ease (Different from Me / Similar to Me)',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -2677,6 +2681,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'During a heated disagreement at home, voices rise and emotional frustration spikes. What is your most effective instinctive way to recover?',
     translations: {
@@ -2687,7 +2692,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Matches individuals whose conflict de-escalation styles soothe rather than exacerbate each others nervous systems.',
     researchBasis: 'Gottman & Levenson (1999) Physiological flooding and relational repair latency.',
     measurementLimitations: 'Self-reported retrospective recollection under simulated calm.',
-    culturalSuitabilityNotes: 'Addresses domestic heated discussions common in high-density urban Indian households.',
+    culturalSuitabilityNotes: 'Addresses domestic heated discussions common in high-density urban Indian households.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'emotional_repair',
     triangulationClusterId: 'stress_regulation_and_decompression',
@@ -2702,6 +2707,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'दोनों का तनाव कम होने तक 20 मिनट का शांत विराम मांगना ताकि शांति से बात हो सके',
         reflection: 'Prioritizes physiological soothing and de-escalation pause.',
         signalEffect: 'Contributes to Conflict Repair & Emotional Regulation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2713,6 +2719,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'कमरे से बाहर जाए बिना, अपनी आवाज़ धीमी करके या सहज मुस्कान से तनाव कम करना',
         reflection: 'Relies on in-situ warmth and tonal defusing.',
         signalEffect: 'Contributes to Conflict Repair & Emotional Regulation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2724,6 +2731,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'बात को अधूरा छोड़ने के बजाय, उसी समय बात जारी रखकर तुरंत निष्कर्ष पर पहुँचना',
         reflection: 'Urgent drive for immediate cognitive closure.',
         signalEffect: 'Contributes to Conflict Resolution Rhythm',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: false
       }
     ]
@@ -2736,12 +2744,13 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     intentionScope: 'All intentions',
     applicableIntentions: ['friendship', 'dating', 'matrimony'],
     constructId: 'personal_values',
-    facetId: 'generosity_and_giving',
+    facetId: 'resource_allocation_philosophy',
     formatType: 'situational_judgment',
     scoringType: 'continuous_trait',
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'When you experience a financial bonus or windfall, what feels most aligned with your personal values?',
     translations: {
@@ -2749,10 +2758,10 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
       hi: 'जब आपको कोई अप्रत्याशित वित्तीय लाभ या बोनस मिलता है, तो आपके मूल्यों के अनुसार उसका क्या उपयोग सबसे सही लगता है?'
     },
     context: 'Resource allocation attitudes: communal generosity vs individual asset accumulation.',
-    whyWeAsk: 'Harmonizes financial giving expectations across partners and close companions.',
+    whyWeAsk: 'Harmonizes financial allocation orientations (communal philanthropy vs targeted personal care vs capital preservation) without moral judgment.',
     researchBasis: 'Schwartz (1992) Universalism and Benevolence vs Security in human values.',
-    measurementLimitations: 'Hypothetical spending choice susceptible to social desirability.',
-    culturalSuitabilityNotes: 'Reflects Indian cultural expectations around supporting family and domestic staff.',
+    measurementLimitations: 'Hypothetical spending choice; neither communal giving nor disciplined asset investing is morally superior. Both represent valid life priorities.',
+    culturalSuitabilityNotes: 'Reflects Indian cultural expectations around supporting family and domestic staff. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'everyday_values',
     isApprovedForMembers: true,
@@ -2765,7 +2774,8 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelTa: 'கூட்டுக்குடும்ப உறுப்பினர்கள், வீட்டுப் பணியாளர்கள் அல்லது சமூக நலனுக்கு ஒரு பகுதியை ஒதுக்குவது',
         labelHi: 'संयुक्त परिवार, घरेलू सहायकों या सामाजिक कारणों में सहायता के लिए एक निश्चित हिस्सा देना',
         reflection: 'Prioritizes communal responsibility and benevolent sharing.',
-        signalEffect: 'Contributes to Communal Generosity',
+        signalEffect: 'Contributes to Communal Generosity Orientation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2776,7 +2786,8 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelTa: 'சேமிப்புக்கு முன்னுரிமை கொடுத்து, வேண்டியவர்களுக்குப் பயனுள்ள பரிசு அல்லது உதவியை வழங்குவது',
         labelHi: 'निजी सुरक्षा के लिए अधिकांश बचत करना और प्रियजनों के लिए कोई सार्थक उपहार या सहयोग चुनना',
         reflection: 'Balanced security with deliberate, targeted generosity.',
-        signalEffect: 'Contributes to Balanced Generosity',
+        signalEffect: 'Contributes to Targeted Relational Generosity',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2786,8 +2797,9 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         label: 'Directing almost all of it into compounding investments and disciplined long-term assets',
         labelTa: 'முழுத் தொகையையும் நீண்டகால முதலீடுகள் மற்றும் சொத்துக்களில் முதலீடு செய்வது',
         labelHi: 'पूरी राशि को अनुशासित ढंग से दीर्घकालिक निवेश और वित्तीय स्वतंत्रता में लगाना',
-        reflection: 'Focuses on capital preservation, security, and financial autonomy.',
+        reflection: 'Disciplined compounding: focuses on capital preservation, security, and long-term autonomy without moral deficiency.',
         signalEffect: 'Contributes to Long-term Asset Prudence',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -2806,6 +2818,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'After a 50-hour demanding workweek, what does your ideal Saturday afternoon look like?',
     translations: {
@@ -2816,7 +2829,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Prevents weekend lifestyle friction between solitary rechargers and active social seekers.',
     researchBasis: 'DeYoung (2015) Extraversion: Enthusiasm vs solitary sensory replenishment.',
     measurementLimitations: 'Varies with seasonal workload fluctuations.',
-    culturalSuitabilityNotes: 'Reflects weekend cadence in Indian metro IT/corporate work cultures.',
+    culturalSuitabilityNotes: 'Reflects weekend cadence in Indian metro IT/corporate work cultures.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'social_energy',
     triangulationClusterId: 'social_energy_vs_solitude',
@@ -2831,6 +2844,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'चहल-पहल वाले बाज़ार, कला दीर्घाओं में जाना या दोस्तों के साथ बाहर समय बिताना',
         reflection: 'Recharges through outward activity and social stimulation.',
         signalEffect: 'Contributes to Outward Social Energy',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2842,6 +2856,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'घर पर आराम से खाना बनाना या किसी करीबी के साथ शांत पार्क में टहलना',
         reflection: 'Values quiet, intimate shared domestic restorative time.',
         signalEffect: 'Contributes to Shared Domestic Serenity',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2853,6 +2868,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'पूरी तरह शांत कमरे में पुस्तक पढ़ना, विश्राम करना या अकेले संगीत सुनना',
         reflection: 'Requires deep solitary cocooning to restore equilibrium.',
         signalEffect: 'Contributes to Restorative Solitude',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -2871,6 +2887,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'When budgeting monthly income, how do you view maintaining an emergency safety fund?',
     translations: {
@@ -2881,7 +2898,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Financial misalignment is a leading cause of long-term relational friction.',
     researchBasis: 'Dew & Britt (2012) Financial management consensus and couple longevity.',
     measurementLimitations: 'Dependent on absolute income level and dependents.',
-    culturalSuitabilityNotes: 'Critical for Indian dual-income couples managing family obligations and EMIs.',
+    culturalSuitabilityNotes: 'Critical for Indian dual-income couples managing family obligations and EMIs.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'independence_finances',
     triangulationClusterId: 'financial_transparency_planning',
@@ -2896,6 +2913,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'किसी भी ऐशो-आराम के खर्च से पहले 6 से 12 महीने के खर्च का सुरक्षित आपातकालीन फंड बनाए रखना',
         reflection: 'Prioritizes robust capital safety and debt-free security.',
         signalEffect: 'Contributes to Financial Prudence',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2907,6 +2925,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: '3 महीने का व्यावहारिक फंड रखना और साथ ही यात्रा, अनुभव और सीखने पर भी खर्च करना',
         reflection: 'Pragmatic balance between liquidity and present life enrichment.',
         signalEffect: 'Contributes to Financial Balance',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2918,6 +2937,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'बिना काम के नकदी रखने के बजाय पैसे को उच्च-लाभ वाले व्यापार या विकास संपत्तियों में लगाना',
         reflection: 'High capital efficiency and comfort with low cash buffers.',
         signalEffect: 'Contributes to Dynamic Capital Growth',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -2936,6 +2956,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'During major festivals like Diwali, Pongal, or Eid, how do you prefer balancing visits between both sets of extended families?',
     translations: {
@@ -2946,7 +2967,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Discloses expectations around filial duty, balance, and nuclear couple boundaries.',
     researchBasis: 'Sorketti et al. (2014) Family systems, in-law boundary clarity, and marital health.',
     measurementLimitations: 'Dependent on geographical proximity to parents and in-laws.',
-    culturalSuitabilityNotes: 'Deeply resonant with modern Indian couples navigating dual-family festival expectations.',
+    culturalSuitabilityNotes: 'Deeply resonant with modern Indian couples navigating dual-family festival expectations.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'family_future',
     triangulationClusterId: 'parental_involvement_boundaries',
@@ -2961,6 +2982,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'दोनों परिवारों में निष्पक्ष समय बिताने के लिए पहले से स्पष्ट रोटेशन कार्यक्रम तय करना',
         reflection: 'Egalitarian and transparent extended family sharing.',
         signalEffect: 'Contributes to Dual-Family Equity',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2972,6 +2994,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'उस वर्ष किस परिवार को अधिक आवश्यकता है या माता-पिता के स्वास्थ्य को देखकर निर्णय लेना',
         reflection: 'Situational empathy and needs-based elder support.',
         signalEffect: 'Contributes to Situational Family Care',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -2983,6 +3006,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'मुख्य रूप से अपने साथी के साथ त्योहार मनाना और विस्तृत पारिवारिक मुलाकातों को सीमित रखना',
         reflection: 'Prioritizes nuclear couple sanctuary and personal space.',
         signalEffect: 'Contributes to Nuclear Couple Autonomy',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3001,6 +3025,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'What role does physical movement, morning exercise, or yoga play in your weekly rhythm?',
     translations: {
@@ -3011,7 +3036,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Discovers lifestyle rhythm harmony regarding health and physical discipline.',
     researchBasis: 'Rhodes et al. (2012) Personality and physical activity: Conscientiousness and Extraversion.',
     measurementLimitations: 'Self-reported intention versus actual biometric consistency.',
-    culturalSuitabilityNotes: 'Reflects growing urban Indian interest in running clubs, yoga, and gym culture.',
+    culturalSuitabilityNotes: 'Reflects growing urban Indian interest in running clubs, yoga, and gym culture.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'lifestyle_health',
     isApprovedForMembers: true,
@@ -3025,6 +3050,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'रोज़ सुबह कसरत, दौड़ या योग करना—यह मेरे मानसिक संतुलन और ऊर्जा के लिए अनिवार्य है',
         reflection: 'High dedication to structured somatic health and discipline.',
         signalEffect: 'Contributes to Daily Physical Vitality',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3036,6 +3062,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'शाम को टहलना, बैडमिंटन खेलना या सप्ताहांत में साइकिल चलाना जैसी सहज सक्रियता',
         reflection: 'Relaxed, balanced functional health without rigid metrics.',
         signalEffect: 'Contributes to Moderate Lifestyle Fitness',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3047,6 +3074,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'कड़े फिटनेस नियमों के बजाय पढ़ने, रचनात्मक कार्यों या आराम करने को प्राथमिकता देना',
         reflection: 'Sedentary or leisurely creative cadence over formal exercise.',
         signalEffect: 'Contributes to Leisure-Centric Lifestyle',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3065,6 +3093,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'In a committed relationship, what is your instinct regarding phone screen privacy, personal chats, and passwords?',
     translations: {
@@ -3075,7 +3104,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Prevents toxic surveillance while establishing clear digital trust expectations.',
     researchBasis: 'Petronio (2002) Communication Privacy Management in digital intimacies.',
     measurementLimitations: 'Responses may reflect past betrayal trauma rather than baseline preference.',
-    culturalSuitabilityNotes: 'Highly pertinent for Indian millennials and Gen-Z balancing transparent marriage with digital boundaries.',
+    culturalSuitabilityNotes: 'Highly pertinent for Indian millennials and Gen-Z balancing transparent marriage with digital boundaries.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'relational_boundaries',
     triangulationClusterId: 'reassurance_vs_space',
@@ -3090,6 +3119,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'पूर्ण खुलापन—फोन के पासवर्ड साझा करना और किसी भी समय एक-दूसरे का फोन देखने में कोई आपत्ति न होना',
         reflection: 'Radical mutual openness and dissolved digital boundaries.',
         signalEffect: 'Contributes to Open Boundary Relational Style',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: false
       },
       {
@@ -3101,6 +3131,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'आपात स्थिति के लिए पहुंच रखना, परंतु मित्रों और काम की निजी बातचीत का सम्मान करना',
         reflection: 'Mature mutual trust with respectful personal sphere boundaries.',
         signalEffect: 'Contributes to Differentiated Privacy Balance',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3112,6 +3143,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'स्पष्ट व्यक्तिगत दायरा—निजी संदेश, डायरी और कार्य संबंधी उपकरणों को पूर्णतः व्यक्तिगत मानना',
         reflection: 'Strong individuation and firm digital sanctuary expectations.',
         signalEffect: 'Contributes to Strict Boundary Sanctuary',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3130,6 +3162,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'When you have free leisure time, how drawn are you to reading, podcasts, non-fiction, or learning about new fields?',
     translations: {
@@ -3140,7 +3173,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Identifies mutual stimulation and conversational chemistry foundations.',
     researchBasis: 'Cacioppo & Petty (1982) Need for Cognition and epistemic curiosity.',
     measurementLimitations: 'Does not account for non-reading modes of analytical thinking.',
-    culturalSuitabilityNotes: 'Appropriate across Indian urban intellectual, creative, and professional communities.',
+    culturalSuitabilityNotes: 'Appropriate across Indian urban intellectual, creative, and professional communities.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'everyday_values',
     triangulationClusterId: 'intellectual_curiosity_debate',
@@ -3155,6 +3188,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'निरंतर सीखने की तीव्र जिज्ञासा—किताबें, शोध लेख, इतिहास या विज्ञान से जुड़े पॉडकास्ट पढ़ना-सुनना',
         reflection: 'High epistemic drive and continuous learning appetite.',
         signalEffect: 'Contributes to Intellectual Depth',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3166,6 +3200,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'जब कोई विषय जीवन या करियर के लिए उपयोगी लगे, तब रुचि लेकर नई जानकारी प्राप्त करना',
         reflection: 'Applied, pragmatic intellectual discovery.',
         signalEffect: 'Contributes to Practical Curiosity',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3177,6 +3212,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'भारी-भरकम अध्ययन के बजाय फिल्में, संगीत, हास्य और दोस्तों के साथ समय बिताने को प्राथमिकता देना',
         reflection: 'Sensory and experiential relaxation over analytical reading.',
         signalEffect: 'Contributes to Experiential Leisure Style',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3189,12 +3225,13 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     intentionScope: 'All intentions',
     applicableIntentions: ['friendship', 'dating', 'matrimony'],
     constructId: 'emotional_regulation',
-    facetId: 'crisis_composure_anchor',
+    facetId: 'acute_stress_coping_orientation',
     formatType: 'situational_judgment',
     scoringType: 'continuous_trait',
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'When an unexpected domestic or travel emergency strikes (flight cancelled, hospital visit, sudden leak), what is your first response?',
     translations: {
@@ -3202,10 +3239,10 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
       hi: 'अचानक कोई आपात स्थिति आने पर (उड़ान रद्द होना, अस्पताल जाना, घर में कोई खराबी), आपकी पहली प्रतिक्रिया क्या होती है?'
     },
     context: 'Affective composure versus pragmatic action orientation under acute stress.',
-    whyWeAsk: 'Pairs companions whose emergency coping styles complement rather than compound collective panic.',
-    researchBasis: 'Gross (2002) Emotion regulation: Cognitive reappraisal vs expressive suppression.',
-    measurementLimitations: 'Real acute trauma may produce different reactions than logistical emergencies.',
-    culturalSuitabilityNotes: 'Addresses logistical challenges common in Indian transit and emergency care.',
+    whyWeAsk: 'Pairs companions whose emergency coping styles complement rather than compound collective panic. Neither problem-focused action nor emotional expression is morally superior.',
+    researchBasis: 'Lazarus & Folkman (1984) Coping theory; Gross (2002) Emotion regulation strategies.',
+    measurementLimitations: 'Real acute trauma may produce different reactions than logistical emergencies. Expressing vulnerability is an adaptive coping mechanism and not a character deficit.',
+    culturalSuitabilityNotes: 'Addresses logistical challenges common in Indian transit and emergency care. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'emotional_repair',
     triangulationClusterId: 'stress_regulation_and_decompression',
@@ -3218,8 +3255,9 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         label: 'Emotionally cool and instantly focused on checklists, logistics, and next practical steps',
         labelTa: 'பதற்றப்படாமல் உடனே அடுத்த நடைமுறைத் தீர்வுகளை நோக்கிச் செயல்படத் தொடங்குவது',
         labelHi: 'शांत रहकर तुरंत समाधान और आवश्यक प्रबंध पर ध्यान केंद्रित करना',
-        reflection: 'High crisis composure and systematic logistical focus.',
-        signalEffect: 'Contributes to Crisis Composure',
+        reflection: 'Problem-focused coping: Action-oriented logistical analysis under acute pressure.',
+        signalEffect: 'Contributes to Problem-Focused Crisis Orientation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3229,8 +3267,9 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         label: 'A momentary spike of stress, quickly centered by talking it through with a partner or trusted friend',
         labelTa: 'ஆரம்பத்தில் சிறு பதற்றம் ஏற்பட்டாலும், துணையுடன் பேசி விரைவாக நிதானத்திற்கு வருவது',
         labelHi: 'शुरुआत में थोड़ा तनाव महसूस होना, परंतु साथी से बात करके तुरंत स्थिति को संभाल लेना',
-        reflection: 'Collaborative emotional regulation and mutual reassurance.',
-        signalEffect: 'Contributes to Collaborative Composure',
+        reflection: 'Collaborative emotional coregulation and mutual reassurance.',
+        signalEffect: 'Contributes to Dyadic Reassurance Orientation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3240,8 +3279,9 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         label: 'Visibly vocalizing the stress and needing emotional validation and presence before tackling the logistics',
         labelTa: 'சூழ்நிலையின் அழுத்தத்தை வெளிப்படையாகப் பேசிவிட்டு, உணர்வுபூர்வ ஆதரவுக்குப் பின் முடிவெடுப்பது',
         labelHi: 'अपनी घबराहट को खुलकर व्यक्त करना और पहले भावनात्मक सहारे की आवश्यकता महसूस करना',
-        reflection: 'Emotionally expressive coping requiring supportive presence.',
-        signalEffect: 'Contributes to Expressive Coping Style',
+        reflection: 'Emotionally expressive coping: seeks validation and relational presence as an adaptive first step.',
+        signalEffect: 'Contributes to Relational Expressive Coping',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3260,6 +3300,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'In balancing the pleasures of your 20s and 30s against retirement and future home ownership, which mindset feels truest to you?',
     translations: {
@@ -3270,7 +3311,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Critical alignment factor for couples choosing lifestyle pacing and financial milestones.',
     researchBasis: 'Kahneman & Tversky (1979) Prospect Theory and temporal intertemporal choice.',
     measurementLimitations: 'Dependent on generational wealth and family support safety nets.',
-    culturalSuitabilityNotes: 'Key consideration in Indian urban life where real estate EMIs impact daily living.',
+    culturalSuitabilityNotes: 'Key consideration in Indian urban life where real estate EMIs impact daily living.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'family_future',
     isApprovedForMembers: true,
@@ -3284,6 +3325,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'युवावस्था में जीवन के अनुभवों, यात्राओं और वर्तमान का भरपूर आनंद लेने में विश्वास रखना',
         reflection: 'Values present-day experiential richness and experiential capital.',
         signalEffect: 'Contributes to Present-Oriented Experiential Living',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3295,6 +3337,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'वर्तमान का आनंद और भविष्य की वित्तीय सुरक्षा—दोनों के बीच संतुलित सामंजस्य बनाना',
         reflection: 'Pragmatic dual-horizon financial and lifestyle stewardship.',
         signalEffect: 'Contributes to Balanced Life Planning',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3306,6 +3349,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'भविष्य में मकान और पूर्ण वित्तीय स्वतंत्रता सुरक्षित करने के लिए अभी अनुशासित बचत करना',
         reflection: 'Prioritizes early financial security and tangible property foundations.',
         signalEffect: 'Contributes to Future Security Orientation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3324,6 +3368,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'In an everyday relationship, how important is it to verbally hear "I appreciate you" or receive explicit spoken warmth?',
     translations: {
@@ -3334,7 +3379,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Prevents emotional starvation when one partner needs verbal validation while the other shows love through acts of service.',
     researchBasis: 'Chapman (1992) Words of Affirmation in relational satisfaction.',
     measurementLimitations: 'Self-reported expectation that may evolve as trust deepens.',
-    culturalSuitabilityNotes: 'Navigates traditional Indian understated affection versus modern verbal warmth.',
+    culturalSuitabilityNotes: 'Navigates traditional Indian understated affection versus modern verbal warmth.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'relationship_intentions',
     isApprovedForMembers: true,
@@ -3348,6 +3393,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'प्रेम और कृतज्ञता भरे शब्दों को बार-बार सुनना मेरे लिए अत्यंत महत्वपूर्ण है',
         reflection: 'Flourishes through explicit spoken affirmations and praise.',
         signalEffect: 'Contributes to High Verbal Affirmation Needs',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3359,6 +3405,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'शब्द अच्छे लगते हैं, परंतु रोजमर्रा के छोटे-छोटे सहयोगी कार्य अधिक मायने रखते हैं',
         reflection: 'Action-anchored appreciation with periodic genuine words.',
         signalEffect: 'Contributes to Action-Centric Appreciation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3370,6 +3417,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'जब आपसी विश्वास गहरा हो, तो बार-बार शब्दों में जताने की आवश्यकता नहीं होती',
         reflection: 'Secure, low-verbal implicit understanding.',
         signalEffect: 'Contributes to Implicit Emotional Security',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3382,12 +3430,13 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     intentionScope: 'All intentions',
     applicableIntentions: ['friendship', 'dating', 'matrimony'],
     constructId: 'communication',
-    facetId: 'voice_note_nuance',
+    facetId: 'communication_modality_preference',
     formatType: 'situational_judgment',
     scoringType: 'continuous_trait',
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'When you want to share a nuanced thought or catch up during a busy week, which communication channel do you naturally prefer?',
     translations: {
@@ -3395,10 +3444,10 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
       hi: 'व्यस्त सप्ताह के दौरान, जब आप कोई गहरी बात साझा करना चाहें, तो आप स्वाभाविक रूप से किस माध्यम को प्राथमिकता देते हैं?'
     },
     context: 'Everyday conversational bandwidth and synchronous vs asynchronous communication.',
-    whyWeAsk: 'Prevents texting fatigue and communication channel mismatch.',
-    researchBasis: 'Daft & Lengel (1986) Media Richness Theory in interpersonal communication.',
-    measurementLimitations: 'Modality choices depend heavily on employer phone policies.',
-    culturalSuitabilityNotes: 'Reflects widespread Indian WhatsApp voice note and calling habits.',
+    whyWeAsk: 'Prevents texting fatigue and communication channel mismatch. Asynchronous text and real-time voice calls are complementary modalities, not a hierarchy of communication competence.',
+    researchBasis: 'Daft & Lengel (1986) Media Richness Theory; Walther (1996) Hyperpersonal CMC interaction.',
+    measurementLimitations: 'Modality choices depend heavily on employer phone policies and sensory preferences, not interpersonal warmth.',
+    culturalSuitabilityNotes: 'Reflects widespread Indian WhatsApp voice note and calling habits. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'communication_style',
     isApprovedForMembers: true,
@@ -3410,8 +3459,9 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         label: 'Picking up the phone for a real-time 10-minute voice call—tone of voice and instant connection are irreplaceable',
         labelTa: 'தொலைபேசியில் நேரடியாகப் பேசுவது—குரலின் தொனியும் உடனடித் தொடர்பும் மிக முக்கியம்',
         labelHi: 'सीधे फोन मिलाकर बात करना—आवाज़ का भाव और तुरंत जुड़ाव सबसे बेहतर लगता है',
-        reflection: 'Prefers real-time auditory warmth and synchronous presence.',
+        reflection: 'Synchronous voice preference: Values real-time vocal nuance, immediate warmth, and tonal presence.',
         signalEffect: 'Contributes to Synchronous Voice Pacing',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3421,8 +3471,9 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         label: 'Sending a 60-second voice note—conveys emotional warmth without demanding the other person pick up immediately',
         labelTa: 'சிறிய குரல் பதிவு (Voice Note) அனுப்புவது—அன்பையும் காட்டும், மறுபுறம் அழுத்தமும் தராது',
         labelHi: 'छोटी वॉयस नोट भेजना—यह बिना किसी दबाव के अपनी बात सहजता से पहुँचाती है',
-        reflection: 'Balances audio nuance with respectful asynchronous boundaries.',
+        reflection: 'Asynchronous voice preference: Values emotional audio warmth while respecting unhurried timing.',
         signalEffect: 'Contributes to Asynchronous Audio Cadence',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3432,8 +3483,9 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         label: 'Crisp, thoughtful written messages—allows each person to read and respond when fully unhurried',
         labelTa: 'தெளிவான குறுஞ்செய்திகள்—இருவரும் தங்களுக்கு நேரம் இருக்கும்போது நிதானமாகப் பதிலளிக்கலாம்',
         labelHi: 'स्पष्ट लिखित संदेश—ताकि दोनों अपनी सुविधानुसार शांत मन से उत्तर दे सकें',
-        reflection: 'Low-pressure, thoughtful written cadence.',
+        reflection: 'Asynchronous written preference: Values thoughtful, low-pressure written exchange that allows unhurried reflection.',
         signalEffect: 'Contributes to Thoughtful Text Communication',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3452,6 +3504,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'A partner or close companion has a minor recurring habit that mildly irks you (leaving cupboards open, losing keys, taking long to get ready). What is your instinct?',
     translations: {
@@ -3462,7 +3515,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Predicts long-term domestic irritation tolerance and repair styles.',
     researchBasis: 'Gottman (1994) Perpetual problems and humor in enduring relationships.',
     measurementLimitations: 'Actual tolerance is contingent on cumulative relationship stress.',
-    culturalSuitabilityNotes: 'Reflects daily domestic life realities in shared households.',
+    culturalSuitabilityNotes: 'Reflects daily domestic life realities in shared households.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'emotional_repair',
     isApprovedForMembers: true,
@@ -3476,6 +3529,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'इसे उनके स्वाभाविक व्यक्तित्व का हिस्सा मानकर सहजता और मुस्कान से स्वीकार करना',
         reflection: 'High acceptance and affectionate tolerance of quirks.',
         signalEffect: 'Contributes to High Idiosyncrasy Tolerance',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3487,6 +3541,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'हँसी-मज़ाक में एक व्यावहारिक व्यवस्था बना लेना (जैसे दरवाज़े पर चाबी रखने की जगह)',
         reflection: 'Humorous, collaborative practical scaffolding.',
         signalEffect: 'Contributes to Pragmatic Domestic Solutions',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3498,6 +3553,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'इस पर सीधे बात करना—क्योंकि छोटी-छोटी बातें भी रोज़मर्रा के सुकून को प्रभावित कर सकती हैं',
         reflection: 'Direct friction containment and standards maintenance.',
         signalEffect: 'Contributes to Direct Domestic Standards',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: false
       }
     ]
@@ -3516,6 +3572,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'At a family or workplace dinner, someone makes a patronizing or exclusionary comment about a quieter person. What is your reaction?',
     translations: {
@@ -3526,7 +3583,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Illuminates core moral orientation toward justice versus social harmony.',
     researchBasis: 'Rest (1986) Moral judgment and prosocial intervention in groups.',
     measurementLimitations: 'Social desirability bias; real courage depends on power dynamics.',
-    culturalSuitabilityNotes: 'Crucial in hierarchical Indian group settings (family elders, corporate managers).',
+    culturalSuitabilityNotes: 'Crucial in hierarchical Indian group settings (family elders, corporate managers).. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'everyday_values',
     isApprovedForMembers: true,
@@ -3540,6 +3597,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'उसी क्षण शालीनता परंतु दृढ़ता से हस्तक्षेप करके उस व्यक्ति का पक्ष लेना',
         reflection: 'High moral assertiveness and public advocacy for fairness.',
         signalEffect: 'Contributes to Moral Assertiveness',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3551,6 +3609,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'बातचीत का रुख सहजता से मोड़ देना और बाद में उस व्यक्ति से अकेले में बात कर ढांढस बंधाना',
         reflection: 'Diplomatic tension defusing coupled with private care.',
         signalEffect: 'Contributes to Diplomatic Compassion',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3562,6 +3621,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'माहौल में तनाव से बचने के लिए चुप रहना और उनके आपसी मामले में न पड़ना',
         reflection: 'Strict non-confrontational social boundary containment.',
         signalEffect: 'Contributes to Low Public Conflict Involvement',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3580,6 +3640,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'For a 4-day long weekend getaway, which environment genuinely recharges your soul?',
     translations: {
@@ -3590,7 +3651,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Vacation and weekend travel harmony is a major source of shared delight or frustration.',
     researchBasis: 'Kaplan (1995) Attention Restoration Theory and nature connectivity.',
     measurementLimitations: 'Preferences can vary depending on work exhaustion levels.',
-    culturalSuitabilityNotes: 'Reflects popular Indian weekend destinations (Western Ghats, Goa, Pondicherry, Mumbai).',
+    culturalSuitabilityNotes: 'Reflects popular Indian weekend destinations (Western Ghats, Goa, Pondicherry, Mumbai).. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'social_energy',
     triangulationClusterId: 'social_energy_vs_solitude',
@@ -3605,6 +3666,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'किसी शांत पहाड़ी क्षेत्र या प्रकृति की गोद में शांति से समय बिताना—प्रदूषण और शोर से दूर',
         reflection: 'Restores through peaceful natural isolation and stillness.',
         signalEffect: 'Contributes to Nature Serenity Preference',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3616,6 +3678,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'किसी ऐतिहासिक नगर में घूमना, जहाँ अच्छे कैफ़े, सुंदर रास्ते और आराम दोनों का मेल हो',
         reflection: 'Blends quiet aesthetic leisure with gentle cultural wandering.',
         signalEffect: 'Contributes to Cultural Leisure Balance',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3627,6 +3690,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'ऊर्जावान बड़े शहर में जाना—कला, नए खान-पान के अनुभव और शहर की जीवंतता का आनंद',
         reflection: 'Energized by urban velocity, culinary diversity, and night life.',
         signalEffect: 'Contributes to Urban Energy Orientation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3645,6 +3709,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'When investing your long-term wealth, which statement best captures your comfort level with volatility?',
     translations: {
@@ -3655,7 +3720,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Financial risk mismatches frequently create anxiety in joint long-term planning.',
     researchBasis: 'Grable & Lytton (1999) Financial risk tolerance measurement.',
     measurementLimitations: 'Influenced by age, dependents, and current market conditions.',
-    culturalSuitabilityNotes: 'Bridges traditional Indian asset preferences (gold, real estate) with modern equity investing.',
+    culturalSuitabilityNotes: 'Bridges traditional Indian asset preferences (gold, real estate) with modern equity investing.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'independence_finances',
     triangulationClusterId: 'financial_transparency_planning',
@@ -3670,6 +3735,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'मूलधन की पूर्ण सुरक्षा—सोना, बैंक एफडी; बाज़ार के उतार-चढ़ाव से मुझे चिंता होती है',
         reflection: 'Prioritizes guaranteed capital preservation and zero sleepless nights.',
         signalEffect: 'Contributes to Conservative Financial Risk Stance',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3681,6 +3747,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'अनुशासित म्यूचुअल फंड और नियमित एसआईपी—उतार-चढ़ाव को शांत भाव से स्वीकार करना',
         reflection: 'Balanced, long-term systematic equity compounder.',
         signalEffect: 'Contributes to Balanced Equity Diversification',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3692,6 +3759,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'अधिक वृद्धि वाले शेयर, नए स्टार्टअप या व्यापारिक अवसर—जोखिम उठाकर बड़ा लाभ पाना',
         reflection: 'High risk appetite and entrepreneurial growth pursuit.',
         signalEffect: 'Contributes to Dynamic High-Growth Risk Stance',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3710,6 +3778,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'In your vision of a shared household, how do you perceive cooking meals?',
     translations: {
@@ -3720,7 +3789,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Clarifies whether food preparation is a bonding joy or a chore to be delegated.',
     researchBasis: 'Gottman (1994) Domestic egalitarianism and relationship satisfaction.',
     measurementLimitations: 'Dependent on culinary skill, schedule pressures, and kitchen space.',
-    culturalSuitabilityNotes: 'Deconstructs traditional gendered cooking roles into shared joy vs outsourced support.',
+    culturalSuitabilityNotes: 'Deconstructs traditional gendered cooking roles into shared joy vs outsourced support.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'family_future',
     triangulationClusterId: 'shared_decision_making',
@@ -3735,6 +3804,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'साथ मिलकर खाना बनाना एक सुखद अनुभव और आपस में जुड़ने का सबसे सुंदर तरीका है',
         reflection: 'Culinary creativity as a shared bonding ritual.',
         signalEffect: 'Contributes to Collaborative Culinary Ritual',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3746,6 +3816,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'घर की आवश्यक ज़िम्मेदारी—जिसे आपस में बांटना चाहिए और व्यस्तता में रसोइए का सहयोग लेना चाहिए',
         reflection: 'Pragmatic domestic labor sharing and practical outsourcing.',
         signalEffect: 'Contributes to Pragmatic Domestic Egalitarianism',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3757,6 +3828,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'रसोई में अधिक समय बिताने के बजाय सरल, पौष्टिक भोजन या टिफिन सेवा को प्राथमिकता देना',
         reflection: 'Time-efficient nutritional fuel over domestic culinary labor.',
         signalEffect: 'Contributes to Outward Efficient Dining Style',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3775,6 +3847,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'What is your relationship with morning chai, filter coffee, or artisanal brews?',
     translations: {
@@ -3785,7 +3858,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Shared morning cadence creates subtle but enduring daily compatibility.',
     researchBasis: 'Csikszentmihalyi (1990) Flow and micro-rituals of daily living.',
     measurementLimitations: 'Dietary habits can change based on health or caffeine sensitivity.',
-    culturalSuitabilityNotes: 'Deeply evocative in Indian culture (South Indian filter coffee, masala chai rituals).',
+    culturalSuitabilityNotes: 'Deeply evocative in Indian culture (South Indian filter coffee, masala chai rituals).. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'lifestyle_health',
     isApprovedForMembers: true,
@@ -3799,6 +3872,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'सुबह की चाय या फिल्टर कॉफी एक सुकून भरा पल है, जिससे मेरे पूरे दिन की ऊर्जा तय होती है',
         reflection: 'Mindful sensory morning pause essential to well-being.',
         signalEffect: 'Contributes to Mindful Morning Ritual Cadence',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3810,6 +3884,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'परिवार या सहकर्मियों के साथ बातचीत करते हुए चाय-कॉफी पीना एक अच्छी आदत है',
         reflection: 'Socially connective beverage habit with flexible attachment.',
         signalEffect: 'Contributes to Social Beverage Connector',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3821,6 +3896,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'मुझे चाय या कॉफी की कोई आदत नहीं है—सादा पानी या अन्य पेय ही पर्याप्त हैं',
         reflection: 'Non-dependent, functional hydration preference.',
         signalEffect: 'Contributes to Low Ritual Attachment',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3839,6 +3915,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'In an ongoing, deeply committed partnership, how do you feel about each person taking an annual solo trip or getaway with their own friends?',
     translations: {
@@ -3849,7 +3926,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Detects attachment security and tolerance for independent individuation.',
     researchBasis: 'Bowen (1978) Family Systems Theory: Differentiation of self in intimate partnerships.',
     measurementLimitations: 'Dependent on trust history and shared child-rearing responsibilities.',
-    culturalSuitabilityNotes: 'Crucial for modern Indian relationships balancing couple unity with independent identity.',
+    culturalSuitabilityNotes: 'Crucial for modern Indian relationships balancing couple unity with independent identity.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'relational_boundaries',
     triangulationClusterId: 'opposite_sex_friendship_boundaries',
@@ -3864,6 +3941,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'पूरी तरह सकारात्मक—साथी का अपने दोस्तों के साथ या अकेले यात्रा करना रिश्ते को ताज़ा रखता है',
         reflection: 'High individuation and secure autonomous support.',
         signalEffect: 'Contributes to Autonomous Relational Security',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3875,6 +3953,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'कभी-कभार ठीक है, परंतु मुख्य छुट्टियां और बजट हमारे साथ बिताए जाने वाले समय के लिए होने चाहिए',
         reflection: 'Shared-first prioritization with room for occasional solo retreats.',
         signalEffect: 'Contributes to Shared-First Travel Balance',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3886,6 +3965,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'छुट्टियों का अर्थ ही एक-दूसरे के साथ होना है—अकेले यात्रा करने के बजाय साथ घूमना अधिक प्रिय है',
         reflection: 'Strong interdependence and exclusively shared leisure preference.',
         signalEffect: 'Contributes to Highly Interdependent Partnership',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: false
       }
     ]
@@ -3904,6 +3984,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'How drawn are you to spending an evening at classical music concerts (Carnatic/Hindustani), theatre, art galleries, or heritage walks?',
     translations: {
@@ -3914,7 +3995,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Aesthetic alignment enriches weekend dating and shared emotional experiences.',
     researchBasis: 'Silvia (2005) Knowledge and aesthetic interest in Openness to Experience.',
     measurementLimitations: 'Varies with local city cultural infrastructure and accessibility.',
-    culturalSuitabilityNotes: 'Deeply rooted in Indian classical sabhas, Delhi theatre, and Kolkata art circles.',
+    culturalSuitabilityNotes: 'Deeply rooted in Indian classical sabhas, Delhi theatre, and Kolkata art circles.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'everyday_values',
     triangulationClusterId: 'intellectual_curiosity_debate',
@@ -3929,6 +4010,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'शास्त्रीय संगीत, नाटक, कला प्रदर्शनियों और सांस्कृतिक धरोहरों में गहरी रुचि और उपस्थिति',
         reflection: 'High aesthetic sensitivity and active cultural patronage.',
         signalEffect: 'Contributes to Aesthetic Cultural Affinity',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3940,6 +4022,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'यदि साथी को पसंद हो तो खुशी से साथ जाना और उस सुंदर वातावरण का आनंद लेना',
         reflection: 'Receptive social companion enjoying shared atmosphere.',
         signalEffect: 'Contributes to Receptive Cultural Participation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -3951,6 +4034,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'शास्त्रीय कलाओं के बजाय फिल्में, खेलकूद या अच्छे रेस्तरां में जाना अधिक पसंद है',
         reflection: 'Prefers contemporary popular entertainment over classical arts.',
         signalEffect: 'Contributes to Popular Commercial Entertainment Style',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -3969,6 +4053,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'You are stuck in a 45-minute Bengaluru/Mumbai traffic jam or an unmoving administrative line through no fault of your own. What happens inside?',
     translations: {
@@ -3979,7 +4064,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Reveals day-to-day patience and emotional reactivity in urban friction.',
     researchBasis: 'Rotter (1966) Locus of control and emotional reactivity.',
     measurementLimitations: 'Fatigue and physical hunger can temporarily lower tolerance.',
-    culturalSuitabilityNotes: 'Directly addresses daily life realities across Indian urban metropolises.',
+    culturalSuitabilityNotes: 'Directly addresses daily life realities across Indian urban metropolises.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'emotional_repair',
     triangulationClusterId: 'stress_regulation_and_decompression',
@@ -3994,6 +4079,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'जो मेरे वश में नहीं है उस पर गुस्सा न कर, शांति से कोई ऑडियोबुक या संगीत सुनकर समय बिताना',
         reflection: 'High cognitive reframing and philosophical equanimity.',
         signalEffect: 'Contributes to Frustration Tolerance & Zen Equanimity',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -4005,6 +4091,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'थोड़ा चिड़चिड़ापन होना, परंतु गूगल मैप्स पर अन्य रास्ते देखकर स्थिति को स्वीकार कर लेना',
         reflection: 'Moderate situational annoyance redirected toward problem-solving.',
         signalEffect: 'Contributes to Pragmatic Stress Management',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -4016,6 +4103,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'समय की बर्बादी पर गहरी बेचैनी और गुस्सा महसूस होना, क्योंकि ऐसी देरी मुझे बहुत परेशान करती है',
         reflection: 'Low tolerance for avoidable friction and time inefficiency.',
         signalEffect: 'Contributes to High Reactivity to Inefficiency',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -4034,6 +4122,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'How do environmental considerations (plastic reduction, waste segregation, water conservation, sustainable fashion) influence your daily choices?',
     translations: {
@@ -4044,7 +4133,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Living space and domestic consumption harmony for environmentally conscious adults.',
     researchBasis: 'Dunlap et al. (2000) New Ecological Paradigm in environmental values.',
     measurementLimitations: 'Gap often exists between ecological attitudes and consumer convenience.',
-    culturalSuitabilityNotes: 'Reflects municipal waste segregation mandates in Bangalore, Chennai, Pune.',
+    culturalSuitabilityNotes: 'Reflects municipal waste segregation mandates in Bangalore, Chennai, Pune.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'family_future',
     isApprovedForMembers: true,
@@ -4058,6 +4147,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'कचरा अलग करना, कपड़े के थैले रखना और सिंगल-यूज़ प्लास्टिक से बचना मेरी दिनचर्या का हिस्सा है',
         reflection: 'High personal ecological stewardship and mindful consumption.',
         signalEffect: 'Contributes to Conscious Ecological Living',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -4069,6 +4159,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'बिजली-पानी की बचत करना और अनावश्यक बर्बादी से बचना जैसे सामान्य समझदारी भरे नियम',
         reflection: 'Pragmatic conservation and anti-waste mindfulness.',
         signalEffect: 'Contributes to Sensible Ecological Conservation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -4080,6 +4171,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'व्यस्तता और सुविधा को प्राथमिकता देना—हर बात में कड़े नियमों का पालन करना व्यावहारिक नहीं लगता',
         reflection: 'Convenience, affordability, and time-saving over green consumerism.',
         signalEffect: 'Contributes to Practical Convenience Priority',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -4098,6 +4190,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'When an unexpected life crisis hits (sudden job transition, health scare, family grief), what partnership dynamic makes you feel secure?',
     translations: {
@@ -4108,7 +4201,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Predicts marital resilience under economic and emotional adversity.',
     researchBasis: 'Bodenmann (2005) Dyadic coping in couples under acute chronic stress.',
     measurementLimitations: 'Stated dynamic may shift depending on whether the crisis affects one or both partners.',
-    culturalSuitabilityNotes: 'Crucial for Indian couples weathering economic transitions and joint family crises.',
+    culturalSuitabilityNotes: 'Crucial for Indian couples weathering economic transitions and joint family crises.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'relationship_intentions',
     triangulationClusterId: 'shared_decision_making',
@@ -4123,6 +4216,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'एक मज़बूत टीम बनकर हर चुनौती का सामना करना—दिन-प्रतिदिन साथ मिलकर रणनीति बनाना और सम्बल देना',
         reflection: 'High collaborative solidarity and deep emotional alignment in crisis.',
         signalEffect: 'Contributes to Dyadic Teamwork in Adversity',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -4134,6 +4228,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'काम का स्पष्ट बंटवारा—एक व्यक्ति व्यवस्था संभाले और दूसरा भावनात्मक संबल दे',
         reflection: 'Functional role specialization and practical crisis stewardship.',
         signalEffect: 'Contributes to Functional Role Differentiation',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -4145,6 +4240,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'पहले अपने स्तर पर तनाव को शांत करने का समय देना और फिर साथ मिलकर आगे बढ़ना',
         reflection: 'Independent emotional self-soothing before collective regrouping.',
         signalEffect: 'Contributes to Autonomous Crisis Processing',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]
@@ -4163,6 +4259,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     stage: 2,
     reverseKeyed: false,
     validationStatus: 'PILOT_REVIEWED',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
     supportedLanguages: ['en', 'ta', 'hi'],
     prompt: 'When you achieve a major career milestone, promotion, or personal creative triumph, how do you naturally like to mark it?',
     translations: {
@@ -4173,7 +4270,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
     whyWeAsk: 'Reveals humility, social orientation, and relational sharing styles in achievement.',
     researchBasis: 'Leary (2007) Relational evaluation, self-presentation, and humble self-enhancement.',
     measurementLimitations: 'May vary depending on whether the achievement was individual or collective.',
-    culturalSuitabilityNotes: 'Captures the Indian cultural balance between humble gratitude and earned self-expression.',
+    culturalSuitabilityNotes: 'Captures the Indian cultural balance between humble gratitude and earned self-expression.. Draft translation awaiting formal human linguistic review in Stage A research pilot.',
     completionBurdenMs: 14000,
     sectionId: 'everyday_values',
     isApprovedForMembers: true,
@@ -4187,6 +4284,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'केवल अपने सबसे करीबी लोगों के साथ सादगी से जश्न मनाना और ईश्वर व सहयोगियों के प्रति कृतज्ञ होना',
         reflection: 'Grounded humility and intimate, heartfelt gratitude.',
         signalEffect: 'Contributes to Humble Groundedness',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -4198,6 +4296,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'इस यात्रा में साथ देने वाले मित्रों और सहयोगियों को बुलाकर एक स्नेहपूर्ण दावत देना',
         reflection: 'Communal celebration sharing credit with supportive network.',
         signalEffect: 'Contributes to Communal Triumph Sharing',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       },
       {
@@ -4209,6 +4308,7 @@ const ADDITIONAL_ITEMS: AssessmentQuestion[] = [
         labelHi: 'अपनी मेहनत की सफलता को खुले दिल से सोशल मीडिया पर साझा करना और सार्वजनिक पहचान का आनंद लेना',
         reflection: 'Confident public celebration and comfortable visibility.',
         signalEffect: 'Contributes to Visible Public Self-Confidence',
+        translationReviewStatus: 'machine_translation_pending_human_review',
         welcomesComplementarity: true
       }
     ]

@@ -72,10 +72,10 @@ export const PRODUCTION_READINESS_REGISTER: ProductionFeatureEvaluation[] = [
   {
     featureId: 'privacy-dpdp-data-erasure',
     category: 'security_privacy',
-    title: 'DPDP Act 2023 Section 27 Consent Withdrawal & Erasure',
+    title: 'DPDP Act 2023 Section 12 Erasure & Section 6(4) Consent Withdrawal',
     status: 'PASS',
-    evidence: 'Implemented in memberStore.deleteMemberAssessmentData and DELETE /api/member/assessment/delete; purges raw answers, vectors, and caches.',
-    securityImpact: 'Full statutory compliance with Indian Digital Personal Data Protection Act 2023.',
+    evidence: 'Implemented in memberStore.deleteMemberAssessmentData and DELETE /api/member/assessment/delete; purges raw answers, vectors, and caches. Strictly distinguishes Section 12 erasure rights from Section 27 penalties.',
+    securityImpact: 'Architectural compliance with Indian Digital Personal Data Protection Act 2023 statutory principles.',
   },
   {
     featureId: 'privacy-raw-answer-guard',
@@ -110,6 +110,24 @@ export const PRODUCTION_READINESS_REGISTER: ProductionFeatureEvaluation[] = [
     evidence: 'Frontend supports captcha token handling; awaiting production Cloudflare account sitekey.',
     securityImpact: 'Prevents automated credential stuffing and rapid-click bot traffic.',
     migrationActionRequired: 'Set CLOUDFLARE_TURNSTILE_SITE_KEY and CLOUDFLARE_TURNSTILE_SECRET in Cloudflare Pages environment.',
+  },
+  {
+    featureId: 'db-d1-remote-persistence',
+    category: 'database_d1',
+    title: 'Cloudflare D1 Remote Cloud Persistence Binding',
+    status: 'BLOCKED',
+    evidence: 'Local SQLite/memory schema 0002 & 0003 verified; awaiting remote Cloudflare API token and live wrangler d1 migrations apply.',
+    securityImpact: 'Required for global distributed SQL persistence across Cloudflare edge regions.',
+    migrationActionRequired: 'Run wrangler d1 create kithra-d1-staging and apply migrations in Cloudflare dashboard.',
+  },
+  {
+    featureId: 'auth-firebase-remote-verify',
+    category: 'authentication',
+    title: 'Remote Firebase Live Auth & Key Endpoint Fetching',
+    status: 'BLOCKED',
+    evidence: 'Cryptographic RS256 Web Crypto verification verified locally with mock keys; awaiting live Firebase staging project credentials.',
+    securityImpact: 'Ensures real mobile/web clients authenticate against Google identity endpoints.',
+    migrationActionRequired: 'Configure Firebase Console authorized domain and link FIREBASE_PROJECT_ID.',
   },
 ];
 

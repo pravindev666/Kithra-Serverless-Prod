@@ -37,6 +37,7 @@ const VALID_MEMBER_TABS: MemberTab[] = [
   'messages',
   'circles',
   'assessments',
+  'insights',
   'photos',
   'profile',
   'privacy',
@@ -56,6 +57,7 @@ const VALID_ADMIN_TABS: AdminTab[] = [
   'staff',
   'audit',
   'questions',
+  'analytics',
 ];
 
 export function parsePathnameToRoute(rawPathname: string): ParsedRoute {
@@ -192,6 +194,7 @@ export function getPageTitleForRoute(route: ParsedRoute): string {
         messages: 'Messages · Kithra',
         circles: 'Community Circles · Kithra',
         assessments: 'Reflection Questions (100-Question Map) · Kithra',
+        insights: 'Psychological Self-Understanding · Kithra',
         photos: 'Photo Manager & Visibility · Kithra',
         profile: 'Your Profile & Intention Preview · Kithra',
         privacy: 'Privacy & Intention Boundaries · Kithra',

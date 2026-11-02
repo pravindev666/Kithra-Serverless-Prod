@@ -1115,7 +1115,11 @@ export const memberStore = {
   },
 
   /**
-   * TASK 2 & 6: Section 27 DPDP Act 2023 Consent Withdrawal & Assessment Data Deletion.
+   * DPDP Act 2023 Statutory Compliance:
+   * Implements Section 12 (Right to correction and erasure of personal data) and
+   * Section 6(4) (Right of Data Principal to withdraw consent with ease).
+   * Note: Section 27 of the DPDP Act governs statutory penalties and adjudication,
+   * while Section 12 and Section 6 govern erasure and withdrawal rights.
    * Completely purges all stored raw questionnaire responses, derived construct vectors,
    * archetype assignments, and cached pairwise similarity scores for the member.
    */

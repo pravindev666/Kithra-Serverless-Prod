@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
   account_status TEXT NOT NULL DEFAULT 'active' CHECK(account_status IN ('active', 'suspended', 'deletion_pending', 'deleted')),
   created_at INTEGER NOT NULL,               -- Unix epoch timestamp in milliseconds
   updated_at INTEGER NOT NULL,
-  deletion_requested_at INTEGER              -- For Section 27 DPDP compliance (30-day grace or immediate purge)
+  deletion_requested_at INTEGER              -- For Section 12 DPDP Act 2023 compliance (Right to erasure) & Section 6(4) (Consent withdrawal)
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -180,4 +180,42 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_id, timestamp);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action, timestamp);
+
+-- 11. Member Safety & Moderation (Mutual Exclusion Blocking)
+CREATE TABLE IF NOT EXISTS member_blocks (
+  id TEXT PRIMARY KEY,
+  blocker_id TEXT NOT NULL,
+  blocked_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (blocker_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (blocked_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(blocker_id, blocked_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_member_blocks_blocker ON member_blocks(blocker_id);
+CREATE INDEX IF NOT EXISTS idx_member_blocks_blocked ON member_blocks(blocked_id);
+
+-- 12. Member Reports (Confidential Safety Case Logging Without Raw Answers)
+CREATE TABLE IF NOT EXISTS member_reports (
+  id TEXT PRIMARY KEY,
+  reporter_id TEXT NOT NULL,
+  reported_id TEXT NOT NULL,
+  category TEXT NOT NULL CHECK(category IN (
+    'Impersonation concern',
+    'Photo report',
+    'Group moderation',
+    'Boundary concern',
+    'Account verification'
+  )),
+  summary TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'under_review', 'resolved', 'dismissed')),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (reported_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_member_reports_status ON member_reports(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_member_reports_reported ON member_reports(reported_id);
+
 

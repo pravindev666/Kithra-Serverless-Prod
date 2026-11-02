@@ -168,6 +168,7 @@ export type MemberTab =
   | 'messages'
   | 'circles'
   | 'assessments'
+  | 'insights'
   | 'photos'
   | 'profile'
   | 'privacy'
@@ -185,7 +186,8 @@ export type AdminTab =
   | 'privacy'
   | 'staff'
   | 'audit'
-  | 'questions';
+  | 'questions'
+  | 'analytics';
 
 export type SystemErrorCode =
   | '404'

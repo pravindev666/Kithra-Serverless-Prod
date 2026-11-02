@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kithra-staging",
+  "main": "src/server/worker.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kithra-d1-staging",
+      "database_id": "29e46034-e38b-4ca3-ad04-1174aa7d3e0f",
+      "migrations_dir": "migrations"
+    },
+    {
+      "binding": "kithra_d1_staging",
+      "database_name": "kithra-d1-staging",
+      "database_id": "29e46034-e38b-4ca3-ad04-1174aa7d3e0f",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "ENVIRONMENT": "staging",
+    "FIREBASE_PROJECT_ID": "kithra-d3ae1",
+    "ALLOW_DEV_TOKENS": "false"
+  }
+}

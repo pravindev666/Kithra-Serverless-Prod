@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Compass,
   Crop,
+  Download,
   Filter,
   HeartHandshake,
   Home,
@@ -18,6 +19,7 @@ import {
   RotateCw,
   Send,
   Shield,
+  ShieldCheck,
   SlidersHorizontal,
   Trash2,
   Upload,
@@ -69,6 +71,13 @@ import {
 import { memberStore } from '../domain/memberStore';
 import { EditorialImage } from './EditorialImage';
 import { EditorialVariant } from '../utils/editorialMedia';
+import {
+  generateMemberSelfUnderstandingReport,
+  NON_CLINICAL_DISCLAIMER,
+} from '../domain/psychologicalInsightsEngine';
+import {
+  VOLUNTARY_RELATIONSHIP_REFLECTION_BANK,
+} from '../data/relationshipReflectionBank';
 
 interface MemberShellProps {
   activeTab: MemberTab;
@@ -416,6 +425,12 @@ export const MemberShell: React.FC<MemberShellProps> = ({
           path: '/member/assessments',
           label: 'Questions & values',
           icon: BookOpen,
+        },
+        {
+          id: 'insights',
+          path: '/member/insights',
+          label: 'Self-Understanding',
+          icon: Sparkles,
         },
         { id: 'photos', path: '/member/photos', label: 'Photos', icon: ImageIcon },
         { id: 'profile', path: '/member/profile', label: 'Your profile', icon: User },
@@ -2096,6 +2111,28 @@ export const MemberShell: React.FC<MemberShellProps> = ({
               </div>
             </div>
 
+            {/* Direct Link to Member Self-Understanding Insights */}
+            <div className="p-4 rounded-[14px] bg-[var(--surface2)]/80 border border-[var(--ochre)]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3">
+                <Sparkles className="w-5 h-5 text-[var(--ochre-text)] shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-[var(--heading)]">
+                    Explore Your Psychological Self-Understanding Report
+                  </p>
+                  <p className="text-xs text-[var(--muted)]">
+                    Review how your scenario choices map to 12 psychological domains with transparent confidence ratings, non-clinical explanations, and DPDP Section 12 data controls.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigateMemberPath('/member/insights')}
+                className="px-4 py-2 rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] text-xs font-bold hover:brightness-105 shrink-0 cursor-pointer"
+              >
+                View Self-Understanding →
+              </button>
+            </div>
+
             {/* Naukri-Style Progressive Profile Readiness & Completion Dashboard */}
             {(() => {
               const activeMemberKey = activeSelfMember?.id ?? 'member-kavya';
@@ -2754,6 +2791,284 @@ export const MemberShell: React.FC<MemberShellProps> = ({
             )}
           </div>
         )}
+
+        {/* TAB: MEMBER-CONTROLLED PSYCHOLOGICAL SELF-UNDERSTANDING */}
+        {activeTab === 'insights' && (() => {
+          const activeMemberKey = activeSelfMember?.id ?? 'member-kavya';
+          let rawAnswers: Record<string, string> = {};
+          try {
+            rawAnswers = memberStore.getMemberRawAnswers(activeMemberKey, 'member_self', activeMemberKey);
+          } catch {
+            rawAnswers = assessmentAnswers;
+          }
+          const report = generateMemberSelfUnderstandingReport(activeMemberKey, rawAnswers, questions);
+
+          return (
+            <div className="space-y-6">
+              {/* Header with Title and DPDP Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="uppercase tracking-[2.3px] text-xs font-bold text-[var(--ochre-text)]">
+                      Member Agency · DPDP Act 2023 Sec 12
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                      Authoritative Backend Synced
+                    </span>
+                  </div>
+                  <h1 className="font-serif-editorial text-[36px] sm:text-[42px] leading-[1.05] font-semibold text-[var(--heading)] mt-1">
+                    Your Psychological Self-Understanding
+                  </h1>
+                  <p className="text-base text-[var(--muted)] mt-1 max-w-[720px]">
+                    Empathetic reflections derived strictly from your self-reported responses. Explore your conversational pace, conflict repair rhythms, autonomy expectations, and life values with complete privacy.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `kithra-self-understanding-${activeMemberKey}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      showToast('Downloaded your self-understanding report JSON.');
+                    }}
+                    className="px-3.5 py-2 rounded-[9px] border border-[var(--line)] bg-[var(--surface)] text-[var(--heading)] hover:bg-[var(--surface2)] text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download JSON</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to permanently erase your psychological assessment answers and derived reflections under Section 12 of the DPDP Act 2023? This cannot be undone.')) {
+                        memberStore.deleteMemberAssessmentData(activeMemberKey);
+                        showToast('All your assessment responses and derived reflections have been permanently erased (DPDP Act Sec 12).');
+                        onNavigateMemberPath('/member/assessments');
+                      }
+                    }}
+                    className="px-3.5 py-2 rounded-[9px] border border-[var(--danger)]/40 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Erase All Data (Sec 12)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Strict Non-Clinical Governance Disclaimer */}
+              <div className="p-4 rounded-[14px] bg-[var(--surface2)] border border-[var(--ochre)]/40 flex items-start gap-3.5">
+                <ShieldCheck className="w-5 h-5 text-[var(--ochre-text)] shrink-0 mt-0.5" />
+                <div className="text-xs sm:text-sm text-[var(--text)] leading-relaxed space-y-1">
+                  <p className="font-bold text-[var(--heading)]">
+                    Non-Clinical Standard &amp; Member Ownership Guarantee
+                  </p>
+                  <p className="text-[var(--muted)]">
+                    {NON_CLINICAL_DISCLAIMER}
+                  </p>
+                  <p className="text-[11px] text-[var(--ochre-text)] font-semibold pt-0.5">
+                    Zero Secret Dossier: Your data is never shared with third parties or advertisers. Ordinary staff and administrators cannot view your raw responses (HTTP 403 server invariant).
+                  </p>
+                </div>
+              </div>
+
+              {/* Assessment Coverage & Readiness Band */}
+              <div className="p-5 rounded-[16px] bg-[var(--surface)] border border-[var(--line)] space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[11px] font-bold text-[var(--muted)] uppercase tracking-wider">Overall Assessment Coverage</span>
+                    <p className="text-base font-bold text-[var(--heading)]">
+                      {report.overallCoverage.totalAnswered} of {report.overallCoverage.totalBankItems} items explored ({report.overallCoverage.coveragePercentage}%)
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-[var(--muted)]">Readiness Band:</span>
+                    <span className={`px-2.5 py-1 rounded-[6px] text-xs font-bold ${
+                      report.overallCoverage.readinessStatus === 'established'
+                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                        : report.overallCoverage.readinessStatus === 'developing'
+                        ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30'
+                        : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                    }`}>
+                      {report.overallCoverage.readinessStatus.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+                <div className="w-full h-2.5 rounded-full bg-[var(--surface2)] overflow-hidden">
+                  <div
+                    className="h-full bg-[var(--ochre)] transition-all duration-300"
+                    style={{ width: `${Math.max(report.overallCoverage.coveragePercentage, 2)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* 12 Psychological Domain Cards */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold font-serif-heading text-[var(--heading)]">
+                    Psychological Domains &amp; Observed Reflections
+                  </h2>
+                  <span className="text-xs text-[var(--muted)]">
+                    {report.insights.length} domains evaluated
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {report.insights.map((insight) => {
+                    const confidenceBg =
+                      insight.confidenceBand === 'established'
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                        : insight.confidenceBand === 'developing'
+                        ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30'
+                        : insight.confidenceBand === 'provisional'
+                        ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                        : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/30';
+
+                    return (
+                      <div
+                        key={insight.constructId}
+                        className="p-5 rounded-[16px] bg-[var(--surface)] border border-[var(--line)] flex flex-col justify-between space-y-4"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
+                                {insight.category.replace(/_/g, ' ')}
+                              </span>
+                              <h3 className="text-base font-bold text-[var(--heading)] leading-snug">
+                                {insight.title}
+                              </h3>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 ${confidenceBg}`}>
+                              {insight.confidenceBand.toUpperCase()}
+                            </span>
+                          </div>
+
+                          <p className="text-xs sm:text-sm text-[var(--text)] leading-relaxed">
+                            {insight.statedPreferenceSummary}
+                          </p>
+
+                          <div className="p-3 rounded-[10px] bg-[var(--surface2)]/70 border border-[var(--line)] space-y-1 text-xs">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[var(--muted)]">Continuous Score:</span>
+                              <span className="font-mono font-bold text-[var(--heading)]">
+                                {insight.observedScore !== null ? `${insight.observedScore} / 100` : 'Pending scenarios'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-[var(--muted)]">Domain Coverage:</span>
+                              <span className="font-semibold text-[var(--heading)]">
+                                {insight.coverage.answeredItemsCount} of {insight.coverage.totalAvailableItemsCount} answered ({insight.coverage.coveragePercentage}%)
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-[11px] text-[var(--muted)] space-y-1">
+                            <p>
+                              <strong className="text-[var(--heading)]">Remaining Context:</strong> {insight.missingInformationNote}
+                            </p>
+                            <p className="italic">
+                              <strong className="text-[var(--heading)]">Limitations:</strong> {insight.interpretationLimitations}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Underlying Scenarios Expansion */}
+                        {insight.answeredReflections.length > 0 && (
+                          <div className="pt-3 border-t border-[var(--line)] space-y-2">
+                            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                              Underlying Responses ({insight.answeredReflections.length})
+                            </p>
+                            <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                              {insight.answeredReflections.map((ref) => (
+                                <div
+                                  key={ref.questionId}
+                                  className="p-2.5 rounded-[8px] bg-[var(--surface2)] text-xs space-y-1"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-mono font-bold text-[var(--ochre-text)]">{ref.questionId}</span>
+                                    <span className="text-[10px] text-[var(--muted)]">Q#{ref.questionNumber}</span>
+                                  </div>
+                                  <p className="text-[var(--heading)] font-medium line-clamp-1">{ref.selectedOptionLabel}</p>
+                                  <p className="text-[11px] text-[var(--muted)] italic">{ref.reflectionText}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Optional Relationship Experience Reflection Module */}
+              <div className="p-6 rounded-[18px] bg-[var(--surface)] border border-[var(--line)] space-y-5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="uppercase tracking-[2.3px] text-xs font-bold text-[var(--ochre-text)]">
+                      Voluntary Reflection Module · Zero History Inference
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+                      100% Optional
+                    </span>
+                  </div>
+                  <h2 className="font-serif-editorial text-[26px] sm:text-[30px] font-semibold text-[var(--heading)] mt-1">
+                    Forward-Looking Relational Experience &amp; Boundaries
+                  </h2>
+                  <p className="text-xs sm:text-sm text-[var(--muted)] mt-1 max-w-[700px]">
+                    Kithra never attempts to reconstruct or infer your prior relationship history, dating frequency, or intimate life from unrelated answers. If you wish, explore what emotional safety and healthy boundaries look like for you today.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {VOLUNTARY_RELATIONSHIP_REFLECTION_BANK.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-5 rounded-[14px] bg-[var(--surface2)]/60 border border-[var(--line)] space-y-3"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[var(--ochre-text)] font-mono">
+                            Reflection #{item.reflectionNumber} · {item.theme}
+                          </span>
+                          <span className="text-[11px] text-[var(--muted)]">Voluntary</span>
+                        </div>
+                        <h3 className="text-sm sm:text-base font-bold text-[var(--heading)] mt-1">
+                          {item.prompt}
+                        </h3>
+                        <p className="text-xs text-[var(--muted)] mt-0.5">
+                          {item.whyWeAsk}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2 pt-1">
+                        {item.options.map((opt) => (
+                          <div
+                            key={opt.id}
+                            onClick={() => showToast(`Selected reflection: "${opt.label.slice(0, 40)}..."`)}
+                            className="p-3 rounded-[10px] border border-[var(--line)] bg-[var(--surface)] hover:border-[var(--ochre)] hover:bg-[var(--surface2)] transition-colors cursor-pointer text-xs space-y-1"
+                          >
+                            <p className="font-semibold text-[var(--heading)]">{opt.label}</p>
+                            <p className="text-[11px] text-[var(--muted)] italic">{opt.reflectionText}</p>
+                            <p className="text-[11px] text-[var(--ochre-text)] font-medium">Companion Guidance: {opt.boundaryGuidance}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <p className="text-[11px] text-[var(--muted)] italic pt-1 border-t border-[var(--line)]">
+                        {item.transparencyNote}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* TAB 7: COMPLETE FRONTEND PHOTOMANAGER */}
         {activeTab === 'photos' && (
