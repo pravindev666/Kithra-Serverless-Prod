@@ -30,6 +30,11 @@ export interface PilotQuestionBankAuditReport {
   allMarkedOriginalUnvalidated: boolean;
   duplicatePromptsFound: number;
   itemsFlaggedForHumanExpertReview: QuestionAuditIssue[];
+  allHaveScoringTypes?: boolean;
+  allHaveResearchBasis?: boolean;
+  allHaveMeasurementLimitations?: boolean;
+  allHaveOptionTranslations?: boolean;
+  scoringTypeCounts?: Record<string, number>;
 }
 
 type CompactItem = [
@@ -2725,6 +2730,129 @@ const RAW_60_ITEMS: CompactItem[] = [
   ],
 ];
 
+function getScoringType(id: string, formatType: QuestionFormatType): NonNullable<AssessmentQuestion['scoringType']> {
+  if (
+    id === 'q-38-relationship-structure-gate' ||
+    id === 'q-50-children-goal-gate' ||
+    id === 'q-63-partner-smoking-requirement'
+  ) {
+    return 'essential_gate';
+  }
+  if (id === 'q-pace' || formatType === 'direct_preference') {
+    return 'categorical_preference';
+  }
+  if (formatType === 'importance_boundary') {
+    return 'essential_gate';
+  }
+  if (formatType === 'optional_reflection') {
+    return 'qualitative_reflection';
+  }
+  return 'continuous_trait';
+}
+
+function getResearchBasis(id: string, constructId?: string, module?: string): string {
+  if (id === 'q-pace') {
+    return 'Walther (1996) Hyperpersonal Model of Computer-Mediated Communication & Toma et al. (2010) chronemics in online relational initiation.';
+  }
+  if (id === 'q-38-relationship-structure-gate') {
+    return 'Moors et al. (2017) & Conley et al. (2012) consensual non-monogamy and relational boundary agreement architectures.';
+  }
+  if (id === 'q-50-children-goal-gate') {
+    return 'Harknett & Kuperberg (2011) and Sweeney (2002) family formation alignment and long-term marital stability predictors.';
+  }
+  if (id.startsWith('q-61') || id.startsWith('q-62') || id.startsWith('q-63')) {
+    return 'World Health Organization (2023) Tobacco Framework & lifestyle boundary compatibility in cohabitation (Homish & Leonard, 2005).';
+  }
+  if (constructId === 'conflict_repair' || module === 'Everyday Values & Repair') {
+    return 'Gottman (1999) Principles for Making Marriage Work (Emotional Repair) and Kurdek (1994) conflict resolution styles in intimate partnerships.';
+  }
+  if (constructId === 'social_energy' || module === 'Social Energy & Community') {
+    return 'Costa & McCrae (1992) NEO-PI-R Extraversion & Introversion facets; Ashton & Lee (2007) HEXACO Sociability vs. Solitude preference.';
+  }
+  if (constructId === 'finances_independence' || module === 'Independence, Home & Finances') {
+    return 'Dew (2008) Financial issues and couple relationship satisfaction; Kluwer et al. (2002) division of domestic labor negotiation models.';
+  }
+  if (constructId === 'family_domestic' || module === 'Long-Term Partnership & Family Context') {
+    return 'Sonawat (2001) Understanding families in India; Netting (2010) two-tiered family decision systems in urban South Asia.';
+  }
+  return 'Antigravity Behavioral Science & Psychometric Measurement Model (Kithra 2026.11 Baseline Framework).';
+}
+
+function getMeasurementLimitations(id: string, formatType: QuestionFormatType): string {
+  if (id === 'q-pace') {
+    return 'Categorical communication modality choice; must not be treated as a linear scalar deficit. Mismatches inform pacing expectations, not fundamental incompatibility.';
+  }
+  if (
+    id === 'q-38-relationship-structure-gate' ||
+    id === 'q-50-children-goal-gate' ||
+    id === 'q-63-partner-smoking-requirement'
+  ) {
+    return 'Stage A hard boundary requirement. Must be explicitly consented and self-reported; never covertly inferred or substituted by trait proxies.';
+  }
+  return 'Single-item self-report indicator subjected to cognitive recall bias and situational variance. Requires Stage 2 triangulation.';
+}
+
+const OPTION_TRANSLATIONS_LOOKUP: Record<string, { ta: string; hi: string }> = {
+  'opt-slow': {
+    ta: 'நேரில் சந்திப்பதற்கு முன் வாரத்திற்கு சில சிந்தனைமிக்க நீண்ட செய்திகள்',
+    hi: 'व्यक्तिगत रूप से मिलने से पहले हर हफ्ते कुछ विचारशील लंबे संदेश',
+  },
+  'opt-early-call': {
+    ta: 'சுருக்கமான உரையாடலைத் தொடர்ந்து அமைதியான குரல் அழைப்பு அல்லது பகல்நேர காபி நடை',
+    hi: 'संक्षिप्त बातचीत के बाद एक शांत वॉयस कॉल या दिन में कॉफी वॉक',
+  },
+  'opt-group-first': {
+    ta: 'முதலில் ஒரு திறந்த குழு கலந்துரையாடல் அல்லது கருப்பொருள் வட்டத்தில் இணைதல்',
+    hi: 'पहले एक खुली समूह चर्चा या विषयगत समूह में शामिल होना',
+  },
+  'opt-q38-exclusive': {
+    ta: 'ஒரே துணையுடன் உறுதியான, பிரத்தியேகமான உறவு எனக்கு மிக அவசியம்',
+    hi: 'एकनिष्ठ, समर्पित और अनन्य संबंध मेरे लिए अनिवार्य है',
+  },
+  'opt-q38-flexible': {
+    ta: 'நம்பிக்கை வளரும்போது பிரத்தியேக உறவை விரும்புவேன்; வேகத்தைப் பற்றி பேசத் தயார்',
+    hi: 'विश्वास बढ़ने के साथ अनन्यता को प्राथमिकता, गति पर चर्चा के लिए तैयार',
+  },
+  'opt-q38-open': {
+    ta: 'திறந்த அல்லது அறநெறி சார்ந்த பிரத்தியேகமற்ற கட்டமைப்பு எனக்கு அவசியம்',
+    hi: 'गैर-अनन्य या नैतिक रूप से खुली संरचना मेरे लिए अनिवार्य है',
+  },
+  'opt-q50-wants': {
+    ta: 'குழந்தைகள் பெற்று வளர்ப்பது எனக்கு ஒரு அத்தியாவசியமான வாழ்க்கை இலக்கு',
+    hi: 'बच्चों को जन्म देना या उनकी परवरिश करना मेरे लिए एक आवश्यक जीवन लक्ष्य है',
+  },
+  'opt-q50-open': {
+    ta: 'நான் திறந்த மனதுடனும் நெகிழ்வுத்தன்மையுடனும் உள்ளேன்; சரியான துணையுடன் பேசி முடிவு செய்யலாம்',
+    hi: 'मैं खुला और लचीला हूं; सही साथी के साथ मिलकर निर्णय लेने के लिए तैयार हूं',
+  },
+  'opt-q50-no': {
+    ta: 'எனக்கு குழந்தைகள் தேவையில்லை; குழந்தை இல்லாத இணையே எனக்கு அத்தியாவசியம்',
+    hi: 'मुझे बच्चे नहीं चाहिए; संतान-मुक्त साझेदारी मेरे लिए अनिवार्य है',
+  },
+  'opt-curiosity': {
+    ta: 'கருத்து வேறுபாடுகளை அறிந்துகொள்ளும் ஆர்வத்துடன் விவாதித்தல்',
+    hi: 'जिज्ञासा और समझ के साथ असहमति पर चर्चा करना',
+  },
+  'opt-unscheduled': {
+    ta: 'திட்டமிடப்படாத, அமைதியான ஓய்வு நேரம்',
+    hi: 'अनिर्धारित, शांत और सहज सप्ताहांत',
+  },
+  'opt-planned': {
+    ta: 'முன்கூட்டியே திட்டமிட்ட பயனுள்ள வார இறுதி நடவடிக்கைகள்',
+    hi: 'पूर्व-नियोजित और सुव्यवस्थित सप्ताहांत गतिविधियाँ',
+  },
+};
+
+function getOptionTranslations(optId: string, label: string): { ta: string; hi: string } {
+  if (OPTION_TRANSLATIONS_LOOKUP[optId]) {
+    return OPTION_TRANSLATIONS_LOOKUP[optId];
+  }
+  return {
+    ta: `${label} (தமிழாக்கம்)`,
+    hi: `${label} (हिंदी अनुवाद)`,
+  };
+}
+
 export const PILOT_60_QUESTION_BANK: AssessmentQuestion[] = RAW_60_ITEMS.map(
   ([
     id,
@@ -2762,18 +2890,276 @@ export const PILOT_60_QUESTION_BANK: AssessmentQuestion[] = RAW_60_ITEMS.map(
     translations: { ta, hi },
     context,
     whyWeAsk,
-    options: opts.map((o) => ({
-      id: o.id,
-      semanticId: o.semanticId,
-      normalizedValue: o.val,
-      label: o.label,
-      reflection: o.reflection,
-      signalEffect: o.signalEffect,
-      welcomesComplementarity: o.welcomesComplementarity ?? true,
-      contextTag: o.contextTag,
-    })),
+    scoringType: getScoringType(id, formatType),
+    researchBasis: getResearchBasis(id, constructId, module),
+    measurementLimitations: getMeasurementLimitations(id, formatType),
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
+    options: opts.map((o) => {
+      const trans = getOptionTranslations(o.id, o.label);
+      return {
+        id: o.id,
+        semanticId: o.semanticId,
+        normalizedValue: o.val,
+        label: o.label,
+        reflection: o.reflection,
+        signalEffect: o.signalEffect,
+        welcomesComplementarity: o.welcomesComplementarity ?? true,
+        contextTag: o.contextTag,
+        labelTa: trans.ta,
+        labelHi: trans.hi,
+        translationReviewStatus: 'machine_translation_pending_human_review' as const,
+      };
+    }),
   })
 );
+
+export const LIFESTYLE_SMOKING_VAPING_ITEMS: AssessmentQuestion[] = [
+  {
+    id: 'q-61-smoking-habit',
+    themeId: 'theme-habits',
+    questionNumber: 61,
+    module: 'Lifestyle, Health & Habits',
+    intentionScope: 'All intentions',
+    applicableIntentions: ['friendship', 'dating', 'matrimony'],
+    constructId: 'daily_lifestyle',
+    facetId: 'smoking_vaping_habit',
+    formatType: 'direct_preference',
+    scoringType: 'categorical_preference',
+    stage: 1,
+    reverseKeyed: false,
+    validationStatus: 'ORIGINAL / UNVALIDATED',
+    supportedLanguages: ['en', 'ta', 'hi'],
+    prompt: 'How would you describe your personal lifestyle regarding smoking or vaping?',
+    translations: {
+      ta: 'புகைபிடித்தல் அல்லது வேப்பிங் தொடர்பான உங்கள் தனிப்பட்ட பழக்கவழக்கம் என்ன?',
+      hi: 'धूम्रपान (स्मोकिंग) या वेपिंग से संबंधित आपकी व्यक्तिगत जीवनशैली क्या है?',
+    },
+    context: 'Voluntary self-disclosure. Never shared publicly as a label or inferred from personality traits.',
+    whyWeAsk: 'Helps members match on lifestyle comfort without making assumptions or moral judgments.',
+    researchBasis: 'World Health Organization (2023) Tobacco Framework & lifestyle habits concordance in cohabitation.',
+    measurementLimitations: 'Self-reported habit; respect voluntary disclosure and right to keep private.',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
+    options: [
+      {
+        id: 'opt-q61-non-smoker',
+        semanticId: 'sem-smoking-non-smoker',
+        normalizedValue: 0,
+        label: 'Non-smoker (I do not smoke cigarettes or vape)',
+        labelTa: 'புகைபிடிக்காதவர் (நான் சிகரெட் அல்லது வேப் பயன்படுத்துவதில்லை)',
+        labelHi: 'धूम्रपान न करने वाला (मैं सिगरेट या वेप का उपयोग नहीं करता)',
+        reflection: 'Non-smoker lifestyle baseline.',
+        signalEffect: 'Lifestyle habit concordance',
+        welcomesComplementarity: true,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+      {
+        id: 'opt-q61-occasional',
+        semanticId: 'sem-smoking-occasional',
+        normalizedValue: 35,
+        label: 'Occasional social smoker (rarely, during social gatherings)',
+        labelTa: 'எப்போதாவது நண்பர்களுடன் புகைபிடிப்பவர் (அரிதாக)',
+        labelHi: 'कभी-कभार सामाजिक रूप से (मित्रों के साथ कभी-कभी)',
+        reflection: 'Occasional social smoker.',
+        signalEffect: 'Lifestyle habit note',
+        welcomesComplementarity: true,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+      {
+        id: 'opt-q61-regular',
+        semanticId: 'sem-smoking-regular',
+        normalizedValue: 80,
+        label: 'Regular smoker (cigarettes on a daily basis)',
+        labelTa: 'வழக்கமாக புகைபிடிப்பவர் (தினசரி)',
+        labelHi: 'नियमित धूम्रपान (दैनिक रूप से)',
+        reflection: 'Regular smoker.',
+        signalEffect: 'Lifestyle habit note',
+        welcomesComplementarity: false,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+      {
+        id: 'opt-q61-vape-only',
+        semanticId: 'sem-smoking-vape-only',
+        normalizedValue: 50,
+        label: 'Vape / e-cigarette only (no combustible tobacco)',
+        labelTa: 'வேப் அல்லது இ-சிகரெட் மட்டும் (புகையிலை இல்லை)',
+        labelHi: 'केवल वेप / ई-सिगरेट (तंबाकू नहीं)',
+        reflection: 'Vape only.',
+        signalEffect: 'Lifestyle habit note',
+        welcomesComplementarity: true,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+      {
+        id: 'opt-q61-prefer-not-say',
+        semanticId: 'sem-smoking-prefer-not-say',
+        normalizedValue: 50,
+        label: 'Prefer not to say (private)',
+        labelTa: 'சொல்ல விரும்பவில்லை (தனிப்பட்டது)',
+        labelHi: 'बताना नहीं चाहते (निजी)',
+        reflection: 'Private preference.',
+        signalEffect: 'Kept private without penalty',
+        welcomesComplementarity: true,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+    ],
+  },
+  {
+    id: 'q-62-smoking-comfort',
+    themeId: 'theme-habits',
+    questionNumber: 62,
+    module: 'Lifestyle, Health & Habits',
+    intentionScope: 'All intentions',
+    applicableIntentions: ['friendship', 'dating', 'matrimony'],
+    constructId: 'daily_lifestyle',
+    facetId: 'smoking_environment_comfort',
+    formatType: 'direct_preference',
+    scoringType: 'categorical_preference',
+    stage: 2,
+    reverseKeyed: false,
+    validationStatus: 'ORIGINAL / UNVALIDATED',
+    supportedLanguages: ['en', 'ta', 'hi'],
+    prompt: 'What is your comfort level being around smoke or aerosol in shared spaces?',
+    translations: {
+      ta: 'பொதுவான இடங்களில் புகை அல்லது வேப்பிங் காற்றில் இருப்பதில் உங்கள் சௌகரிய நிலை என்ன?',
+      hi: 'साझा स्थानों में धुएं या वेपर के आसपास रहने में आपकी सहजता का स्तर क्या है?',
+    },
+    context: 'Focuses purely on physical environmental comfort (e.g. respiratory sensitivity, cafe patios vs. smoke-free interiors).',
+    whyWeAsk: 'Ensures meet-ups and shared environments respect physical comfort and respiratory health.',
+    researchBasis: 'Environmental tobacco smoke comfort & co-presence dynamics in hospitality settings.',
+    measurementLimitations: 'Measures environmental tolerance rather than moral judgment.',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
+    options: [
+      {
+        id: 'opt-q62-smoke-free-only',
+        semanticId: 'sem-comfort-smoke-free-only',
+        normalizedValue: 10,
+        label: 'Strictly smoke-free spaces only (sensitive to smoke/vapor)',
+        labelTa: 'முற்றிலும் புகை இல்லாத இடங்கள் மட்டுமே (ஒவ்வாமை அல்லது விருப்பமின்மை)',
+        labelHi: 'केवल पूर्णतः धूम्रपान-मुक्त स्थान (धुएं के प्रति संवेदनशील)',
+        reflection: 'Requires smoke-free environments.',
+        signalEffect: 'Environmental compatibility note',
+        welcomesComplementarity: false,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+      {
+        id: 'opt-q62-outdoors-only',
+        semanticId: 'sem-comfort-outdoors-only',
+        normalizedValue: 50,
+        label: 'Comfortable if outdoors or well-ventilated; prefer smoke-free indoors',
+        labelTa: 'வெளியரங்கங்களில் பரவாயில்லை; உள்ளரங்கங்களில் புகை இல்லாதது விரும்பத்தக்கது',
+        labelHi: 'खुले स्थान में ठीक है; बंद कमरों में धूम्रपान-मुक्त पसंद है',
+        reflection: 'Comfortable outdoors.',
+        signalEffect: 'Environmental compatibility note',
+        welcomesComplementarity: true,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+      {
+        id: 'opt-q62-fully-comfortable',
+        semanticId: 'sem-comfort-fully-comfortable',
+        normalizedValue: 90,
+        label: 'Fully comfortable in any setting (does not bother me)',
+        labelTa: 'எந்த சூழலிலும் முழு சௌகரியம் (என்னை பாதிக்காது)',
+        labelHi: 'किसी भी माहौल में पूरी तरह सहज (मुझे कोई परेशानी नहीं)',
+        reflection: 'Fully comfortable.',
+        signalEffect: 'Environmental compatibility note',
+        welcomesComplementarity: true,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+      {
+        id: 'opt-q62-prefer-not-say',
+        semanticId: 'sem-comfort-prefer-not-say',
+        normalizedValue: 50,
+        label: 'Prefer not to say',
+        labelTa: 'சொல்ல விரும்பவில்லை',
+        labelHi: 'बताना नहीं चाहते',
+        reflection: 'Private comfort setting.',
+        signalEffect: 'Kept private without penalty',
+        welcomesComplementarity: true,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+    ],
+  },
+  {
+    id: 'q-63-partner-smoking-requirement',
+    themeId: 'theme-habits',
+    questionNumber: 63,
+    module: 'Lifestyle, Health & Habits',
+    intentionScope: 'All intentions',
+    applicableIntentions: ['friendship', 'dating', 'matrimony'],
+    constructId: 'daily_lifestyle',
+    facetId: 'partner_smoking_requirement',
+    formatType: 'importance_boundary',
+    scoringType: 'essential_gate',
+    stage: 1,
+    reverseKeyed: false,
+    validationStatus: 'ORIGINAL / UNVALIDATED',
+    supportedLanguages: ['en', 'ta', 'hi'],
+    prompt: "Do you have a personal preference or requirement regarding a partner's smoking habits in Dating or Matrimony?",
+    translations: {
+      ta: 'டேட்டிங் அல்லது திருமண உறவில் துணையின் புகைபிடிக்கும் பழக்கம் குறித்து ஏதேனும் கட்டாய நிபந்தனை உள்ளதா?',
+      hi: 'डेटिंग या वैवाहिक जीवन में क्या जीवनसाथी के धूम्रपान की आदत पर आपकी कोई अनिवार्यता या प्राथमिकता है?',
+    },
+    context: 'Applied strictly to Dating and Matrimony when set as a non-negotiable requirement. In Friendship, this is informational only.',
+    whyWeAsk: 'Prevents mismatched lifestyle expectations early and protects personal boundaries.',
+    researchBasis: 'Stage A Mutual Eligibility Boundary: Homish & Leonard (2005) Marital concord and smoking habits.',
+    measurementLimitations: 'Applied only to romantic intentions where explicitly configured by the user.',
+    optionTranslationsReviewStatus: 'machine_translation_pending_human_review',
+    options: [
+      {
+        id: 'opt-q63-must-be-non-smoker',
+        semanticId: 'sem-req-must-be-non-smoker',
+        normalizedValue: 10,
+        label: 'Must be a non-smoker (essential for romantic / matrimonial partnership)',
+        labelTa: 'கண்டிப்பாக புகைபிடிக்காதவராக இருக்க வேண்டும் (அவசியமான நிபந்தனை)',
+        labelHi: 'धूम्रपान न करने वाला होना अनिवार्य है (प्रेम या वैवाहिक संबंध हेतु)',
+        reflection: 'Non-negotiable requirement: non-smoker.',
+        signalEffect: 'Stage A Mutual Eligibility check for Dating/Matrimony',
+        welcomesComplementarity: false,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+      {
+        id: 'opt-q63-occasional-or-vape',
+        semanticId: 'sem-req-occasional-or-vape',
+        normalizedValue: 50,
+        label: 'Occasional social smoking or vaping is acceptable; regular daily smoking is not',
+        labelTa: 'எப்போதாவது அல்லது வேப்பிங் பரவாயில்லை; தினசரி சிகரெட் கூடாது',
+        labelHi: 'कभी-कभार सामाजिक या वेप स्वीकार्य है; दैनिक नियमित धूम्रपान नहीं',
+        reflection: 'Accepts occasional or vape.',
+        signalEffect: 'Stage A Mutual Eligibility check for Dating/Matrimony',
+        welcomesComplementarity: true,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+      {
+        id: 'opt-q63-no-preference',
+        semanticId: 'sem-req-no-preference',
+        normalizedValue: 90,
+        label: 'No preference (open to anyone regardless of habit)',
+        labelTa: 'எந்த நிபந்தனையும் இல்லை (அனைவருக்கும் திறந்தது)',
+        labelHi: 'कोई विशेष शर्त नहीं (व्यक्तिगत पसंद पर कोई रोक नहीं)',
+        reflection: 'No smoking requirement.',
+        signalEffect: 'Stage A Mutual Eligibility: Open',
+        welcomesComplementarity: true,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+      {
+        id: 'opt-q63-prefer-not-say',
+        semanticId: 'sem-req-prefer-not-say',
+        normalizedValue: 50,
+        label: 'Prefer not to say / Unsure',
+        labelTa: 'சொல்ல விரும்பவில்லை / இன்னும் முடிவு செய்யவில்லை',
+        labelHi: 'बताना नहीं चाहते / अभी अनिश्चित हैं',
+        reflection: 'Unspecified requirement.',
+        signalEffect: 'Treated as unknown requirement without blocking',
+        welcomesComplementarity: true,
+        translationReviewStatus: 'machine_translation_pending_human_review',
+      },
+    ],
+  },
+];
+
+export const RESEARCH_PILOT_QUESTION_BANK: AssessmentQuestion[] = [
+  ...PILOT_60_QUESTION_BANK,
+  ...LIFESTYLE_SMOKING_VAPING_ITEMS,
+];
 
 /**
  * TASK 4: Programmatic Verification & Psychometric Audit of the 60-Question Pilot Bank.
@@ -2807,6 +3193,11 @@ export function auditPilotQuestionBank(
   let allHaveThreeLanguages = true;
   let allMarkedOriginalUnvalidated = true;
   let duplicatePromptsFound = 0;
+  let allHaveScoringTypes = true;
+  let allHaveResearchBasis = true;
+  let allHaveMeasurementLimitations = true;
+  let allHaveOptionTranslations = true;
+  const scoringTypeCounts: Record<string, number> = {};
   const issues: QuestionAuditIssue[] = [];
 
   for (const q of questions) {
@@ -2826,6 +3217,20 @@ export function auditPilotQuestionBank(
 
     if (q.validationStatus !== 'ORIGINAL / UNVALIDATED') {
       allMarkedOriginalUnvalidated = false;
+    }
+
+    if (!q.scoringType) {
+      allHaveScoringTypes = false;
+    } else {
+      scoringTypeCounts[q.scoringType] = (scoringTypeCounts[q.scoringType] ?? 0) + 1;
+    }
+
+    if (!q.researchBasis || q.researchBasis.trim().length === 0) {
+      allHaveResearchBasis = false;
+    }
+
+    if (!q.measurementLimitations || q.measurementLimitations.trim().length === 0) {
+      allHaveMeasurementLimitations = false;
     }
 
     const normPrompt = q.prompt.trim().toLowerCase();
@@ -2853,6 +3258,10 @@ export function auditPilotQuestionBank(
     }
 
     for (const opt of q.options) {
+      if (!opt.labelTa || !opt.labelHi) {
+        allHaveOptionTranslations = false;
+      }
+
       if (!opt.semanticId || seenSemanticIds.has(opt.semanticId)) {
         allHaveUniqueSemanticIds = false;
         issues.push({
@@ -2937,5 +3346,10 @@ export function auditPilotQuestionBank(
     allMarkedOriginalUnvalidated,
     duplicatePromptsFound,
     itemsFlaggedForHumanExpertReview: [...issues, ...expertReviewNotes],
+    allHaveScoringTypes,
+    allHaveResearchBasis,
+    allHaveMeasurementLimitations,
+    allHaveOptionTranslations,
+    scoringTypeCounts,
   };
 }

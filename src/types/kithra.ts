@@ -81,6 +81,35 @@ export type LongTermChildrenPreference =
   | 'unknown'
   | 'prefer_not_to_answer';
 
+export type SmokingHabitStatus =
+  | 'non_smoker'
+  | 'occasional_social_smoker'
+  | 'regular_smoker'
+  | 'vape_only'
+  | 'prefer_not_to_say'
+  | 'unknown';
+
+export type SmokingEnvironmentComfort =
+  | 'smoke_free_only'
+  | 'outdoors_only'
+  | 'fully_comfortable'
+  | 'prefer_not_to_say'
+  | 'unknown';
+
+export type PartnerSmokingRequirement =
+  | 'must_be_non_smoker'
+  | 'occasional_or_vape_acceptable'
+  | 'no_preference'
+  | 'prefer_not_to_say'
+  | 'unknown';
+
+export interface SmokingVapingProfile {
+  personalHabit: SmokingHabitStatus;
+  environmentComfort: SmokingEnvironmentComfort;
+  partnerRequirementByIntention: Partial<Record<IntentionId, PartnerSmokingRequirement>>;
+  isVoluntarilyDisclosed: boolean;
+}
+
 export type AssessmentStage =
   | 'stage_1_lightweight'
   | 'stage_2_initial'
@@ -211,6 +240,7 @@ export interface MemberEligibilityRequirements {
   childrenRequirementLevel?: ImportanceLevel;
   childrenPreferenceImportance?: ImportanceLevel;
   relocationOpenness?: 'open' | 'anchored_in_city' | 'flexible' | 'unknown';
+  smokingVapingProfile?: SmokingVapingProfile;
 }
 
 export interface ConstructVectorPoint {
@@ -281,6 +311,10 @@ export interface MemberProfile {
    * Explicit mutual eligibility settings
    */
   eligibility?: MemberEligibilityRequirements;
+  /**
+   * Lifestyle smoking and vaping profile (voluntarily disclosed)
+   */
+  smokingVapingProfile?: SmokingVapingProfile;
 }
 
 export interface PhotoCropTransform {
@@ -332,6 +366,14 @@ export interface AssessmentQuestionOption {
   welcomesComplementarity?: boolean;
   /** Flags if an option represents tolerance of boundary violation (never rewarded) */
   isBoundaryViolationTolerance?: boolean;
+  /** Tamil translation of the option label */
+  labelTa?: string;
+  /** Hindi translation of the option label */
+  labelHi?: string;
+  /** Translation review status */
+  translationReviewStatus?: 'machine_translation_pending_human_review' | 'human_reviewed';
+  /** Measured flexibility contribution when this option explicitly reflects adaptability */
+  measuredFlexibility?: number;
 }
 
 export interface AssessmentQuestion {
@@ -343,7 +385,8 @@ export interface AssessmentQuestion {
   | 'Everyday Values & Repair'
   | 'Social Energy & Community'
   | 'Independence, Home & Finances'
-  | 'Long-Term Partnership & Family Context';
+  | 'Long-Term Partnership & Family Context'
+  | 'Lifestyle, Health & Habits';
   intentionScope: 'All intentions' | 'Friendship & Dating' | 'Matrimony & Partnership';
   applicableIntentions: IntentionId[];
   prompt: string;
@@ -362,6 +405,12 @@ export interface AssessmentQuestion {
   validationStatus?: 'ORIGINAL / UNVALIDATED' | 'PILOT_REVIEWED' | 'VALIDATED';
   supportedLanguages?: ('en' | 'ta' | 'hi')[];
   translations?: Partial<Record<'ta' | 'hi', string>>;
+  /** Psychometric scoring classification */
+  scoringType?: 'continuous_trait' | 'categorical_preference' | 'essential_gate' | 'qualitative_reflection';
+  researchBasis?: string;
+  measurementLimitations?: string;
+  targetFacetName?: string;
+  optionTranslationsReviewStatus?: 'machine_translation_pending_human_review' | 'human_reviewed';
 }
 
 export interface MessageItem {

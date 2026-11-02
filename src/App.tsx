@@ -293,8 +293,12 @@ export default function App() {
     setProfiles(dynamicCandidates);
   }, [activeMemberId, intentionFilter]);
 
-  const handleSelectAssessmentAnswer = (questionId: string, optionId: string) => {
-    memberStore.saveMemberAnswer(activeMemberId, questionId, optionId);
+  const handleSelectAssessmentAnswer = (
+    questionId: string,
+    optionId: string,
+    displayedOptionIndex?: number
+  ) => {
+    memberStore.saveMemberAnswer(activeMemberId, questionId, optionId, 3000, displayedOptionIndex);
     setAssessmentAnswers((prev) => ({ ...prev, [questionId]: optionId }));
     const dynamicCandidates = memberStore.getDynamicMatchesForActiveMember(
       activeMemberId,

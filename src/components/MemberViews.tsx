@@ -74,7 +74,7 @@ interface MemberShellProps {
   onUpdatePhotos: React.Dispatch<React.SetStateAction<MemberPhoto[]>>;
   questions: AssessmentQuestion[];
   assessmentAnswers: Record<string, string>;
-  onSelectAssessmentAnswer: (questionId: string, optionId: string) => void;
+  onSelectAssessmentAnswer: (questionId: string, optionId: string, displayedOptionIndex?: number) => void;
   conversations: ConversationThread[];
   onSendMessage: (conversationId: string, text: string) => void;
   circles: CommunityCircle[];
@@ -537,7 +537,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
               </span>
             )}
           </button>
-          {!collapsed && onSwitchActiveMember && (
+          {!collapsed && Boolean(import.meta.env.DEV) && onSwitchActiveMember && (
             <div className="pt-2 border-t border-[var(--line)]/50 mt-1 px-1">
               <label
                 htmlFor="member-account-switcher"
@@ -2319,7 +2319,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                         `session-${selfName}-${currentQuestion.id}`
                       )
                       : currentQuestion.options
-                    ).map((opt) => {
+                    ).map((opt, optIdx) => {
                       const isChosen = assessmentAnswers[currentQuestion.id] === opt.id;
                       return (
                         <button
@@ -2327,7 +2327,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                           type="button"
                           aria-pressed={isChosen}
                           onClick={() =>
-                            onSelectAssessmentAnswer(currentQuestion.id, opt.id)
+                            onSelectAssessmentAnswer(currentQuestion.id, opt.id, optIdx)
                           }
                           className={`w-full text-left p-4 rounded-[12px] border transition-colors cursor-pointer ${isChosen
                             ? 'bg-[var(--surface2)] border-[var(--heading)]'

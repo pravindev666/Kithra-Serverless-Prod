@@ -13,9 +13,17 @@ import {
   ConstructVectorPoint,
   IntentionId,
   MemberProfile,
+  PartnerSmokingRequirement,
   RelationshipSignalKind,
+  SmokingVapingProfile,
 } from '../types/kithra';
-import { PILOT_60_QUESTION_BANK } from '../data/pilotQuestionBank';
+import {
+  PILOT_60_QUESTION_BANK,
+  RESEARCH_PILOT_QUESTION_BANK,
+} from '../data/pilotQuestionBank';
+import {
+  selectNextAdaptiveQuestion,
+} from './adaptiveQuestionEngine';
 import {
   AdministeredItemResponse,
   authorizeRawAnswerAccess,
@@ -48,6 +56,7 @@ export interface StoredRawResponse {
   semanticId?: string;
   answeredAt: number;
   responseLatencyMs?: number;
+  displayedOptionIndex?: number;
 }
 
 export type RawResponsesByMember = Record<string, Record<string, StoredRawResponse>>;
@@ -407,6 +416,16 @@ function createInitialStoreState(): MemberStoreState {
       experimentalSecondaryPattern: kavyaStaged.assignedSecondaryArchetype ?? undefined,
       alignment: [],
       measuredDimensions: [],
+      smokingVapingProfile: {
+        personalHabit: 'non_smoker',
+        environmentComfort: 'smoke_free_only',
+        partnerRequirementByIntention: {
+          dating: 'must_be_non_smoker',
+          matrimony: 'must_be_non_smoker',
+          friendship: 'no_preference',
+        },
+        isVoluntarilyDisclosed: true,
+      },
       eligibility: {
         memberId: 'member-kavya',
         isAdultVerified: true,
@@ -416,6 +435,16 @@ function createInitialStoreState(): MemberStoreState {
         relationshipStructure: 'exclusive_required',
         childrenPreference: 'wants_children',
         childrenRequirementLevel: 'flexible',
+        smokingVapingProfile: {
+          personalHabit: 'non_smoker',
+          environmentComfort: 'smoke_free_only',
+          partnerRequirementByIntention: {
+            dating: 'must_be_non_smoker',
+            matrimony: 'must_be_non_smoker',
+            friendship: 'no_preference',
+          },
+          isVoluntarilyDisclosed: true,
+        },
       },
     },
     'member-aarav': {
@@ -440,6 +469,16 @@ function createInitialStoreState(): MemberStoreState {
       experimentalSecondaryPattern: aaravStaged.assignedSecondaryArchetype ?? undefined,
       alignment: [],
       measuredDimensions: [],
+      smokingVapingProfile: {
+        personalHabit: 'non_smoker',
+        environmentComfort: 'outdoors_only',
+        partnerRequirementByIntention: {
+          dating: 'must_be_non_smoker',
+          matrimony: 'must_be_non_smoker',
+          friendship: 'no_preference',
+        },
+        isVoluntarilyDisclosed: true,
+      },
       eligibility: {
         memberId: 'member-aarav',
         isAdultVerified: true,
@@ -449,6 +488,16 @@ function createInitialStoreState(): MemberStoreState {
         relationshipStructure: 'exclusive_preferred',
         childrenPreference: 'wants_children',
         childrenRequirementLevel: 'flexible',
+        smokingVapingProfile: {
+          personalHabit: 'non_smoker',
+          environmentComfort: 'outdoors_only',
+          partnerRequirementByIntention: {
+            dating: 'must_be_non_smoker',
+            matrimony: 'must_be_non_smoker',
+            friendship: 'no_preference',
+          },
+          isVoluntarilyDisclosed: true,
+        },
       },
     },
     'member-meera': {
@@ -473,6 +522,16 @@ function createInitialStoreState(): MemberStoreState {
       experimentalSecondaryPattern: meeraStaged.assignedSecondaryArchetype ?? undefined,
       alignment: [],
       measuredDimensions: [],
+      smokingVapingProfile: {
+        personalHabit: 'non_smoker',
+        environmentComfort: 'smoke_free_only',
+        partnerRequirementByIntention: {
+          dating: 'must_be_non_smoker',
+          matrimony: 'must_be_non_smoker',
+          friendship: 'no_preference',
+        },
+        isVoluntarilyDisclosed: true,
+      },
       eligibility: {
         memberId: 'member-meera',
         isAdultVerified: true,
@@ -482,6 +541,16 @@ function createInitialStoreState(): MemberStoreState {
         relationshipStructure: 'exclusive_required',
         childrenPreference: 'wants_children',
         childrenRequirementLevel: 'essential',
+        smokingVapingProfile: {
+          personalHabit: 'non_smoker',
+          environmentComfort: 'smoke_free_only',
+          partnerRequirementByIntention: {
+            dating: 'must_be_non_smoker',
+            matrimony: 'must_be_non_smoker',
+            friendship: 'no_preference',
+          },
+          isVoluntarilyDisclosed: true,
+        },
       },
     },
     'member-rohan': {
@@ -506,6 +575,15 @@ function createInitialStoreState(): MemberStoreState {
       experimentalSecondaryPattern: rohanStaged.assignedSecondaryArchetype ?? undefined,
       alignment: [],
       measuredDimensions: [],
+      smokingVapingProfile: {
+        personalHabit: 'occasional_social_smoker',
+        environmentComfort: 'fully_comfortable',
+        partnerRequirementByIntention: {
+          dating: 'no_preference',
+          friendship: 'no_preference',
+        },
+        isVoluntarilyDisclosed: true,
+      },
       eligibility: {
         memberId: 'member-rohan',
         isAdultVerified: true,
@@ -515,6 +593,15 @@ function createInitialStoreState(): MemberStoreState {
         relationshipStructure: 'open_required',
         childrenPreference: 'open_or_unsure',
         childrenRequirementLevel: 'flexible',
+        smokingVapingProfile: {
+          personalHabit: 'occasional_social_smoker',
+          environmentComfort: 'fully_comfortable',
+          partnerRequirementByIntention: {
+            dating: 'no_preference',
+            friendship: 'no_preference',
+          },
+          isVoluntarilyDisclosed: true,
+        },
       },
     },
     'member-tara': {
@@ -539,6 +626,12 @@ function createInitialStoreState(): MemberStoreState {
       experimentalSecondaryPattern: taraStaged.assignedSecondaryArchetype ?? undefined,
       alignment: [],
       measuredDimensions: [],
+      smokingVapingProfile: {
+        personalHabit: 'unknown',
+        environmentComfort: 'unknown',
+        partnerRequirementByIntention: {},
+        isVoluntarilyDisclosed: false,
+      },
       eligibility: {
         memberId: 'member-tara',
         isAdultVerified: true,
@@ -547,6 +640,12 @@ function createInitialStoreState(): MemberStoreState {
         blockedMemberIds: [],
         relationshipStructure: 'unknown',
         childrenPreference: 'unknown',
+        smokingVapingProfile: {
+          personalHabit: 'unknown',
+          environmentComfort: 'unknown',
+          partnerRequirementByIntention: {},
+          isVoluntarilyDisclosed: false,
+        },
       },
     },
     'member-vikram': {
@@ -571,6 +670,15 @@ function createInitialStoreState(): MemberStoreState {
       experimentalSecondaryPattern: vikramStaged.assignedSecondaryArchetype ?? undefined,
       alignment: [],
       measuredDimensions: [],
+      smokingVapingProfile: {
+        personalHabit: 'regular_smoker',
+        environmentComfort: 'fully_comfortable',
+        partnerRequirementByIntention: {
+          dating: 'no_preference',
+          friendship: 'no_preference',
+        },
+        isVoluntarilyDisclosed: true,
+      },
       eligibility: {
         memberId: 'member-vikram',
         isAdultVerified: true,
@@ -580,6 +688,15 @@ function createInitialStoreState(): MemberStoreState {
         relationshipStructure: 'exclusive_required',
         childrenPreference: 'wants_children',
         childrenRequirementLevel: 'flexible',
+        smokingVapingProfile: {
+          personalHabit: 'regular_smoker',
+          environmentComfort: 'fully_comfortable',
+          partnerRequirementByIntention: {
+            dating: 'no_preference',
+            friendship: 'no_preference',
+          },
+          isVoluntarilyDisclosed: true,
+        },
       },
     },
   };
@@ -639,6 +756,8 @@ export const memberStore = {
   /**
    * TASK 2 & 6: Saves a single assessment question response for a member.
    * - Persists raw response with timestamp and latency.
+   * - Records actual visual displayedOptionIndex and semanticId (no arbitrary idx % 3).
+   * - Automatically synchronizes Stage A gates (Q38, Q50, Q63) with member eligibility & lifestyle profile.
    * - Updates continuous construct vectors dynamically via `deriveConstructProfileFromAnswers`.
    * - Recalculates staged pattern via `evaluateMemberStagedPattern`.
    * - Evaluates response quality (non-accusatory check for rapid clicking or straight-lining).
@@ -647,7 +766,8 @@ export const memberStore = {
     memberId: string,
     questionId: string,
     optionId: string,
-    latencyMs = 3000
+    latencyMs = 3000,
+    displayedOptionIndex?: number
   ): {
     quality: ReturnType<typeof evaluateResponseQuality>;
     profile: MemberProfile;
@@ -662,12 +782,146 @@ export const memberStore = {
       storeState.rawResponses[memberId] = {};
     }
 
+    const qItem = RESEARCH_PILOT_QUESTION_BANK.find((q) => q.id === questionId);
+    const chosenOpt = qItem?.options.find((o) => o.id === optionId);
+    const semanticId = chosenOpt?.semanticId ?? optionId;
+    const resolvedDisplayedIndex =
+      displayedOptionIndex !== undefined
+        ? displayedOptionIndex
+        : (qItem?.options.findIndex((o) => o.id === optionId) ?? 0);
+
     storeState.rawResponses[memberId][questionId] = {
       questionId,
       optionId,
+      semanticId,
       answeredAt: Date.now(),
       responseLatencyMs: latencyMs,
+      displayedOptionIndex: resolvedDisplayedIndex >= 0 ? resolvedDisplayedIndex : 0,
     };
+
+    // Ensure member eligibility exists
+    if (!member.eligibility) {
+      member.eligibility = {
+        memberId,
+        isAdultVerified: true,
+        enabledIntentions: member.intentions,
+        discoverableInIntentions: member.intentions,
+        blockedMemberIds: [],
+      };
+    }
+
+    // Auto-sync Q38 Relationship Structure Gate
+    if (questionId === 'q-38-relationship-structure-gate') {
+      if (optionId === 'opt-q38-exclusive' || semanticId.includes('exclusive')) {
+        member.eligibility.relationshipStructure = 'exclusive_required';
+      } else if (optionId === 'opt-q38-open' || semanticId.includes('open')) {
+        member.eligibility.relationshipStructure = 'open_required';
+      } else if (optionId === 'opt-q38-flexible' || semanticId.includes('flexible')) {
+        member.eligibility.relationshipStructure = 'flexible_either';
+      }
+    }
+
+    // Auto-sync Q50 Children Goal Gate
+    if (questionId === 'q-50-children-goal-gate') {
+      if (optionId === 'opt-q50-wants' || semanticId.includes('wants')) {
+        member.eligibility.childrenPreference = 'wants_children';
+        member.eligibility.childrenRequirementLevel = 'essential';
+      } else if (optionId === 'opt-q50-no' || semanticId.includes('no')) {
+        member.eligibility.childrenPreference = 'does_not_want_children';
+        member.eligibility.childrenRequirementLevel = 'essential';
+      } else if (optionId === 'opt-q50-open' || semanticId.includes('open')) {
+        member.eligibility.childrenPreference = 'open_or_flexible';
+        member.eligibility.childrenRequirementLevel = 'flexible';
+      }
+    }
+
+    // Auto-sync Q61 Smoking Habit
+    if (questionId === 'q-61-smoking-habit') {
+      if (!member.smokingVapingProfile) {
+        member.smokingVapingProfile = {
+          personalHabit: 'unknown',
+          environmentComfort: 'unknown',
+          partnerRequirementByIntention: {
+            dating: 'no_preference',
+            matrimony: 'no_preference',
+            friendship: 'no_preference',
+          },
+          isVoluntarilyDisclosed: true,
+        };
+      }
+      if (optionId === 'opt-q61-non-smoker' || semanticId.includes('non-smoker')) {
+        member.smokingVapingProfile.personalHabit = 'non_smoker';
+      } else if (optionId === 'opt-q61-occasional' || semanticId.includes('occasional')) {
+        member.smokingVapingProfile.personalHabit = 'occasional_social_smoker';
+      } else if (optionId === 'opt-q61-regular' || semanticId.includes('regular')) {
+        member.smokingVapingProfile.personalHabit = 'regular_smoker';
+      } else if (optionId === 'opt-q61-vape-only' || semanticId.includes('vape-only')) {
+        member.smokingVapingProfile.personalHabit = 'vape_only';
+      } else if (optionId === 'opt-q61-prefer-not-say' || semanticId.includes('prefer-not-say')) {
+        member.smokingVapingProfile.personalHabit = 'prefer_not_to_say';
+      }
+      member.smokingVapingProfile.isVoluntarilyDisclosed = true;
+      member.eligibility.smokingVapingProfile = member.smokingVapingProfile;
+    }
+
+    // Auto-sync Q62 Smoking Environment Comfort
+    if (questionId === 'q-62-smoking-comfort') {
+      if (!member.smokingVapingProfile) {
+        member.smokingVapingProfile = {
+          personalHabit: 'unknown',
+          environmentComfort: 'unknown',
+          partnerRequirementByIntention: {
+            dating: 'no_preference',
+            matrimony: 'no_preference',
+            friendship: 'no_preference',
+          },
+          isVoluntarilyDisclosed: true,
+        };
+      }
+      if (optionId === 'opt-q62-smoke-free-only' || semanticId.includes('smoke-free')) {
+        member.smokingVapingProfile.environmentComfort = 'smoke_free_only';
+      } else if (optionId === 'opt-q62-outdoors-only' || semanticId.includes('outdoors')) {
+        member.smokingVapingProfile.environmentComfort = 'outdoors_only';
+      } else if (optionId === 'opt-q62-fully-comfortable' || semanticId.includes('fully-comfortable')) {
+        member.smokingVapingProfile.environmentComfort = 'fully_comfortable';
+      } else if (optionId === 'opt-q62-prefer-not-say' || semanticId.includes('prefer-not-say')) {
+        member.smokingVapingProfile.environmentComfort = 'prefer_not_to_say';
+      }
+      member.smokingVapingProfile.isVoluntarilyDisclosed = true;
+      member.eligibility.smokingVapingProfile = member.smokingVapingProfile;
+    }
+
+    // Auto-sync Q63 Partner Smoking Requirement
+    if (questionId === 'q-63-partner-smoking-requirement') {
+      if (!member.smokingVapingProfile) {
+        member.smokingVapingProfile = {
+          personalHabit: 'unknown',
+          environmentComfort: 'unknown',
+          partnerRequirementByIntention: {
+            dating: 'no_preference',
+            matrimony: 'no_preference',
+            friendship: 'no_preference',
+          },
+          isVoluntarilyDisclosed: true,
+        };
+      }
+      let req: PartnerSmokingRequirement = 'no_preference';
+      if (optionId === 'opt-q63-must-be-non-smoker' || semanticId.includes('must-be-non-smoker')) {
+        req = 'must_be_non_smoker';
+      } else if (optionId === 'opt-q63-occasional-or-vape' || semanticId.includes('occasional-or-vape')) {
+        req = 'occasional_or_vape_acceptable';
+      } else if (optionId === 'opt-q63-no-preference' || semanticId.includes('no-preference')) {
+        req = 'no_preference';
+      } else if (optionId === 'opt-q63-prefer-not-say' || semanticId.includes('prefer-not-say')) {
+        req = 'prefer_not_to_say';
+      }
+
+      member.smokingVapingProfile.partnerRequirementByIntention.dating = req;
+      member.smokingVapingProfile.partnerRequirementByIntention.matrimony = req;
+      member.smokingVapingProfile.partnerRequirementByIntention.friendship = 'no_preference';
+      member.smokingVapingProfile.isVoluntarilyDisclosed = true;
+      member.eligibility.smokingVapingProfile = member.smokingVapingProfile;
+    }
 
     // Extract flat answer dictionary
     const rawAnswersDict: Record<string, string> = {};
@@ -678,7 +932,7 @@ export const memberStore = {
     }
 
     // Dynamic construct profile derivation
-    const constructs = deriveConstructProfileFromAnswers(rawAnswersDict, PILOT_60_QUESTION_BANK);
+    const constructs = deriveConstructProfileFromAnswers(rawAnswersDict, RESEARCH_PILOT_QUESTION_BANK);
 
     // Dynamic staged pattern evaluation
     const staged = evaluateMemberStagedPattern(
@@ -692,8 +946,8 @@ export const memberStore = {
     ).map(([qId, rec], idx) => ({
       questionId: qId,
       itemId: qId,
-      displayedOptionIndex: idx % 3,
-      semanticOptionId: rec.optionId,
+      displayedOptionIndex: rec.displayedOptionIndex ?? (idx % 4),
+      semanticOptionId: rec.semanticId ?? rec.optionId,
       responseTimeMs: rec.responseLatencyMs ?? latencyMs,
     }));
 
@@ -714,6 +968,18 @@ export const memberStore = {
       profile: member,
       constructProfile: constructs,
     };
+  },
+
+  /**
+   * Adaptive Question Selection: Predicts and provides the next question
+   * tailored to the member's current answered set and intentions.
+   */
+  getNextAdaptiveQuestionForMember(memberId: string) {
+    const member = storeState.members[memberId];
+    if (!member) throw new Error(`Member not found: ${memberId}`);
+    const rawMap = storeState.rawResponses[memberId] ?? {};
+    const answeredIds = Object.keys(rawMap);
+    return selectNextAdaptiveQuestion(answeredIds, member.intentions, RESEARCH_PILOT_QUESTION_BANK);
   },
 
   /**
@@ -843,6 +1109,11 @@ export const memberStore = {
       throw new Error(`Members not found: ${viewerId}, ${candidateId}`);
     }
     return evaluateMemberPairwiseMatch(viewer, candidate, intention);
+  },
+
+  /** Get internal store state for diagnostic inspection and tests */
+  getInternalState(): typeof storeState {
+    return storeState;
   },
 
   /** Reset store to original factory calibrated state */

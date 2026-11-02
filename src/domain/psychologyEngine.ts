@@ -10,9 +10,13 @@ import {
   IntentionId,
   MemberEligibilityRequirements,
   MemberProfile,
+  PartnerSmokingRequirement,
   RelationshipSignalKind,
   ResponseQualityState,
   SimilarityPresetId,
+  SmokingEnvironmentComfort,
+  SmokingHabitStatus,
+  SmokingVapingProfile,
 } from '../types/kithra';
 import { PILOT_60_QUESTION_BANK } from '../data/pilotQuestionBank';
 
@@ -236,8 +240,8 @@ export function evaluateMutualEligibility(
 
   // 2. Blocking rules (symmetric 0ms block enforcement across all intentions)
   if (
-    viewer.blockedMemberIds.includes(candidateId) ||
-    candidate.blockedMemberIds.includes(viewerId)
+    (viewer.blockedMemberIds ?? []).includes(candidateId) ||
+    (candidate.blockedMemberIds ?? []).includes(viewerId)
   ) {
     return {
       eligible: false,
@@ -263,9 +267,9 @@ export function evaluateMutualEligibility(
       ? candidate.discoveryEnabledByIntention[intention] !== false
       : true;
 
-  const viewerEnabled = viewer.enabledIntentions.includes(intention) && viewerDiscoverable;
+  const viewerEnabled = (viewer.enabledIntentions ?? [intention]).includes(intention) && viewerDiscoverable;
   const candidateEnabled =
-    candidate.enabledIntentions.includes(intention) && candidateDiscoverable;
+    (candidate.enabledIntentions ?? [intention]).includes(intention) && candidateDiscoverable;
 
   if (!viewerEnabled || !candidateEnabled) {
     return {
@@ -331,6 +335,57 @@ export function evaluateMutualEligibility(
         if (childConflict) {
           reasons.push('incompatible_children_goal');
         }
+      }
+    }
+  }
+
+  // 6. Privacy-preserving lifestyle smoking & vaping compatibility check (Stage A)
+  const vSmokeProfile = viewer.smokingVapingProfile;
+  const cSmokeProfile = candidate.smokingVapingProfile;
+
+  if (vSmokeProfile || cSmokeProfile) {
+    const vReq =
+      vSmokeProfile?.partnerRequirementByIntention?.[intention] ?? 'no_preference';
+    const cReq =
+      cSmokeProfile?.partnerRequirementByIntention?.[intention] ?? 'no_preference';
+    const vHabit = vSmokeProfile?.personalHabit ?? 'unknown';
+    const cHabit = cSmokeProfile?.personalHabit ?? 'unknown';
+
+    // Viewer requirement check against candidate
+    if (vReq === 'must_be_non_smoker') {
+      if (cHabit === 'unknown' || cHabit === 'prefer_not_to_say') {
+        unknownFields.push('smoking_habit');
+      } else if (
+        cHabit === 'regular_smoker' ||
+        cHabit === 'occasional_social_smoker' ||
+        cHabit === 'vape_only'
+      ) {
+        reasons.push('incompatible_smoking_preference');
+      }
+    } else if (vReq === 'occasional_or_vape_acceptable') {
+      if (cHabit === 'unknown' || cHabit === 'prefer_not_to_say') {
+        unknownFields.push('smoking_habit');
+      } else if (cHabit === 'regular_smoker') {
+        reasons.push('incompatible_smoking_preference');
+      }
+    }
+
+    // Candidate requirement check against viewer
+    if (cReq === 'must_be_non_smoker') {
+      if (vHabit === 'unknown' || vHabit === 'prefer_not_to_say') {
+        unknownFields.push('smoking_habit');
+      } else if (
+        vHabit === 'regular_smoker' ||
+        vHabit === 'occasional_social_smoker' ||
+        vHabit === 'vape_only'
+      ) {
+        reasons.push('incompatible_smoking_preference');
+      }
+    } else if (cReq === 'occasional_or_vape_acceptable') {
+      if (vHabit === 'unknown' || vHabit === 'prefer_not_to_say') {
+        unknownFields.push('smoking_habit');
+      } else if (vHabit === 'regular_smoker') {
+        reasons.push('incompatible_smoking_preference');
       }
     }
   }
@@ -624,24 +679,36 @@ export function evaluateWeBalanceEachOther(
     evaluatedConstructs += 1;
     const diff = Math.abs(v.score - c.score);
     const label = v.constructName ?? formatConstructLayerName(v.constructId);
-    const vWelcomes = v.welcomesComplementarity ?? true;
-    const cWelcomes = c.welcomesComplementarity ?? true;
-    const vFlex = v.flexibility ?? 75;
-    const cFlex = c.flexibility ?? 75;
+    const mutualAcceptance =
+      options?.mutualAcceptanceOfDifference ??
+      (Boolean(v.welcomesComplementarity) && Boolean(c.welcomesComplementarity));
+    const vFlex = v.flexibility ?? (v.importance === 'flexible' ? 75 : undefined);
+    const cFlex = c.flexibility ?? (c.importance === 'flexible' ? 75 : undefined);
 
     // Moderate-to-meaningful difference (20..75 points) where BOTH welcome complementarity
     if (diff >= 20 && diff <= 75) {
-      if (vWelcomes && cWelcomes && vFlex >= 55 && cFlex >= 55) {
+      if (
+        mutualAcceptance &&
+        vFlex !== undefined &&
+        cFlex !== undefined &&
+        vFlex >= 55 &&
+        cFlex >= 55
+      ) {
         complementaryThemes.push(label);
         mutuallyAcceptedPairs.push(
-          `Both welcome complementary balance in ${label.toLowerCase()}.`
+          `Both members explicitly welcome complementary balance in ${label.toLowerCase()}.`
         );
         pairScores += 88;
-      } else {
+      } else if (!mutualAcceptance) {
         unwelcomedDifferenceWarnings.push(
-          `Different preferences in ${label.toLowerCase()} may require active compromise.`
+          `Measured differences in ${label.toLowerCase()}—one or both members prefer similarity rather than complementary contrast.`
         );
         pairScores += 35;
+      } else {
+        unwelcomedDifferenceWarnings.push(
+          `Different preferences in ${label.toLowerCase()} require flexibility that has not yet been confirmed.`
+        );
+        pairScores += 40;
       }
     } else if (diff < 20) {
       // High similarity also contributes steady baseline harmony if both are flexible
@@ -1095,9 +1162,20 @@ export function evaluateMemberStagedPattern(
   }
 
   if (answeredCount < 15) {
-    // Stage 1 (5–14 questions): Explicitly NO archetype assignment! Only a small provisional observation.
-    const notice =
-      'Early provisional note only: 5 questions cannot assign a fixed personality type. Based on your initial answers, you lean toward thoughtful, unhurried communication and calm conflict repair. Answer 15+ questions across themes to see developing pattern summaries.';
+    // Stage 1 (5–14 questions): Explicitly NO archetype assignment! Cautious, transparent summary based strictly on answered constructs.
+    const measuredConstructNames = Array.isArray(constructsOrPrimaryTendency)
+      ? constructsOrPrimaryTendency
+        .filter((c) => (c.itemCount ?? c.answeredItemCount ?? 0) > 0)
+        .map((c) => c.constructName ?? formatConstructLayerName(c.constructId))
+      : [];
+
+    const constructSummary =
+      measuredConstructNames.length > 0
+        ? `Based on initial reflections across ${measuredConstructNames.slice(0, 3).join(', ')}, your responses show early exploratory patterns.`
+        : 'Based on your first answers, initial reflections are recorded.';
+
+    const notice = `5 questions cannot assign a fixed personality type. ${constructSummary} Complete 15+ questions across themes to see developing pattern summaries.`;
+
     return {
       answeredCount,
       stage: 1,
@@ -1107,8 +1185,7 @@ export function evaluateMemberStagedPattern(
       primaryMetadata: null,
       secondaryMetadata: null,
       provisionalInsightTitle: 'Early Provisional Reflection (Stage 1 · 5+ Questions)',
-      provisionalInsightBody:
-        'Based on your first answers, you currently lean toward thoughtful, unhurried communication and calm conflict repair. Because 5–14 questions are too few to classify a personality pattern, Kithra keeps your profile open and develops your pattern gradually as you answer more.',
+      provisionalInsightBody: `${constructSummary} Because 5–14 questions are too few to classify a personality pattern or assign an archetype, Kithra keeps your profile open and develops your pattern gradually as you answer more reflections across different life domains.`,
       provisionalNotice: notice,
       uncertaintyNotice: notice,
       engineVersion: PSYCHOLOGY_ENGINE_VERSION,
@@ -1725,7 +1802,7 @@ export function deriveConstructProfileFromAnswers(
     string,
     {
       scores: number[];
-      flexibilitySum: number;
+      flexibilityScores: number[];
       welcomesCount: number;
       itemsAnswered: number;
     }
@@ -1749,7 +1826,7 @@ export function deriveConstructProfileFromAnswers(
     if (!buckets[cId]) {
       buckets[cId] = {
         scores: [],
-        flexibilitySum: 0,
+        flexibilityScores: [],
         welcomesCount: 0,
         itemsAnswered: 0,
       };
@@ -1757,7 +1834,9 @@ export function deriveConstructProfileFromAnswers(
 
     buckets[cId].scores.push(finalScore);
     buckets[cId].itemsAnswered += 1;
-    buckets[cId].flexibilitySum += 75;
+    if (typeof (option as any).measuredFlexibility === 'number') {
+      buckets[cId].flexibilityScores.push((option as any).measuredFlexibility);
+    }
     if (option.welcomesComplementarity) {
       buckets[cId].welcomesCount += 1;
     }
@@ -1771,7 +1850,13 @@ export function deriveConstructProfileFromAnswers(
     const clampedScore = Math.max(0, Math.min(100, avgScore));
     const count = data.itemsAnswered;
     const confidence = count >= 5 ? 1.0 : count >= 3 ? 0.75 : 0.5;
-    const flexAvg = Math.round(data.flexibilitySum / count);
+    const flexAvg =
+      data.flexibilityScores.length > 0
+        ? Math.round(
+          data.flexibilityScores.reduce((a, b) => a + b, 0) /
+          data.flexibilityScores.length
+        )
+        : undefined;
 
     results.push({
       constructId: constructId as ConstructLayerId,
@@ -1781,7 +1866,7 @@ export function deriveConstructProfileFromAnswers(
       answeredItemCount: count,
       confidence,
       flexibility: flexAvg,
-      welcomesComplementarity: data.welcomesCount >= Math.ceil(count / 2),
+      welcomesComplementarity: data.welcomesCount > 0 && data.welcomesCount >= Math.ceil(count / 2),
       importance: 'important',
     });
   }
@@ -1844,15 +1929,15 @@ export function evaluateMemberPairwiseMatch(
       ? viewer.constructProfile
       : viewer.measuredDimensions
         ? viewer.measuredDimensions.map((d, i) => ({
-            constructId: (`dim_${i}` as unknown) as ConstructLayerId,
-            constructName: d.dimension,
-            score: d.visualFillPercent,
-            itemCount: 5,
-            answeredItemCount: 5,
-            confidence: 0.8,
-            flexibility: 75,
-            welcomesComplementarity: d.signalKind === 'mosaic',
-          }))
+          constructId: (`dim_${i}` as unknown) as ConstructLayerId,
+          constructName: d.dimension,
+          score: d.visualFillPercent,
+          itemCount: 5,
+          answeredItemCount: 5,
+          confidence: 0.8,
+          flexibility: 75,
+          welcomesComplementarity: d.signalKind === 'mosaic',
+        }))
         : [];
 
   const candidateConstructs: ConstructVectorPoint[] =
@@ -1860,15 +1945,15 @@ export function evaluateMemberPairwiseMatch(
       ? candidate.constructProfile
       : candidate.measuredDimensions
         ? candidate.measuredDimensions.map((d, i) => ({
-            constructId: (`dim_${i}` as unknown) as ConstructLayerId,
-            constructName: d.dimension,
-            score: d.visualFillPercent,
-            itemCount: 5,
-            answeredItemCount: 5,
-            confidence: 0.8,
-            flexibility: 75,
-            welcomesComplementarity: d.signalKind === 'mosaic',
-          }))
+          constructId: (`dim_${i}` as unknown) as ConstructLayerId,
+          constructName: d.dimension,
+          score: d.visualFillPercent,
+          itemCount: 5,
+          answeredItemCount: 5,
+          confidence: 0.8,
+          flexibility: 75,
+          welcomesComplementarity: d.signalKind === 'mosaic',
+        }))
         : [];
 
   const similarity = computeAttributeSimilarity(
