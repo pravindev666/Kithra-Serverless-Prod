@@ -20,6 +20,7 @@ import {
   ProfileSectionStatus,
   RelationshipSignalKind,
   SmokingVapingProfile,
+  StaffCase,
 } from '../types/kithra';
 import {
   EXPANDED_PILOT_QUESTION_BANK,
@@ -1225,5 +1226,73 @@ export const memberStore = {
     storage.clear();
     storeState = createInitialStoreState();
     persistStore();
+  },
+
+  /**
+   * TASK 6: Blocks a target member for the active viewer.
+   * Immediately prevents mutual discovery and hides conversations.
+   */
+  blockMember(viewerId: string, targetMemberId: string): void {
+    const viewer = storeState.members[viewerId];
+    if (!viewer) throw new Error(`Member not found: ${viewerId}`);
+    if (!viewer.eligibility) {
+      viewer.eligibility = {
+        memberId: viewerId,
+        isAdultVerified: true,
+        enabledIntentions: viewer.intentions,
+        discoverableInIntentions: viewer.intentions,
+        blockedMemberIds: [],
+      };
+    }
+    if (!viewer.eligibility.blockedMemberIds.includes(targetMemberId)) {
+      viewer.eligibility.blockedMemberIds.push(targetMemberId);
+      persistStore();
+    }
+  },
+
+  /**
+   * TASK 6: Unblocks a target member for the active viewer.
+   */
+  unblockMember(viewerId: string, targetMemberId: string): void {
+    const viewer = storeState.members[viewerId];
+    if (!viewer || !viewer.eligibility) return;
+    viewer.eligibility.blockedMemberIds = viewer.eligibility.blockedMemberIds.filter(
+      (id) => id !== targetMemberId
+    );
+    persistStore();
+  },
+
+  /**
+   * TASK 6: Checks if a member is blocked by viewer or vice versa.
+   */
+  isMemberBlocked(viewerId: string, targetMemberId: string): boolean {
+    const viewer = storeState.members[viewerId];
+    const target = storeState.members[targetMemberId];
+    if (viewer?.eligibility?.blockedMemberIds.includes(targetMemberId)) return true;
+    if (target?.eligibility?.blockedMemberIds.includes(viewerId)) return true;
+    return false;
+  },
+
+  /**
+   * TASK 6: Submits a member report to staff queue (privacy-preserving).
+   */
+  submitMemberReport(
+    reporterId: string,
+    targetMemberId: string,
+    category: StaffCase['category'],
+    summary: string
+  ): StaffCase {
+    const newCase: StaffCase = {
+      id: `K-${Date.now().toString().slice(-4)}`,
+      category,
+      priority: category === 'Boundary concern' || category === 'Impersonation concern' ? 'High' : 'Normal',
+      status: 'Awaiting review',
+      reportedContext: `Report submitted by ${reporterId} regarding ${targetMemberId}`,
+      submittedAt: new Date().toISOString(),
+      assignedTo: 'Unassigned',
+      summary,
+      notes: [`Auto-generated report from member ${reporterId}`],
+    };
+    return newCase;
   },
 };

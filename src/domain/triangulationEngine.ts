@@ -45,6 +45,24 @@ export interface TriangulationClusterResult {
   suggestedFollowUpQuestionId?: string;
 }
 
+/**
+ * UNVALIDATED EXPERIMENTAL HEURISTIC THRESHOLDS (Phase 7B Psychometric Audit Notice)
+ *
+ * The following numerical cutoffs (spread <= 28, 29-58, > 58) are preliminary heuristic
+ * rules inspired by the 21-card progressive uncertainty narrowing model.
+ *
+ * STATUS: [EXPERIMENTAL / UNVALIDATED HEURISTIC — PENDING EMPIRICAL PILOT CALIBRATION]
+ *
+ * Formal psychometric calibration requires human response data from the planned N=100 pilot
+ * (calculating standard error of measurement, item response curves, and empirical standard deviations).
+ * These thresholds DO NOT constitute clinical diagnostic cutoffs or certified psychological tests.
+ */
+export const EXPERIMENTAL_TRIANGULATION_SPREAD_THRESHOLDS = {
+  CONSISTENT_MAX_SPREAD: 28, // 0..28 pts: consistent stance heuristic
+  SITUATIONAL_MAX_SPREAD: 58, // 29..58 pts: situational nuance heuristic
+  CLARIFICATION_MIN_SPREAD: 59, // > 58 pts: divergence self-reflection trigger
+} as const;
+
 export const TRIANGULATION_CLUSTERS: TriangulationClusterDefinition[] = [
   {
     id: 'confidentiality_expectations',
@@ -92,13 +110,13 @@ export const TRIANGULATION_CLUSTERS: TriangulationClusterDefinition[] = [
     scientificReference: 'Burleson (2003) Emotional Support Skills in Close Relationships: Person-centered comforting.',
   },
   {
-    id: 'substance_environmental_comfort',
-    name: 'Substance & Environmental Boundary Settings',
-    description: 'Distinguishes personal consumption, social venue tolerance, and living space cleanliness standards.',
-    coreConstruct: 'substance_environmental_comfort',
-    questionIds: ['q-80-alcohol-lifestyle-habit', 'q-81-partner-alcohol-requirement', 'q-61-smoking-habit', 'q-62-smoking-comfort'],
-    situationalAxes: ['alcohol_personal_habit', 'partner_substance_tolerance', 'personal_use_habit', 'domestic_smoke_tolerance'],
-    scientificReference: 'Bandura (1986) Social Foundations of Thought and Action: Situational cues in health behaviors.',
+    id: 'stress_regulation_and_decompression',
+    name: 'Stress Regulation & Decompression Across Spheres',
+    description: 'Measures how emotional composure and acute stress are handled across domestic, work, transit, and interpersonal friction.',
+    coreConstruct: 'emotional_regulation',
+    questionIds: ['q-74-stress-spillover', 'q-102-de-escalation-patience', 'q-110-crisis-composure-anchor', 'q-122-patience-in-frustrations'],
+    situationalAxes: ['work_to_home_stress_spillover', 'domestic_conflict_patience', 'logistical_emergency_composure', 'urban_delay_frustration_tolerance'],
+    scientificReference: 'Gross (2002) Emotion Regulation: Cognitive reappraisal and situational composure.',
   },
   {
     id: 'opposite_sex_friendship_boundaries',
@@ -245,21 +263,21 @@ export function evaluateTriangulationCluster(
   let psychometricInterpretation: string;
   const confidenceLevel = answeredCount >= 3 ? 'established' : 'moderate';
 
-  if (spread <= 28) {
-    // Consistent stance across multiple contexts
+  if (spread <= EXPERIMENTAL_TRIANGULATION_SPREAD_THRESHOLDS.CONSISTENT_MAX_SPREAD) {
+    // Consistent stance across multiple contexts (Heuristic spread <= 28)
     classification = 'consistent_stance';
     userFacingExplanation = `Your responses reflect a clear, steady personal preference across different real-world situations (mean score: ${meanScore}/100, spread: ${spread} pts).`;
-    psychometricInterpretation = `High contextual convergence across ${answeredCount} distinct scenario contexts. Demonstrates an enduring trait/value orientation with low situational variance.`;
-  } else if (spread <= 58) {
-    // Plausible situational variation (context-dependent nuance)
+    psychometricInterpretation = `[EXPERIMENTAL HEURISTIC — UNCALIBRATED PILOT THRESHOLD] High contextual convergence across ${answeredCount} distinct scenario contexts. Demonstrates an enduring trait/value orientation with low situational variance.`;
+  } else if (spread <= EXPERIMENTAL_TRIANGULATION_SPREAD_THRESHOLDS.SITUATIONAL_MAX_SPREAD) {
+    // Plausible situational variation (Heuristic spread 29–58)
     classification = 'plausible_situational_variation';
     userFacingExplanation = `Your answers reflect healthy situational adaptability. For example, your expectations adapt thoughtfully depending on whether you are in a casual, family, or high-stakes environment (spread: ${spread} pts).`;
-    psychometricInterpretation = `Meaningful but psychologically coherent situational variance (spread: ${spread} pts). The member differentiates between distinct environmental contexts (e.g., private vs public spheres) rather than answering with rigid dogmatism.`;
+    psychometricInterpretation = `[EXPERIMENTAL HEURISTIC — UNCALIBRATED PILOT THRESHOLD] Meaningful but psychologically coherent situational variance (spread: ${spread} pts). The member differentiates between distinct environmental contexts (e.g., private vs public spheres) rather than answering with rigid dogmatism.`;
   } else {
-    // Substantial divergence on paired anchors -> Clarification needed
+    // Substantial divergence on paired anchors -> Clarification needed (Heuristic spread > 58)
     classification = 'clarification_needed';
     userFacingExplanation = `Your answers to these scenarios point in different directions across similar situations (spread: ${spread} pts). When you are ready, you may review your answers to ensure they accurately describe your preferred way of relating.`;
-    psychometricInterpretation = `Divergent anchor responses detected (spread: ${spread} pts). Flagged for optional member review or follow-up adaptive probe; no moral judgment or deception implied.`;
+    psychometricInterpretation = `[EXPERIMENTAL HEURISTIC — UNCALIBRATED PILOT THRESHOLD] Divergent anchor responses detected (spread: ${spread} pts). Flagged for optional member review or follow-up adaptive probe; no moral judgment or deception implied.`;
   }
 
   return {

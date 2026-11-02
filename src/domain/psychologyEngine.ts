@@ -34,6 +34,31 @@ export const MIN_COMPARABLE_CONSTRUCTS_FOR_SCORE = 2;
 /*  CHANGE 1: Plain-English Member-Facing Lens Names + Internal Mapping       */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * UNVALIDATED HEURISTIC UNCERTAINTY MARGINS (Phase 7B Audit)
+ *
+ * Status: [EXPERIMENTAL HEURISTIC — PENDING EMPIRICAL PILOT CALIBRATION]
+ *
+ * Margins (+-5 for >=6 constructs, +-9 for 4-5 constructs, +-15 for <4 constructs)
+ * are provisional heuristics modeling measurement error reduction, pending empirical
+ * standard error of measurement (SEM) derivation from Stage B pilot data.
+ */
+export const EXPERIMENTAL_UNCERTAINTY_MARGINS = {
+  HIGH_CONFIDENCE_MARGIN: 5,
+  MODERATE_CONFIDENCE_MARGIN: 9,
+  PROVISIONAL_CONFIDENCE_MARGIN: 15,
+} as const;
+
+/**
+ * UNVALIDATED HEURISTIC RESPONSE TIME CUTOFF (Phase 7B Audit)
+ *
+ * Status: [EXPERIMENTAL HEURISTIC — PENDING EMPIRICAL PILOT CALIBRATION]
+ *
+ * 650ms cutoff is a preliminary safeguard based on human silent reading rates (Rayner 1998)
+ * to distinguish ultra-rapid uniform tapping from deliberate reading. Requires mobile touch norming.
+ */
+export const EXPERIMENTAL_RESPONSE_TIME_CUTOFF_MS = 650;
+
 export interface LensDisplayDescriptor {
   internalKind: RelationshipSignalKind;
   lensView: Exclude<DiscoveryLensView, 'all'>;
@@ -594,7 +619,11 @@ export function computeAttributeSimilarity(
         : 'provisional';
 
   const measurementUncertaintyMargin =
-    confidence === 'high' ? 5 : confidence === 'moderate' ? 9 : 15;
+    confidence === 'high'
+      ? EXPERIMENTAL_UNCERTAINTY_MARGINS.HIGH_CONFIDENCE_MARGIN
+      : confidence === 'moderate'
+        ? EXPERIMENTAL_UNCERTAINTY_MARGINS.MODERATE_CONFIDENCE_MARGIN
+        : EXPERIMENTAL_UNCERTAINTY_MARGINS.PROVISIONAL_CONFIDENCE_MARGIN;
 
   return {
     status: 'computed',
@@ -611,7 +640,7 @@ export function computeAttributeSimilarity(
     algorithmVersion: PSYCHOLOGY_ENGINE_VERSION,
     engineVersion: PSYCHOLOGY_ENGINE_VERSION,
     scientificDisclaimer:
-      'Provisional measured attribute similarity (0–100) across answered constructs. Not a probability of attraction, friendship, or marriage success.',
+      'Provisional measured attribute similarity (0–100) across answered constructs [EXPERIMENTAL HEURISTIC — UNCALIBRATED PILOT MARGIN]. Not a probability of attraction, friendship, or marriage success.',
     measurementUncertaintyMargin,
     uncomparedConstructsCount: uncomparedConstructNames.length,
     uncomparedConstructNames,
@@ -1637,7 +1666,7 @@ export function evaluateResponseQuality(
   const fastClicks = responses.filter((r) => r.responseTimeMs < 750).length;
   const fastClickRatio = fastClicks / responses.length;
 
-  const isUltraFastClicking = medianResponseTimeMs < 650;
+  const isUltraFastClicking = medianResponseTimeMs < EXPERIMENTAL_RESPONSE_TIME_CUTOFF_MS;
   const isUniformDisplayPosition = identicalDisplayPositionRatio >= 0.85;
   const isPositionStreakHigh = maxDisplayPositionStreak >= 8;
   const isThoughtfulPace = medianResponseTimeMs >= 1200;

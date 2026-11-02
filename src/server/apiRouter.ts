@@ -132,6 +132,45 @@ export async function handleApiRequest(req: ApiRequest): Promise<ApiResponse> {
     return { status: 200, body: { matches, total: matches.length } };
   }
 
+  // POST /api/member/block
+  if (req.method === 'POST' && req.path === '/api/member/block') {
+    const { targetMemberId } = (req.body as { targetMemberId?: string }) ?? {};
+    if (!targetMemberId) {
+      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'targetMemberId is required.' } };
+    }
+    memberStore.blockMember(user.userId, targetMemberId);
+    return { status: 200, body: { success: true, blockedMemberId: targetMemberId } };
+  }
+
+  // POST /api/member/unblock
+  if (req.method === 'POST' && req.path === '/api/member/unblock') {
+    const { targetMemberId } = (req.body as { targetMemberId?: string }) ?? {};
+    if (!targetMemberId) {
+      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'targetMemberId is required.' } };
+    }
+    memberStore.unblockMember(user.userId, targetMemberId);
+    return { status: 200, body: { success: true, unblockedMemberId: targetMemberId } };
+  }
+
+  // POST /api/member/report
+  if (req.method === 'POST' && req.path === '/api/member/report') {
+    const { targetMemberId, category, summary } = (req.body as {
+      targetMemberId?: string;
+      category?: 'Impersonation concern' | 'Photo report' | 'Group moderation' | 'Boundary concern' | 'Account verification';
+      summary?: string;
+    }) ?? {};
+    if (!targetMemberId || !category) {
+      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'targetMemberId and category are required.' } };
+    }
+    const reportCase = memberStore.submitMemberReport(
+      user.userId,
+      targetMemberId,
+      category,
+      summary ?? 'Member submitted report'
+    );
+    return { status: 200, body: { success: true, reportCase } };
+  }
+
   // GET /api/admin/quiz-answers/:memberId (STRICT PRIVACY TEST)
   if (req.path.startsWith('/api/admin/quiz-answers/')) {
     const targetMemberId = req.path.split('/')[4];
