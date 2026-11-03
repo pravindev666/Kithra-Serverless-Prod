@@ -320,6 +320,11 @@ test('Task 3.1 — Q101–Q125 Free From Moral Rankings and Labeled Provisional 
   assert.equal(q103.optionTranslationsReviewStatus, 'machine_translation_pending_human_review');
   assert.equal(q110.optionTranslationsReviewStatus, 'machine_translation_pending_human_review');
   assert.equal(q113.optionTranslationsReviewStatus, 'machine_translation_pending_human_review');
+
+  // Psychometric scoring classification separation (ITC Guidelines & Founder Directive)
+  assert.equal(q103.scoringType, 'value_tradeoff', 'Q103 must be classified as a value_tradeoff, not a continuous pseudo-trait');
+  assert.equal(q110.scoringType, 'categorical_preference', 'Q110 must be classified as a categorical_preference coping style');
+  assert.equal(q113.scoringType, 'categorical_preference', 'Q113 must be classified as a categorical_preference communication modality');
 });
 
 // ============================================================================

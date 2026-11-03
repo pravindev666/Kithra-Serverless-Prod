@@ -177,16 +177,25 @@ export type MemberTab =
 
 export type AdminTab =
   | 'overview'
-  | 'reports'
-  | 'photos'
-  | 'users'
-  | 'groups'
-  | 'support'
+  | 'members'
+  | 'growth'
+  | 'profiles'
+  | 'connections'
   | 'subscriptions'
-  | 'privacy'
+  | 'revenue'
+  | 'map'
+  | 'support'
+  | 'safety'
+  | 'photos'
   | 'staff'
   | 'audit'
   | 'questions'
+  | 'settings'
+  // Legacy aliases for backward compatibility
+  | 'users'
+  | 'reports'
+  | 'groups'
+  | 'privacy'
   | 'analytics';
 
 export type SystemErrorCode =
@@ -423,8 +432,17 @@ export interface AssessmentQuestion {
   validationStatus?: 'ORIGINAL / UNVALIDATED' | 'PILOT_REVIEWED' | 'VALIDATED';
   supportedLanguages?: ('en' | 'ta' | 'hi')[];
   translations?: Partial<Record<'ta' | 'hi', string>>;
-  /** Psychometric scoring classification */
-  scoringType?: 'continuous_trait' | 'categorical_preference' | 'essential_gate' | 'qualitative_reflection';
+  /** Psychometric measurement category (rigorously separated across 8 empirical classes) */
+  scoringType?:
+  | 'continuous_trait'
+  | 'categorical_preference'
+  | 'value_tradeoff'
+  | 'disclosed_behavior'
+  | 'partner_expectation'
+  | 'essential_gate'
+  | 'contextual_variation'
+  | 'connection_outcome'
+  | 'qualitative_reflection';
   researchBasis?: string;
   measurementLimitations?: string;
   targetFacetName?: string;

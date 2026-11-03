@@ -23,6 +23,8 @@ import {
   verifyStaffMfaCode,
   authenticateStaffToken,
   authorizeStaffRole,
+  generateStaffTotpCode,
+  clearStaffRateLimits,
 } from '../server/adminAuthService';
 import {
   verifyFirebaseToken,
@@ -48,29 +50,43 @@ import { handleApiRequest } from '../server/apiRouter';
 // ============================================================================
 
 test('Phase 8A — Staff Authentication: Step 1 Credential Check & Challenge Generation', async () => {
+  clearStaffRateLimits();
+
   // Reject invalid operational credentials
   const badLogin = await initiateStaffLogin('intruder@kithra.in', 'WrongPassword123');
   assert.equal(badLogin.success, false);
   assert.equal(badLogin.challengeId, undefined);
 
   // Reject non-operational external email
-  const externalLogin = await initiateStaffLogin('member.kavya@gmail.com', 'KithraStaging2026!');
+  const externalLogin = await initiateStaffLogin('member.kavya@gmail.com', 'KithraSecureAdmin2026!');
   assert.equal(externalLogin.success, false);
 
   // Valid administrator login initiates 5-minute challenge
-  const adminChallenge = await initiateStaffLogin('admin@kithra.in', 'KithraStaging2026!');
+  const adminChallenge = await initiateStaffLogin('admin@kithra.in', 'KithraSecureAdmin2026!');
   assert.equal(adminChallenge.success, true);
   assert.equal(adminChallenge.mfaRequired, true);
   assert.ok(adminChallenge.challengeId?.startsWith('mfa_ch_'));
 
   // Valid moderator login initiates challenge
-  const modChallenge = await initiateStaffLogin('moderator@kithra.in', 'KithraStaging2026!');
+  const modChallenge = await initiateStaffLogin('moderator@kithra.in', 'KithraSafetyMod2026!');
   assert.equal(modChallenge.success, true);
   assert.equal(modChallenge.mfaRequired, true);
+
+  // Rate limiting lockout check after 5 failed attempts
+  for (let i = 0; i < 5; i++) {
+    await initiateStaffLogin('admin@kithra.in', 'BadPass' + i);
+  }
+  const lockedOutLogin = await initiateStaffLogin('admin@kithra.in', 'KithraSecureAdmin2026!');
+  assert.equal(lockedOutLogin.success, false);
+  assert.equal(lockedOutLogin.rateLimited, true);
+  assert.ok(lockedOutLogin.errorMessage?.includes('temporarily locked'));
+
+  clearStaffRateLimits();
 });
 
 test('Phase 8A — Staff Authentication: Step 2 TOTP MFA Verification & Single-Use Challenge', async () => {
-  const challenge = await initiateStaffLogin('admin@kithra.in', 'KithraStaging2026!');
+  clearStaffRateLimits();
+  const challenge = await initiateStaffLogin('admin@kithra.in', 'KithraSecureAdmin2026!');
   assert.ok(challenge.challengeId);
 
   // Reject invalid MFA code
@@ -78,24 +94,46 @@ test('Phase 8A — Staff Authentication: Step 2 TOTP MFA Verification & Single-U
   assert.equal(badMfa.success, false);
   assert.equal(badMfa.session, undefined);
 
+  // Calculate real RFC 6238 TOTP code
+  const currentTotp = await generateStaffTotpCode('admin@kithra.in');
+  assert.ok(currentTotp);
+  assert.equal(currentTotp.length, 6);
+
   // Accept valid 6-digit TOTP code
-  const goodMfa = await verifyStaffMfaCode(challenge.challengeId, '849201');
+  const goodMfa = await verifyStaffMfaCode(challenge.challengeId, currentTotp);
   assert.equal(goodMfa.success, true);
   assert.ok(goodMfa.session);
   assert.equal(goodMfa.session.role, 'admin');
   assert.equal(goodMfa.session.mfaVerified, true);
-  assert.ok(goodMfa.session.token.startsWith('staff-jwt-admin-'));
+
+  // Verify token is a cryptographically signed HS256 JWT
+  const jwtParts = goodMfa.session.token.split('.');
+  assert.equal(jwtParts.length, 3);
+
+  // Cryptographic token verification
+  const verifiedToken = await authenticateStaffToken(goodMfa.session.token);
+  assert.equal(verifiedToken.authenticated, true);
+  assert.equal(verifiedToken.context?.role, 'admin');
 
   // Single-use challenge: Replaying the challengeId must fail
-  const replayAttempt = await verifyStaffMfaCode(challenge.challengeId, '849201');
+  const replayAttempt = await verifyStaffMfaCode(challenge.challengeId, currentTotp);
   assert.equal(replayAttempt.success, false);
   assert.ok(replayAttempt.errorMessage?.includes('expired or not found'));
+
+  // Test emergency backup code
+  const challenge2 = await initiateStaffLogin('admin@kithra.in', 'KithraSecureAdmin2026!');
+  const backupMfa = await verifyStaffMfaCode(challenge2.challengeId!, 'REC-ADM-8421-9901');
+  assert.equal(backupMfa.success, true);
+  assert.equal(backupMfa.session?.role, 'admin');
 });
 
 test('Phase 8A — Staff Role-Based Access Control (RBAC): Admin vs Moderator Permissions', async () => {
+  clearStaffRateLimits();
+
   // Login as moderator
-  const modCh = await initiateStaffLogin('moderator@kithra.in', 'KithraStaging2026!');
-  const modMfa = await verifyStaffMfaCode(modCh.challengeId!, '849201');
+  const modCh = await initiateStaffLogin('moderator@kithra.in', 'KithraSafetyMod2026!');
+  const modTotp = await generateStaffTotpCode('moderator@kithra.in');
+  const modMfa = await verifyStaffMfaCode(modCh.challengeId!, modTotp!);
   const modSession = modMfa.session!;
 
   // Moderator is permitted for case review
@@ -108,8 +146,9 @@ test('Phase 8A — Staff Role-Based Access Control (RBAC): Admin vs Moderator Pe
   assert.equal(analyticsPerm.status, 403);
 
   // Login as admin
-  const adminCh = await initiateStaffLogin('admin@kithra.in', 'KithraStaging2026!');
-  const adminMfa = await verifyStaffMfaCode(adminCh.challengeId!, '849201');
+  const adminCh = await initiateStaffLogin('admin@kithra.in', 'KithraSecureAdmin2026!');
+  const adminTotp = await generateStaffTotpCode('admin@kithra.in');
+  const adminMfa = await verifyStaffMfaCode(adminCh.challengeId!, adminTotp!);
   const adminSession = adminMfa.session!;
 
   // Admin is permitted for founder analytics

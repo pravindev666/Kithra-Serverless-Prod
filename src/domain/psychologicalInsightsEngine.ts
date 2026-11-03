@@ -47,6 +47,14 @@ export interface ConstructInsightReport {
   missingInformationNote: string;
   interpretationLimitations: string;
   answeredReflections: AnsweredItemReflection[];
+  /** Empirical measurement classification separating continuous traits from categorical trade-offs */
+  measurementCategory?: 'continuous_trait' | 'categorical_preference' | 'value_tradeoff' | 'mixed';
+  /** Scientific confidence criteria grounded in ITC psychometric guidelines */
+  empiricalConfidenceCriteria?: {
+    level: 'insufficient' | 'provisional_exploration' | 'developing_pattern' | 'multi_context_triangulated';
+    scientificValidationStatus: 'PRE_EMPIRICAL_PILOT';
+    requiredPilotSampleSize: number;
+  };
 }
 
 export interface MemberSelfUnderstandingReport {
@@ -232,17 +240,25 @@ export function generateMemberSelfUnderstandingReport(
     }
 
     // Calculate average score across answered options
+    // Only continuous traits are scored numerically. Categorical preferences, value trade-offs, and gates
+    // are qualitative stances and are strictly separated to prevent unscientific averaging.
     let sumScore = 0;
     let scoredItemsCount = 0;
     const answeredReflections: AnsweredItemReflection[] = [];
+    let hasCategoricalOrTradeoff = false;
+    let hasContinuous = false;
 
     for (const q of answeredConstructQuestions) {
       const selectedOptId = rawAnswers[q.id];
       const opt = q.options.find((o) => o.id === selectedOptId);
       if (opt) {
-        if (typeof opt.normalizedValue === 'number') {
+        const isContinuous = !q.scoringType || q.scoringType === 'continuous_trait';
+        if (isContinuous && typeof opt.normalizedValue === 'number') {
           sumScore += opt.normalizedValue;
           scoredItemsCount++;
+          hasContinuous = true;
+        } else {
+          hasCategoricalOrTradeoff = true;
         }
         answeredReflections.push({
           questionId: q.id,
@@ -258,7 +274,23 @@ export function generateMemberSelfUnderstandingReport(
 
     const observedScore = scoredItemsCount > 0 ? Math.round(sumScore / scoredItemsCount) : null;
 
-    // Build empathetic summary based on score
+    let measurementCategory: ConstructInsightReport['measurementCategory'] = 'continuous_trait';
+    if (hasContinuous && hasCategoricalOrTradeoff) {
+      measurementCategory = 'mixed';
+    } else if (hasCategoricalOrTradeoff) {
+      measurementCategory = 'categorical_preference';
+    }
+
+    let empiricalLevel: NonNullable<ConstructInsightReport['empiricalConfidenceCriteria']>['level'] = 'insufficient';
+    if (answeredCount >= 3) {
+      empiricalLevel = 'multi_context_triangulated';
+    } else if (answeredCount >= 2) {
+      empiricalLevel = 'developing_pattern';
+    } else if (answeredCount >= 1) {
+      empiricalLevel = 'provisional_exploration';
+    }
+
+    // Build empathetic summary based on score or qualitative reflection
     let statedPreferenceSummary = 'You have not yet explored scenarios in this domain. Answering questions in this section will reveal your natural preferences.';
     if (observedScore !== null) {
       if (observedScore >= 67) {
@@ -268,6 +300,8 @@ export function generateMemberSelfUnderstandingReport(
       } else {
         statedPreferenceSummary = meta.lowSummary;
       }
+    } else if (answeredReflections.length > 0) {
+      statedPreferenceSummary = answeredReflections.map((r) => r.reflectionText).join(' ');
     }
 
     // Missing information note
@@ -284,6 +318,12 @@ export function generateMemberSelfUnderstandingReport(
       statedPreferenceSummary,
       observedScore,
       confidenceBand,
+      measurementCategory,
+      empiricalConfidenceCriteria: {
+        level: empiricalLevel,
+        scientificValidationStatus: 'PRE_EMPIRICAL_PILOT',
+        requiredPilotSampleSize: 300,
+      },
       coverage: {
         answeredItemsCount: answeredCount,
         totalAvailableItemsCount: totalAvail,

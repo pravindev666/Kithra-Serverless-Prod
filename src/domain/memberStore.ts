@@ -768,6 +768,43 @@ export const memberStore = {
     return storeState.members[memberId];
   },
 
+  /** Upsert or register a member profile */
+  upsertMemberProfile(profile: Partial<MemberProfile> & { id: string }): MemberProfile {
+    const existing = storeState.members[profile.id];
+    const updated: MemberProfile = {
+      id: profile.id,
+      name: profile.name ?? existing?.name ?? 'Member',
+      ageRange: profile.ageRange ?? existing?.ageRange ?? '25',
+      city: profile.city ?? existing?.city ?? 'Bengaluru',
+      neighborhood: profile.neighborhood ?? existing?.neighborhood ?? 'Central',
+      languages: profile.languages ?? existing?.languages ?? ['English'],
+      intentions: profile.intentions ?? existing?.intentions ?? ['matrimony', 'friendship'],
+      primaryIntention: profile.primaryIntention ?? existing?.primaryIntention ?? 'matrimony',
+      headline: profile.headline ?? existing?.headline ?? '',
+      bio: profile.bio ?? existing?.bio ?? '',
+      interests: profile.interests ?? existing?.interests ?? [],
+      paceNote: profile.paceNote ?? existing?.paceNote ?? '',
+      occupation: profile.occupation ?? existing?.occupation ?? '',
+      portraitVariant: profile.portraitVariant ?? existing?.portraitVariant ?? 'member-kavya',
+      saved: profile.saved ?? existing?.saved ?? false,
+      connectionState: profile.connectionState ?? existing?.connectionState ?? 'discover',
+      constructProfile: profile.constructProfile ?? existing?.constructProfile ?? [],
+      alignment: profile.alignment ?? existing?.alignment ?? [],
+      measuredDimensions: profile.measuredDimensions ?? existing?.measuredDimensions ?? [],
+      smokingVapingProfile: profile.smokingVapingProfile ?? existing?.smokingVapingProfile,
+      eligibility: profile.eligibility ?? existing?.eligibility ?? {
+        memberId: profile.id,
+        isAdultVerified: true,
+        enabledIntentions: profile.intentions ?? ['matrimony', 'friendship'],
+        discoverableInIntentions: profile.intentions ?? ['matrimony', 'friendship'],
+        blockedMemberIds: [],
+      },
+    };
+    storeState.members[profile.id] = updated;
+    persistStore();
+    return updated;
+  },
+
   /**
    * TASK 2 & 6: Saves a single assessment question response for a member.
    * - Persists raw response with timestamp and latency.

@@ -9,6 +9,7 @@
  */
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { getAnalytics, isSupported } from 'firebase/analytics';
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -17,18 +18,20 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider,
   User,
   Auth,
 } from 'firebase/auth';
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyBldryZXPaSuXdzQ5bp4vTroInv8J3XUX8",
-  authDomain: "kithra-d3ae1.firebaseapp.com",
-  projectId: "kithra-d3ae1",
-  storageBucket: "kithra-d3ae1.firebasestorage.app",
-  messagingSenderId: "427750782405",
-  appId: "1:427750782405:web:f82460a84171f8ba76c7ac",
-  measurementId: "G-3PKJNEK6RW",
+  apiKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_API_KEY) || "AIzaSyBldryZXPaSuxdzQ5bp4vTroInv8J3XUX8",
+  authDomain: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN) || "kithra-d3ae1.firebaseapp.com",
+  projectId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_PROJECT_ID) || "kithra-d3ae1",
+  storageBucket: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET) || "kithra-d3ae1.firebasestorage.app",
+  messagingSenderId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID) || "427750782405",
+  appId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_APP_ID) || "1:427750782405:web:f82460a84171f8ba76c7ac",
+  measurementId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_MEASUREMENT_ID) || "G-3PKJNEK6RW",
 };
 
 // Initialize or reuse existing Firebase app
@@ -36,6 +39,19 @@ export const firebaseApp: FirebaseApp =
   getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
 export const auth: Auth = getAuth(firebaseApp);
+export const googleProvider: GoogleAuthProvider = new GoogleAuthProvider();
+
+// Safe browser-only Analytics initialization
+export let analytics: ReturnType<typeof getAnalytics> | null = null;
+if (typeof window !== 'undefined') {
+  isSupported().then((supported) => {
+    if (supported) {
+      analytics = getAnalytics(firebaseApp);
+    }
+  }).catch(() => {
+    // Analytics is non-critical if environment restricts cookies/indexedDB
+  });
+}
 
 export interface AuthStateResult {
   user: User | null;
@@ -51,22 +67,22 @@ export async function registerMemberWithFirebase(
 ): Promise<{ user: User; idToken: string }> {
   const userCredential = await createUserWithEmailAndPassword(auth, email, passwordPlain);
   const user = userCredential.user;
-  
+
   // Attempt to send email verification
   try {
     await sendEmailVerification(user);
   } catch {
     // Non-blocking in local development/staging
   }
-  
+
   const idToken = await user.getIdToken(true);
-  
+
   // Cache in session storage for local API requests
   if (typeof window !== 'undefined' && window.sessionStorage) {
     window.sessionStorage.setItem('kithra_firebase_id_token', idToken);
     window.sessionStorage.setItem('kithra_firebase_uid', user.uid);
   }
-  
+
   return { user, idToken };
 }
 
@@ -80,13 +96,29 @@ export async function loginMemberWithFirebase(
   const userCredential = await signInWithEmailAndPassword(auth, email, passwordPlain);
   const user = userCredential.user;
   const idToken = await user.getIdToken();
-  
+
   // Cache in session storage for local API requests
   if (typeof window !== 'undefined' && window.sessionStorage) {
     window.sessionStorage.setItem('kithra_firebase_id_token', idToken);
     window.sessionStorage.setItem('kithra_firebase_uid', user.uid);
   }
-  
+
+  return { user, idToken };
+}
+
+/**
+ * Sign in or sign up using Google OAuth Popup.
+ */
+export async function loginWithGoogle(): Promise<{ user: User; idToken: string }> {
+  const result = await signInWithPopup(auth, googleProvider);
+  const user = result.user;
+  const idToken = await user.getIdToken();
+
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    window.sessionStorage.setItem('kithra_firebase_id_token', idToken);
+    window.sessionStorage.setItem('kithra_firebase_uid', user.uid);
+  }
+
   return { user, idToken };
 }
 

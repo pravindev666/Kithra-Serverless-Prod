@@ -118,6 +118,7 @@ export default {
       const apiRes: ApiResponse = await handleApiRequest(apiReq, {
         requireCrypto: env.ENVIRONMENT === 'production',
         allowDevTokens,
+        db: env.DB || env.kithra_d1_staging,
       });
 
       return new Response(JSON.stringify(apiRes.body), {

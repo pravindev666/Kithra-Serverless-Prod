@@ -78,6 +78,14 @@ import {
 import {
   VOLUNTARY_RELATIONSHIP_REFLECTION_BANK,
 } from '../data/relationshipReflectionBank';
+import {
+  MATRIMONY_DISCUSSION_KITS,
+  MatrimonyGuideKit,
+} from '../data/matrimonyDiscussionGuides';
+import {
+  INDIAN_PRICING_PLANS,
+  formatInrCurrency,
+} from '../server/founderCommandCenterService';
 
 interface MemberShellProps {
   activeTab: MemberTab;
@@ -209,6 +217,38 @@ export const MemberShell: React.FC<MemberShellProps> = ({
     }
   }, [activeMemberId, activeSelfMember]);
   const [previewIntentionMode, setPreviewIntentionMode] = useState<IntentionId>('friendship');
+
+  // Tier & Pricing Engineering: Free vs Plus Tiers
+  const [memberTier, setMemberTier] = useState<
+    'free' | 'plus_monthly' | 'plus_quarterly' | 'plus_halfyearly' | 'matrimony_annual'
+  >(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const saved = window.localStorage.getItem(`kithra_tier_${activeMemberId}`);
+      if (saved) return saved as any;
+    }
+    if (activeMemberId === 'member-aarav') return 'plus_quarterly';
+    if (activeMemberId === 'member-meera') return 'matrimony_annual';
+    return 'free';
+  });
+
+  const handleSetMemberTier = (
+    tier: 'free' | 'plus_monthly' | 'plus_quarterly' | 'plus_halfyearly' | 'matrimony_annual'
+  ) => {
+    setMemberTier(tier);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(`kithra_tier_${activeMemberId}`, tier);
+    }
+    showToast(
+      `Membership tier updated to: ${tier === 'free' ? 'Free (Effort-Based Discovery)' : tier.replace('_', ' ').toUpperCase()
+      }`
+    );
+  };
+
+  const answeredQuestionCount = Object.keys(assessmentAnswers).length;
+
+  // Matrimony & Family Discussion Guides State
+  const [showMatrimonyGuidesModal, setShowMatrimonyGuidesModal] = useState<boolean>(false);
+  const [activeMatrimonyKitId, setActiveMatrimonyKitId] = useState<string>('kit-finances');
 
   const showToast = (msg: string) => {
     setMemberFeedbackToast(msg);
@@ -642,7 +682,108 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                 </button>
               </div>
 
+              {/* Effort-to-Discovery & Membership Status Banner */}
+              {memberTier === 'free' ? (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-[var(--surface2)]/80 border border-[var(--line)]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[var(--surface)] border border-[var(--line)] flex items-center justify-center shrink-0">
+                      <Sparkles className="w-4 h-4 text-[var(--friend)]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-[var(--heading)] flex items-center gap-2">
+                        <span>
+                          Free Tier:{' '}
+                          {answeredQuestionCount >= 15
+                            ? '10 Daily Curated Matches'
+                            : answeredQuestionCount >= 5
+                              ? '5 Daily Curated Matches'
+                              : '3 Daily Curated Matches'}
+                        </span>
+                        <span className="text-[10px] text-[var(--friend)] bg-[var(--surface)] px-2 py-0.5 rounded-full border border-[var(--line)] font-normal">
+                          {answeredQuestionCount} Reflections Answered
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                        {answeredQuestionCount < 15
+                          ? `Answer ${15 - answeredQuestionCount} more questions in "Themes" to unlock 10 profiles/day and preview complementary balance for free!`
+                          : '🎉 You unlocked Level 2 Effort Rewards! Complete full 60 questions for maximum precision.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onNavigateMemberPath('/member/settings')}
+                    className="text-xs font-bold text-[var(--ochre-text)] hover:underline whitespace-nowrap self-start sm:self-auto cursor-pointer"
+                  >
+                    Manage Membership →
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[var(--surface)] border border-amber-500/30 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-4 h-4 text-[var(--ochre-text)]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-[var(--heading)] flex items-center gap-2">
+                        <span>⭐ Kithra Plus Active: Unlimited Curated Discovery &amp; Full 12-Domain Radars</span>
+                        {memberTier === 'matrimony_annual' && (
+                          scopedIntention === 'matrimony' ? (
+                            <span className="text-[10px] text-amber-700 dark:text-amber-300 font-extrabold uppercase">
+                              💍 Verified Serious Intent
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-teal-700 dark:text-teal-300 font-extrabold uppercase">
+                              ⭐ 1-Year All-Access
+                            </span>
+                          )
+                        )}
+                      </div>
+                      <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                        All 3 discovery lenses unlocked with unhurried pacing and thoughtful introductory notes.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-mono font-bold text-[var(--ochre-text)]">
+                    {memberTier === 'plus_quarterly'
+                      ? '3-Month Plan (₹999)'
+                      : memberTier === 'matrimony_annual'
+                        ? '1-Year All-Access (₹2,499)'
+                        : 'Plus Plan Active'}
+                  </span>
+                </div>
+              )}
+
               {renderIntentionSelector()}
+
+              {/* Matrimony Alignment Toolkit Banner */}
+              {scopedIntention === 'matrimony' && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-[var(--surface)] border border-[var(--ochre-text)]/40 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[var(--surface2)] border border-[var(--line)] flex items-center justify-center shrink-0">
+                      <BookOpen className="w-4 h-4 text-[var(--ochre-text)]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-[var(--heading)] flex items-center gap-2">
+                        <span>💍 Matrimony Toolkit: 4 Pre-Marriage Alignment Kits</span>
+                        <span className="text-[10px] text-[var(--ochre-text)] bg-[var(--surface2)] px-2 py-0.5 rounded-full font-bold">
+                          Included with Matrimony
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                        Respectful conversation frameworks for money, in-law living arrangements, careers, and children before engagement.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMatrimonyGuidesModal(true)}
+                    className="rounded-[9px] bg-[var(--ochre-text)] text-[#09121C] px-3.5 py-2 text-xs font-bold cursor-pointer whitespace-nowrap hover:opacity-90 transition-opacity"
+                  >
+                    Open Discussion Kits →
+                  </button>
+                </div>
+              )}
             </header>
 
             {/* 2. Discover people — visually prioritized */}
@@ -1033,7 +1174,108 @@ export const MemberShell: React.FC<MemberShellProps> = ({
               </div>
             </div>
 
+            {/* Effort-to-Discovery & Membership Status Banner */}
+            {memberTier === 'free' ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-[var(--surface2)]/80 border border-[var(--line)]">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[var(--surface)] border border-[var(--line)] flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-[var(--friend)]" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-[var(--heading)] flex items-center gap-2">
+                      <span>
+                        Free Tier:{' '}
+                        {answeredQuestionCount >= 15
+                          ? '10 Daily Curated Matches'
+                          : answeredQuestionCount >= 5
+                            ? '5 Daily Curated Matches'
+                            : '3 Daily Curated Matches'}
+                      </span>
+                      <span className="text-[10px] text-[var(--friend)] bg-[var(--surface)] px-2 py-0.5 rounded-full border border-[var(--line)] font-normal">
+                        {answeredQuestionCount} Reflections Answered
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                      {answeredQuestionCount < 15
+                        ? `Answer ${15 - answeredQuestionCount} more questions in "Themes" to unlock 10 profiles/day and preview complementary balance for free!`
+                        : '🎉 You unlocked Level 2 Effort Rewards! Complete full 60 questions for maximum precision.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigateMemberPath('/member/settings')}
+                  className="text-xs font-bold text-[var(--ochre-text)] hover:underline whitespace-nowrap self-start sm:self-auto cursor-pointer"
+                >
+                  Manage Membership →
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[var(--surface)] border border-amber-500/30 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-[var(--ochre-text)]" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-[var(--heading)] flex items-center gap-2">
+                      <span>⭐ Kithra Plus Active: Unlimited Curated Discovery &amp; Full 12-Domain Radars</span>
+                      {memberTier === 'matrimony_annual' && (
+                        scopedIntention === 'matrimony' ? (
+                          <span className="text-[10px] text-amber-700 dark:text-amber-300 font-extrabold uppercase">
+                            💍 Verified Serious Intent
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-teal-700 dark:text-teal-300 font-extrabold uppercase">
+                            ⭐ 1-Year All-Access
+                          </span>
+                        )
+                      )}
+                    </div>
+                    <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                      All 3 discovery lenses unlocked with unhurried pacing and thoughtful introductory notes.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-mono font-bold text-[var(--ochre-text)]">
+                  {memberTier === 'plus_quarterly'
+                    ? '3-Month Plan (₹999)'
+                    : memberTier === 'matrimony_annual'
+                      ? '1-Year All-Access (₹2,499)'
+                      : 'Plus Plan Active'}
+                </span>
+              </div>
+            )}
+
             {renderIntentionSelector()}
+
+            {/* Matrimony Alignment Toolkit Banner */}
+            {scopedIntention === 'matrimony' && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-[var(--surface)] border border-[var(--ochre-text)]/40 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[var(--surface2)] border border-[var(--line)] flex items-center justify-center shrink-0">
+                    <BookOpen className="w-4 h-4 text-[var(--ochre-text)]" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-[var(--heading)] flex items-center gap-2">
+                      <span>💍 Matrimony Toolkit: 4 Pre-Marriage Alignment Kits</span>
+                      <span className="text-[10px] text-[var(--ochre-text)] bg-[var(--surface2)] px-2 py-0.5 rounded-full font-bold">
+                        Included with Matrimony
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                      Respectful conversation frameworks for money, in-law living arrangements, careers, and children before engagement.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMatrimonyGuidesModal(true)}
+                  className="rounded-[9px] bg-[var(--ochre-text)] text-[#09121C] px-3.5 py-2 text-xs font-bold cursor-pointer whitespace-nowrap hover:opacity-90 transition-opacity"
+                >
+                  Open Discussion Kits →
+                </button>
+              </div>
+            )}
 
             {/* CHANGE 1 & 2: Discovery Lenses & Full-Range 0-100 Attribute Similarity Controls */}
             <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[14px] p-4 sm:p-5 space-y-4">
@@ -1950,10 +2192,22 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                 <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-5 flex flex-col justify-between min-h-[450px]">
                   <div>
                     <div className="pb-4 border-b border-[var(--line)]">
-                      <div className="flex items-center justify-between gap-2">
-                        <h2 className="font-serif-editorial text-[30px] font-semibold text-[var(--heading)]">
-                          {activeConversation.memberName}
-                        </h2>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-3">
+                          <h2 className="font-serif-editorial text-[30px] font-semibold text-[var(--heading)]">
+                            {activeConversation.memberName}
+                          </h2>
+                          <span
+                            className="text-[11px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full"
+                            style={{
+                              backgroundColor: `${INTENTION_METADATA[activeConversation.intention].colorVar}18`,
+                              color: INTENTION_METADATA[activeConversation.intention].colorVar,
+                              border: `1px solid ${INTENTION_METADATA[activeConversation.intention].colorVar}40`,
+                            }}
+                          >
+                            {INTENTION_METADATA[activeConversation.intention].label}
+                          </span>
+                        </div>
                         <span className="text-sm text-[var(--muted)]">
                           {activeConversation.city}
                         </span>
@@ -2272,12 +2526,12 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                                   {sec.shortLabel}
                                 </span>
                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${sec.status === 'completed'
-                                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                                    : sec.status === 'in_progress'
-                                      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                                      : sec.status === 'optional_available'
-                                        ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
-                                        : 'bg-[var(--surface2)] text-[var(--muted)]'
+                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                  : sec.status === 'in_progress'
+                                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                                    : sec.status === 'optional_available'
+                                      ? 'bg-purple-500/15 text-purple-600 dark:text-purple-400'
+                                      : 'bg-[var(--surface2)] text-[var(--muted)]'
                                   }`}>
                                   {sec.status === 'completed' ? '✓ Done' : sec.status === 'in_progress' ? 'In progress' : sec.status === 'optional_available' ? 'Optional' : 'Start'}
                                 </span>
@@ -2742,12 +2996,12 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                               {res.clusterName}
                             </h4>
                             <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${res.classification === 'consistent_stance'
-                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                                : res.classification === 'plausible_situational_variation'
-                                  ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                                  : res.classification === 'clarification_needed'
-                                    ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                                    : 'bg-[var(--surface2)] text-[var(--muted)] border border-[var(--line)]'
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                              : res.classification === 'plausible_situational_variation'
+                                ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                                : res.classification === 'clarification_needed'
+                                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                  : 'bg-[var(--surface2)] text-[var(--muted)] border border-[var(--line)]'
                               }`}>
                               {res.classification === 'consistent_stance'
                                 ? 'Consistent Stance'
@@ -2886,13 +3140,12 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-[var(--muted)]">Readiness Band:</span>
-                    <span className={`px-2.5 py-1 rounded-[6px] text-xs font-bold ${
-                      report.overallCoverage.readinessStatus === 'established'
-                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-                        : report.overallCoverage.readinessStatus === 'developing'
+                    <span className={`px-2.5 py-1 rounded-[6px] text-xs font-bold ${report.overallCoverage.readinessStatus === 'established'
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                      : report.overallCoverage.readinessStatus === 'developing'
                         ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30'
                         : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-                    }`}>
+                      }`}>
                       {report.overallCoverage.readinessStatus.toUpperCase()}
                     </span>
                   </div>
@@ -2922,10 +3175,10 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                       insight.confidenceBand === 'established'
                         ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                         : insight.confidenceBand === 'developing'
-                        ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30'
-                        : insight.confidenceBand === 'provisional'
-                        ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
-                        : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/30';
+                          ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30'
+                          : insight.confidenceBand === 'provisional'
+                            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                            : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/30';
 
                     return (
                       <div
@@ -3950,6 +4203,166 @@ export const MemberShell: React.FC<MemberShellProps> = ({
               </h1>
             </div>
 
+            {/* MEMBERSHIP & EFFORT-TO-DISCOVERY TIER */}
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--line)]">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--ochre-text)]">
+                    Kithra Unified Membership
+                  </span>
+                  <h2 className="font-serif-editorial text-[28px] font-semibold text-[var(--heading)] mt-0.5">
+                    Current Plan &amp; Discovery Limits
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${memberTier === 'free'
+                      ? 'bg-[var(--surface2)] text-[var(--friend)] border border-[var(--line)]'
+                      : 'bg-[var(--ochre-text)] text-[#09121C]'
+                      }`}
+                  >
+                    {memberTier === 'free'
+                      ? 'Free Tier · Effort-to-Discovery'
+                      : memberTier === 'plus_quarterly'
+                        ? '⭐ Kithra Plus (Quarterly)'
+                        : memberTier === 'matrimony_annual'
+                          ? '⭐ 1-Year All-Access Pass (Annual)'
+                          : `Kithra Plus (${memberTier.replace('plus_', '')})`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Effort-to-Discovery Stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-[var(--surface2)]/50 border border-[var(--line)] text-xs">
+                <div>
+                  <div className="text-[var(--muted)]">Reflections Answered</div>
+                  <div className="text-lg font-bold text-[var(--heading)] mt-0.5">
+                    {answeredQuestionCount} / 60 scenarios
+                  </div>
+                  <div className="text-[11px] text-[var(--friend)] mt-0.5">
+                    {answeredQuestionCount >= 15
+                      ? '✓ 15+ Core Gates Unlocked'
+                      : `${15 - answeredQuestionCount} more to unlock Lens 2 & 3`}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[var(--muted)]">Daily Curated Match Volume</div>
+                  <div className="text-lg font-bold text-[var(--heading)] mt-0.5">
+                    {memberTier === 'free'
+                      ? `${answeredQuestionCount >= 15 ? 10 : answeredQuestionCount >= 5 ? 5 : 3} profiles / day`
+                      : 'Unlimited Profiles'}
+                  </div>
+                  <div className="text-[11px] text-[var(--muted)] mt-0.5">
+                    {memberTier === 'free' ? 'Earn up to 10/day by answering' : 'Uncapped unhurried discovery'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[var(--muted)]">12-Domain Radar Access</div>
+                  <div className="text-lg font-bold text-[var(--heading)] mt-0.5">
+                    {memberTier === 'free' ? '3 Domains (Preview)' : 'Full 12 Domains'}
+                  </div>
+                  <div className="text-[11px] text-[var(--muted)] mt-0.5">
+                    Circadian, repair style, finances
+                  </div>
+                </div>
+              </div>
+
+              {/* Switch / Select Tier Simulation */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-bold text-[var(--heading)]">
+                    Switch / Preview Membership Tier (Instant Prototype Simulation)
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => onNavigateMemberPath('/pricing')}
+                    className="text-xs text-[var(--ochre-text)] font-bold hover:underline"
+                  >
+                    View Full Matrix →
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  {/* Free */}
+                  <button
+                    type="button"
+                    onClick={() => handleSetMemberTier('free')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${memberTier === 'free'
+                      ? 'border-[var(--friend)] bg-[var(--surface2)] ring-1 ring-[var(--friend)]'
+                      : 'border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)]/60'
+                      }`}
+                  >
+                    <div className="text-[10px] font-bold text-[var(--friend)] uppercase">Effort-Based</div>
+                    <div className="text-sm font-bold text-[var(--heading)] mt-1">Free Tier</div>
+                    <div className="text-xs font-mono text-[var(--muted)]">₹0 / month</div>
+                    <div className="text-[10px] text-[var(--muted)] mt-2">Earn discovery by answering scenarios</div>
+                  </button>
+
+                  {/* 1 Month */}
+                  <button
+                    type="button"
+                    onClick={() => handleSetMemberTier('plus_monthly')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${memberTier === 'plus_monthly'
+                      ? 'border-[var(--ochre-text)] bg-[var(--surface2)] ring-1 ring-[var(--ochre-text)]'
+                      : 'border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)]/60'
+                      }`}
+                  >
+                    <div className="text-[10px] font-bold text-[var(--ochre-text)] uppercase">30-Day Pass</div>
+                    <div className="text-sm font-bold text-[var(--heading)] mt-1">1-Month Explorer</div>
+                    <div className="text-xs font-mono text-[var(--heading)]">₹499 / mo</div>
+                    <div className="text-[10px] text-[var(--muted)] mt-2">No-rush trial, uncapped profiles</div>
+                  </button>
+
+                  {/* 3 Months */}
+                  <button
+                    type="button"
+                    onClick={() => handleSetMemberTier('plus_quarterly')}
+                    className={`relative p-3 rounded-xl border text-left transition-all cursor-pointer ${memberTier === 'plus_quarterly'
+                      ? 'border-[var(--ochre-text)] bg-[var(--surface2)] ring-1 ring-[var(--ochre-text)]'
+                      : 'border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)]/60'
+                      }`}
+                  >
+                    <span className="absolute -top-2 right-2 bg-[var(--ochre-text)] text-[#09121C] text-[9px] font-extrabold px-1.5 py-0.2 rounded-full uppercase">
+                      POPULAR
+                    </span>
+                    <div className="text-[10px] font-bold text-[var(--ochre-text)] uppercase">Save 33%</div>
+                    <div className="text-sm font-bold text-[var(--heading)] mt-1">3-Month Pacing</div>
+                    <div className="text-xs font-mono text-[var(--heading)]">₹999 (₹333/mo)</div>
+                    <div className="text-[10px] text-[var(--muted)] mt-2">Natural incubation window</div>
+                  </button>
+
+                  {/* 6 Months */}
+                  <button
+                    type="button"
+                    onClick={() => handleSetMemberTier('plus_halfyearly')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${memberTier === 'plus_halfyearly'
+                      ? 'border-[var(--ochre-text)] bg-[var(--surface2)] ring-1 ring-[var(--ochre-text)]'
+                      : 'border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)]/60'
+                      }`}
+                  >
+                    <div className="text-[10px] font-bold text-[var(--ochre-text)] uppercase">Save 47%</div>
+                    <div className="text-sm font-bold text-[var(--heading)] mt-1">6-Month Intentional</div>
+                    <div className="text-xs font-mono text-[var(--heading)]">₹1,599 (₹266/mo)</div>
+                    <div className="text-[10px] text-[var(--muted)] mt-2">Serious partnership dater</div>
+                  </button>
+
+                  {/* 1 Year Matrimony */}
+                  <button
+                    type="button"
+                    onClick={() => handleSetMemberTier('matrimony_annual')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${memberTier === 'matrimony_annual'
+                      ? 'border-[var(--ochre-text)] bg-[var(--surface2)] ring-1 ring-[var(--ochre-text)]'
+                      : 'border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)]/60'
+                      }`}
+                  >
+                    <div className="text-[10px] font-bold text-[var(--ochre-text)] uppercase">Save 58%</div>
+                    <div className="text-sm font-bold text-[var(--heading)] mt-1">1-Year All-Access</div>
+                    <div className="text-xs font-mono text-[var(--heading)]">₹2,499 (₹208/mo)</div>
+                    <div className="text-[10px] text-[var(--muted)] mt-2">All 3 Intentions + Pre-Marriage Kits</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-6 space-y-3">
                 <h2 className="font-serif-editorial text-[28px] font-semibold text-[var(--heading)]">
@@ -4068,15 +4481,27 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                   path: '/member/settings',
                 },
                 {
-                  label: 'Unified Membership (Free / Plus / Connect)',
-                  desc: 'Compare plans across all three intentions',
+                  label: 'Unified Membership (Free vs Plus)',
+                  desc: 'Compare plans across Friendship, Dating & Matrimony (₹499 – ₹2,499)',
                   path: '/pricing',
+                },
+                {
+                  label: '💍 Matrimony & Family Alignment Kits',
+                  desc: 'Pre-marriage conversation frameworks for money, in-laws, careers & kids',
+                  path: '#matrimony-guides',
+                  isGuides: true,
                 },
               ].map((item) => (
                 <button
                   key={item.path}
                   type="button"
-                  onClick={() => onNavigateMemberPath(item.path)}
+                  onClick={() => {
+                    if ((item as any).isGuides) {
+                      setShowMatrimonyGuidesModal(true);
+                    } else {
+                      onNavigateMemberPath(item.path);
+                    }
+                  }}
                   className="text-left p-4 rounded-[13px] bg-[var(--surface)] border border-[var(--line)] hover:bg-[var(--surface2)]/50 cursor-pointer"
                 >
                   <p className="text-base font-bold text-[var(--heading)]">{item.label}</p>
@@ -4102,9 +4527,21 @@ export const MemberShell: React.FC<MemberShellProps> = ({
           <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[16px] max-w-[490px] w-full p-6">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div>
-                <p className="text-xs uppercase tracking-[2px] font-bold text-[var(--ochre-text)]">
-                  Thoughtful introduction
-                </p>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span
+                    className="text-[11px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: `${INTENTION_METADATA[scopedIntention].colorVar}18`,
+                      color: INTENTION_METADATA[scopedIntention].colorVar,
+                      border: `1px solid ${INTENTION_METADATA[scopedIntention].colorVar}40`,
+                    }}
+                  >
+                    {INTENTION_METADATA[scopedIntention].label} Introduction
+                  </span>
+                  <span className="text-[11px] text-[var(--muted)]">
+                    Isolated to {INTENTION_METADATA[scopedIntention].label}
+                  </span>
+                </div>
                 <h2
                   id="intro-note-title"
                   className="font-serif-editorial text-[32px] font-semibold text-[var(--heading)]"
@@ -4157,6 +4594,183 @@ export const MemberShell: React.FC<MemberShellProps> = ({
           </div>
         </div>
       )}
+      {/* Modal for Matrimony & Family Expectation Discussion Guides */}
+      {showMatrimonyGuidesModal && (() => {
+        const activeKit =
+          MATRIMONY_DISCUSSION_KITS.find((k) => k.id === activeMatrimonyKitId) ||
+          MATRIMONY_DISCUSSION_KITS[0];
+
+        return (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="matrimony-guides-title"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setShowMatrimonyGuidesModal(false);
+            }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+          >
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[20px] max-w-[820px] w-full p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4 pb-4 border-b border-[var(--line)]">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--ochre-text)] bg-[var(--surface2)] px-2.5 py-0.5 rounded-full border border-[var(--line)]">
+                      💍 Matrimony Toolkit
+                    </span>
+                    <span className="text-xs text-[var(--muted)]">4 Pre-Marriage Alignment Kits</span>
+                  </div>
+                  <h2
+                    id="matrimony-guides-title"
+                    className="font-serif-editorial text-[28px] sm:text-[34px] font-bold text-[var(--heading)]"
+                  >
+                    Family &amp; Couple Expectation Discussion Guides
+                  </h2>
+                  <p className="text-xs sm:text-sm text-[var(--muted)]">
+                    Resolving the 4 primary causes of domestic friction in modern Indian marriages before formalizing commitments.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowMatrimonyGuidesModal(false)}
+                  className="w-9 h-9 rounded-full bg-[var(--surface2)] hover:bg-[var(--line)] flex items-center justify-center text-[var(--heading)] cursor-pointer shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Kit Switcher Tabs */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {MATRIMONY_DISCUSSION_KITS.map((kit) => {
+                  const isActive = kit.id === activeKit.id;
+                  return (
+                    <button
+                      key={kit.id}
+                      type="button"
+                      onClick={() => setActiveMatrimonyKitId(kit.id)}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${isActive
+                        ? 'border-[var(--ochre-text)] bg-[var(--surface2)] ring-1 ring-[var(--ochre-text)]'
+                        : 'border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)]/60'
+                        }`}
+                    >
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--ochre-text)]">
+                        {kit.title.split(':')[0]}
+                      </div>
+                      <div className="text-xs font-bold text-[var(--heading)] mt-0.5 truncate">
+                        {kit.title.split(':')[1]?.trim() || kit.title}
+                      </div>
+                      <div className="text-[10px] text-[var(--muted)] mt-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{kit.estimatedTimeMin} min conversation</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Active Kit Cultural Context Banner */}
+              <div className="p-4 rounded-xl bg-[var(--surface2)]/70 border border-[var(--line)] space-y-1.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-[var(--heading)]">
+                  <Sparkles className="w-3.5 h-3.5 text-[var(--ochre-text)]" />
+                  <span>Cultural Reality &amp; Purpose</span>
+                </div>
+                <p className="text-xs text-[var(--text)] leading-relaxed">
+                  {activeKit.culturalContext}
+                </p>
+              </div>
+
+              {/* Discussion Prompt Cards */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--heading)]">
+                  Prompts to Explore Together ({activeKit.prompts.length} Core Areas)
+                </h3>
+                <div className="space-y-3">
+                  {activeKit.prompts.map((p, idx) => (
+                    <div
+                      key={p.id}
+                      className="p-5 rounded-xl bg-[var(--surface2)]/40 border border-[var(--line)] space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold uppercase text-[var(--ochre-text)]">
+                          Topic {idx + 1}: {p.topic}
+                        </span>
+                      </div>
+                      <h4 className="text-base font-serif font-bold text-[var(--heading)] leading-snug">
+                        &ldquo;{p.promptQuestion}&rdquo;
+                      </h4>
+                      <p className="text-xs text-[var(--muted)] leading-relaxed">
+                        <strong className="text-[var(--heading)]">Why this matters:</strong>{' '}
+                        {p.contextWhyItMatters}
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+                        <div className="p-3 rounded-lg bg-[var(--surface)] border border-[var(--line)] space-y-1">
+                          <span className="font-bold text-[var(--friend)] flex items-center gap-1.5 text-[11px]">
+                            <Check className="w-3.5 h-3.5" /> Healthy Signs
+                          </span>
+                          <ul className="space-y-1 text-[11px] text-[var(--text)] list-disc list-inside">
+                            {p.healthySignals.map((s, i) => (
+                              <li key={i}>{s}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20 space-y-1">
+                          <span className="font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5 text-[11px]">
+                            <AlertCircle className="w-3.5 h-3.5" /> Warning Signs
+                          </span>
+                          <ul className="space-y-1 text-[11px] text-[var(--text)] list-disc list-inside">
+                            {p.frictionWarningSigns.map((w, i) => (
+                              <li key={i}>{w}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Takeaway Agreement Checklist */}
+              <div className="p-5 rounded-xl bg-[var(--surface2)] border border-[var(--line)] space-y-2.5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--heading)] flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[var(--friend)]" />
+                  <span>Takeaway Agreement Checklist for Couple</span>
+                </h4>
+                <ul className="space-y-1.5 text-xs text-[var(--text)]">
+                  {activeKit.takeawayWorksheet.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="font-bold text-[var(--ochre-text)] shrink-0">✓</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    showToast('Discussion guide checklist printed / saved.');
+                    window.print();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-[9px] border border-[var(--line)] bg-[var(--surface2)] px-4 py-2.5 text-xs font-bold text-[var(--heading)] hover:bg-[var(--surface)] cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Print / Save Kit Checklist</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMatrimonyGuidesModal(false)}
+                  className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] px-5 py-2.5 text-xs font-bold cursor-pointer"
+                >
+                  Done Reviewing
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </AppShell>
   );
 };

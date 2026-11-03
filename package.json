@@ -7,14 +7,16 @@
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "tsx --test src/utils/kithraLogic.test.ts src/domain/phase3EndToEnd.test.ts src/domain/phase35And4Verification.test.ts src/domain/phase5And6Verification.test.ts src/domain/phase7aTriangulationAndIntegrity.test.ts src/domain/phase7bStagingAndPilotReadiness.test.ts src/domain/phase8StagingAndPilotReadiness.test.ts src/domain/phase8aInsightsAndSecurityAudit.test.ts",
+    "test": "tsx --test src/utils/kithraLogic.test.ts src/domain/phase3EndToEnd.test.ts src/domain/phase35And4Verification.test.ts src/domain/phase5And6Verification.test.ts src/domain/phase7aTriangulationAndIntegrity.test.ts src/domain/phase7bStagingAndPilotReadiness.test.ts src/domain/phase8StagingAndPilotReadiness.test.ts src/domain/phase8aInsightsAndSecurityAudit.test.ts src/domain/phase9RealCloudE2E.test.ts src/domain/phase9aFounderCommandCenter.test.ts",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@types/leaflet": "^1.9.22",
     "@vitejs/plugin-react": "^6.1.1",
     "firebase": "^13.1.0",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.1",
