@@ -258,31 +258,159 @@ export function calculateCofounderSynergy(
     ...pB.skillsNeeded.map((s) => s.skillId),
   ].filter((sId) => !collectiveOffered.has(sId));
 
-  // Pillar C: Working-Style Psychology
+  // Pillar C: Working-Style Psychology (Dynamic Evidence-Based Synthesis, P4 Fix)
+  const getScore = (constructs?: ConstructVectorPoint[], targetId?: string): number | undefined => {
+    if (!constructs) return undefined;
+    const item = constructs.find(
+      (c) => c.constructId === targetId || (targetId && c.constructId.includes(targetId))
+    );
+    return item?.score;
+  };
+
+  const decisionScoreA = getScore(founderA.constructs, 'adaptability_change') ?? getScore(founderA.constructs, 'decision_speed');
+  const decisionScoreB = getScore(founderB.constructs, 'adaptability_change') ?? getScore(founderB.constructs, 'decision_speed');
+
+  const conflictScoreA = getScore(founderA.constructs, 'conflict_repair');
+  const conflictScoreB = getScore(founderB.constructs, 'conflict_repair');
+
+  const planningScoreA = getScore(founderA.constructs, 'daily_lifestyle') ?? getScore(founderA.constructs, 'planning_structure');
+  const planningScoreB = getScore(founderB.constructs, 'daily_lifestyle') ?? getScore(founderB.constructs, 'planning_structure');
+
+  // 1. Decision Speed & Risk Review
+  let decisionApproachA = 'Not yet assessed (requires Work-Style reflections)';
+  let decisionApproachB = 'Not yet assessed (requires Work-Style reflections)';
+  let decisionSynthesis = 'Decision-making approaches have not been compared yet. Complete Work-Style module to view comparative analysis.';
+  let decisionFriction: string | undefined = undefined;
+
+  if (decisionScoreA !== undefined || decisionScoreB !== undefined) {
+    decisionApproachA =
+      decisionScoreA === undefined
+        ? 'Not yet assessed'
+        : decisionScoreA >= 60
+          ? 'Iterative, rapid execution with agile user testing'
+          : decisionScoreA <= 40
+            ? 'Thorough analytical risk modeling and structural diligence'
+            : 'Balanced execution weighing speed against risk diligence';
+
+    decisionApproachB =
+      decisionScoreB === undefined
+        ? 'Not yet assessed'
+        : decisionScoreB >= 60
+          ? 'Iterative, rapid execution with agile user testing'
+          : decisionScoreB <= 40
+            ? 'Thorough analytical risk modeling and structural diligence'
+            : 'Balanced execution weighing speed against risk diligence';
+
+    if (decisionScoreA !== undefined && decisionScoreB !== undefined) {
+      if (Math.abs(decisionScoreA - decisionScoreB) >= 20) {
+        decisionSynthesis = `Classic Fire + Air dynamic: ${founderA.name} and ${founderB.name} bring complementary pacing (momentum vs risk diligence).`;
+        decisionFriction = `${founderA.name} and ${founderB.name} move at different natural validation velocities; agree upfront on release criteria.`;
+      } else {
+        decisionSynthesis = `Aligned decision cadence: Both founders share compatible execution and risk pacing.`;
+      }
+    }
+  }
+
   const decisionMakingStyle: WorkingStyleInsight = {
     dimension: 'Decision Speed & Risk Review',
-    founderApproachA: 'Iterative, fast execution with rapid user feedback',
-    founderApproachB: 'Thorough analytical risk modeling and structural diligence',
-    synthesisNote: 'Classic Fire + Air dynamic: A drives rapid momentum while B ensures operational resilience.',
-    potentialFrictionPoint: 'A may feel delayed by extensive analysis; B may feel rushed by rapid releases.',
+    founderApproachA: decisionApproachA,
+    founderApproachB: decisionApproachB,
+    synthesisNote: decisionSynthesis,
+    potentialFrictionPoint: decisionFriction,
     discussionPrompt: 'How will we decide when a product decision requires immediate action versus deliberate consensus?',
   };
 
+  // 2. Constructive Disagreement & Repair
+  let conflictApproachA = 'Not yet assessed (requires Work-Style reflections)';
+  let conflictApproachB = 'Not yet assessed (requires Work-Style reflections)';
+  let conflictSynthesis = 'Conflict repair style has not been compared yet. Mutual expectations should be discussed early.';
+
+  if (conflictScoreA !== undefined || conflictScoreB !== undefined) {
+    conflictApproachA =
+      conflictScoreA === undefined
+        ? 'Not yet assessed'
+        : conflictScoreA >= 60
+          ? 'Direct, real-time debate focused on rapid issue clearance'
+          : conflictScoreA <= 40
+            ? 'Reflective, structured evaluation with overnight consideration'
+            : 'Collaborative discussion balancing candor with reflection';
+
+    conflictApproachB =
+      conflictScoreB === undefined
+        ? 'Not yet assessed'
+        : conflictScoreB >= 60
+          ? 'Direct, real-time debate focused on rapid issue clearance'
+          : conflictScoreB <= 40
+            ? 'Reflective, structured evaluation with overnight consideration'
+            : 'Collaborative discussion balancing candor with reflection';
+
+    if (conflictScoreA !== undefined && conflictScoreB !== undefined) {
+      conflictSynthesis =
+        Math.abs(conflictScoreA - conflictScoreB) >= 20
+          ? 'Clear boundary agreement prevents misunderstandings during high-pressure pivot discussions.'
+          : 'Aligned communication expectations during strategic disagreements.';
+    }
+  }
+
   const conflictResolutionStyle: WorkingStyleInsight = {
     dimension: 'Constructive Disagreement & Repair',
-    founderApproachA: 'Direct, real-time debate focused on rapid issue clearance',
-    founderApproachB: 'Reflective, structured evaluation with overnight consideration',
-    synthesisNote: 'Clear boundary agreement prevents misunderstandings during high-pressure pivot discussions.',
+    founderApproachA: conflictApproachA,
+    founderApproachB: conflictApproachB,
+    synthesisNote: conflictSynthesis,
     discussionPrompt: 'When a strong strategic disagreement arises, what is our agreed 24-hour escalation and resolution protocol?',
   };
 
+  // 3. Roadmap Structure & Adaptability
+  let planningApproachA = 'Not yet assessed (requires Work-Style reflections)';
+  let planningApproachB = 'Not yet assessed (requires Work-Style reflections)';
+  let planningSynthesis = 'Roadmap cadence has not been compared yet. Review planning rhythms during initial sync.';
+
+  if (planningScoreA !== undefined || planningScoreB !== undefined) {
+    planningApproachA =
+      planningScoreA === undefined
+        ? 'Not yet assessed'
+        : planningScoreA >= 60
+          ? 'Adaptive milestone sprints that pivot as customer insights arrive'
+          : planningScoreA <= 40
+            ? 'Systematic quarterly OKRs with documented resource allocation'
+            : 'Hybrid cadence combining structured goals with flexible sprints';
+
+    planningApproachB =
+      planningScoreB === undefined
+        ? 'Not yet assessed'
+        : planningScoreB >= 60
+          ? 'Adaptive milestone sprints that pivot as customer insights arrive'
+          : planningScoreB <= 40
+            ? 'Systematic quarterly OKRs with documented resource allocation'
+            : 'Hybrid cadence combining structured goals with flexible sprints';
+
+    if (planningScoreA !== undefined && planningScoreB !== undefined) {
+      planningSynthesis =
+        Math.abs(planningScoreA - planningScoreB) >= 20
+          ? 'Balanced planning cadence: agile execution anchored inside structured quarterly objectives.'
+          : 'Cohesive roadmap alignment: Both founders share compatible sprint horizons.';
+    }
+  }
+
   const planningPaceStyle: WorkingStyleInsight = {
     dimension: 'Roadmap Structure & Adaptability',
-    founderApproachA: 'Adaptive milestone sprints that pivot as customer insights arrive',
-    founderApproachB: 'Systematic quarterly OKRs with documented resource allocation',
-    synthesisNote: 'Balanced planning cadence: agile weekly execution anchored inside structured quarterly objectives.',
+    founderApproachA: planningApproachA,
+    founderApproachB: planningApproachB,
+    synthesisNote: planningSynthesis,
     discussionPrompt: 'How frequently will we re-evaluate product roadmap priorities against core unit economics?',
   };
+
+  const hasPsychologicalEvidence =
+    (decisionScoreA !== undefined && decisionScoreB !== undefined) ||
+    (conflictScoreA !== undefined && conflictScoreB !== undefined) ||
+    (planningScoreA !== undefined && planningScoreB !== undefined);
+
+  const overallStyleCompatibility: 'complementary_dynamic' | 'balanced_alignment' | 'friction_risk' =
+    hasPsychologicalEvidence ? 'complementary_dynamic' : 'balanced_alignment';
+
+  const summaryExplanation = hasPsychologicalEvidence
+    ? 'Working-style assessment evidence analyzed: Stated behavioral preferences provide an explainable team dynamic.'
+    : 'Stated business requirements and skills have been compared. Complete the Work-Style module to view behavioral team synergy.';
 
   // Pillar D: Unresolved Partnership Questions
   const recommendedDiscussionTopics: string[] = [

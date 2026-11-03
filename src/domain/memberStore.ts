@@ -801,9 +801,10 @@ export const memberStore = {
       smokingVapingProfile: profile.smokingVapingProfile ?? existing?.smokingVapingProfile,
       eligibility: profile.eligibility ?? existing?.eligibility ?? {
         memberId: profile.id,
-        isAdultVerified: true,
-        enabledIntentions: profile.intentions ?? ['matrimony', 'friendship'],
-        discoverableInIntentions: profile.intentions ?? ['matrimony', 'friendship'],
+        isAdult: false,
+        isAdultVerified: false,
+        enabledIntentions: profile.intentions ?? ['friendship'],
+        discoverableInIntentions: [],
         blockedMemberIds: [],
       },
     };
@@ -858,18 +859,19 @@ export const memberStore = {
       displayedOptionIndex: resolvedDisplayedIndex >= 0 ? resolvedDisplayedIndex : 0,
     };
 
-    // Ensure member eligibility exists
+    // Ensure member eligibility exists (Strict Fail-Closed)
     if (!member.eligibility) {
       member.eligibility = {
         memberId,
-        isAdultVerified: true,
+        isAdult: false,
+        isAdultVerified: false,
         enabledIntentions: member.intentions,
-        discoverableInIntentions: member.intentions,
+        discoverableInIntentions: [],
         blockedMemberIds: [],
       };
     }
 
-    // Auto-sync Q38 Relationship Structure Gate
+    // Auto-sync Q38 Relationship Structure Gate (P2 Transparent Intimate Preference)
     if (questionId === 'q-38-relationship-structure-gate') {
       if (optionId === 'opt-q38-exclusive' || semanticId.includes('exclusive')) {
         member.eligibility.relationshipStructure = 'exclusive_required';
@@ -877,6 +879,10 @@ export const memberStore = {
         member.eligibility.relationshipStructure = 'open_required';
       } else if (optionId === 'opt-q38-flexible' || semanticId.includes('flexible')) {
         member.eligibility.relationshipStructure = 'flexible_either';
+      } else if (optionId === 'opt-q38-exploring' || semanticId.includes('exploring')) {
+        member.eligibility.relationshipStructure = 'unknown';
+      } else if (optionId === 'opt-q38-prefer-not-to-say' || semanticId.includes('prefer-not')) {
+        member.eligibility.relationshipStructure = 'prefer_not_to_answer';
       }
     }
 
@@ -990,8 +996,8 @@ export const memberStore = {
       if (rec.responseLatencyMs) latencies.push(rec.responseLatencyMs);
     }
 
-    // Dynamic construct profile derivation
-    const constructs = deriveConstructProfileFromAnswers(rawAnswersDict, RESEARCH_PILOT_QUESTION_BANK);
+    // Dynamic construct profile derivation using full 125-item question bank (P1.1 Fix)
+    const constructs = deriveConstructProfileFromAnswers(rawAnswersDict, EXPANDED_PILOT_QUESTION_BANK);
 
     // Dynamic staged pattern evaluation
     const staged = evaluateMemberStagedPattern(
@@ -1240,6 +1246,16 @@ export const memberStore = {
   },
 
   /**
+   * Internal / Test helper to inspect response metadata (e.g. latency, displayed index)
+   */
+  getMemberResponseRecord(
+    memberId: string,
+    questionId: string
+  ): StoredResponseRecord | undefined {
+    return storeState.rawResponses[memberId]?.[questionId];
+  },
+
+  /**
    * DPDP Act 2023 Statutory Compliance:
    * Implements Section 12 (Right to correction and erasure of personal data) and
    * Section 6(4) (Right of Data Principal to withdraw consent with ease).
@@ -1288,7 +1304,7 @@ export const memberStore = {
    */
   getDynamicMatchesForActiveMember(
     viewerId?: string,
-    intention: IntentionId | 'all' = 'all',
+    intention: ExtendedIntentionId | 'all' = 'all',
     filterCriteria?: Partial<FullRangeDiscoveryFilterCriteria>
   ): MemberProfile[] {
     const activeId = viewerId ?? storeState.activeMemberId;
@@ -1299,7 +1315,7 @@ export const memberStore = {
 
     const evaluatedCandidates: MemberProfile[] = candidates.map((candidate) => {
       // Finding D Fix: When intention === 'all', evaluate against mutually consented shared intentions!
-      let effectiveIntention: IntentionId = 'friendship';
+      let effectiveIntention: ExtendedIntentionId = 'friendship';
       if (intention === 'all') {
         const viewerIntentions = viewer.intentions ?? viewer.eligibility?.enabledIntentions ?? [];
         const candidateIntentions = candidate.intentions ?? candidate.eligibility?.enabledIntentions ?? [];

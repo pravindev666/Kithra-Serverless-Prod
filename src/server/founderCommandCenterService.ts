@@ -17,7 +17,7 @@
  */
 
 import { memberStore } from '../domain/memberStore';
-import { MemberProfile, IntentionId } from '../types/kithra';
+import { MemberProfile, IntentionId, ExtendedIntentionId } from '../types/kithra';
 import { EXPANDED_PILOT_QUESTION_BANK } from '../data/pilotQuestionBank';
 import { computeProfileReadinessBreakdown } from '../domain/progressiveProfileEngine';
 import { applyKAnonymity, K_ANONYMITY_THRESHOLD } from '../domain/founderAnalyticsEngine';
@@ -203,7 +203,7 @@ export interface CrmMemberDirectoryItem {
   basicProfileReadinessPct: number;
   questionsAnsweredCount: number;
   assessmentConfidenceStage: 'provisional' | 'developing' | 'established';
-  intentions: IntentionId[];
+  intentions: ExtendedIntentionId[];
   subscriptionStatus: 'free_tier' | 'trial_active' | 'active_subscriber' | 'cancelled';
   supportCasesCount: number;
   moderationFlagsCount: number;

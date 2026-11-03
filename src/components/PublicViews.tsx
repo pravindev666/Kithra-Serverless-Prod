@@ -15,12 +15,14 @@ import {
   Star,
 } from 'lucide-react';
 import {
+  ExtendedIntentionId,
   IntentionId,
   MemberTab,
   RelationshipSignalKind,
   ShellSection,
   SystemErrorCode,
 } from '../types/kithra';
+import { memberStore } from '../domain/memberStore';
 import {
   INTENTION_METADATA,
   SIGNAL_VOCABULARY_METADATA,
@@ -43,14 +45,15 @@ interface PublicNavigateProps {
   onNavigatePath: (
     path: string,
     options?: {
-      intentionFilter?: IntentionId | 'all';
+      intentionFilter?: ExtendedIntentionId | 'all';
     }
   ) => void;
-  activeIntentions: IntentionId[];
-  onToggleActiveIntention: (intention: IntentionId) => void;
+  activeIntentions: ExtendedIntentionId[];
+  onToggleActiveIntention: (intention: ExtendedIntentionId) => void;
   pacePreference: string;
   onChangePacePreference: (pace: string) => void;
   manualReduceMotion?: boolean;
+  activeMemberId?: string;
 }
 
 const VOCABULARY_ITEMS: {
@@ -1451,6 +1454,7 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
   onToggleActiveIntention,
   pacePreference,
   onChangePacePreference,
+  activeMemberId,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [selectedCity, setSelectedCity] = useState('Bengaluru');
@@ -1459,6 +1463,9 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
     'Tamil',
     'Hindi',
   ]);
+  const [isAdultConfirmed, setIsAdultConfirmed] = useState(true);
+  const [birthYear, setBirthYear] = useState('1998');
+  const [discoveryConsentGiven, setDiscoveryConsentGiven] = useState(true);
   const [sampleAnswer, setSampleAnswer] = useState('opt-slow');
 
   const toggleLanguage = (lang: string) => {
@@ -1476,7 +1483,7 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
           </p>
           <h1 className="font-serif-editorial text-[36px] sm:text-[46px] leading-[1.04] font-semibold text-[var(--heading)] mt-1">
             {step === 1
-              ? 'One account. Three independent intentions.'
+              ? 'One account. Four independent spaces.'
               : step === 2
                 ? 'Where are you based, and which languages feel like home?'
                 : step === 3
@@ -1515,10 +1522,10 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
             className="space-y-4"
           >
             <p className="text-base text-[var(--muted)]">
-              Enable one intention or more. Dating and Matrimony stay strictly separate from Friendship—there is no automatic crossover of profile visibility.
+              Enable one space or more. Dating, Matrimony, Friendship, and Cofounders stay strictly separate—there is no automatic crossover of profile visibility or personal disclosures.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-              {(['friendship', 'dating', 'matrimony'] as IntentionId[]).map((intentKey) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+              {(['friendship', 'dating', 'matrimony', 'cofounders'] as ExtendedIntentionId[]).map((intentKey) => {
                 const info = INTENTION_METADATA[intentKey];
                 const isSelected = activeIntentions.includes(intentKey);
                 return (
@@ -1542,7 +1549,7 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
                           {isSelected ? '✓ Enabled' : 'Enable'}
                         </span>
                       </div>
-                      <h2 className="font-serif-editorial text-[30px] font-semibold text-[var(--heading)]">
+                      <h2 className="font-serif-editorial text-[26px] font-semibold text-[var(--heading)]">
                         {info.label}
                       </h2>
                       <p className="text-sm text-[var(--muted)] leading-relaxed mt-2">
@@ -1623,6 +1630,54 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Private Legal Age & DPDP Act Verification (Fail-Closed) */}
+            <div className="pt-4 border-t border-[var(--line)] space-y-3">
+              <p className="text-sm font-bold text-[var(--heading)]">
+                Private Verification &amp; Discovery Consent (DPDP Act 2023)
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="onb-birth-year" className="block text-xs font-semibold text-[var(--muted)] mb-1">
+                    Year of Birth (Must be 18+)
+                  </label>
+                  <input
+                    id="onb-birth-year"
+                    type="number"
+                    min="1920"
+                    max={new Date().getFullYear() - 18}
+                    value={birthYear}
+                    onChange={(e) => setBirthYear(e.target.value)}
+                    className="w-full h-[44px] rounded-[9px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3 text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <input
+                    id="onb-adult-confirm"
+                    type="checkbox"
+                    checked={isAdultConfirmed}
+                    onChange={(e) => setIsAdultConfirmed(e.target.checked)}
+                    className="w-4 h-4 rounded border-[var(--line)] text-[var(--ochre)] focus:ring-[var(--ochre)]"
+                  />
+                  <label htmlFor="onb-adult-confirm" className="text-xs text-[var(--muted)] leading-tight">
+                    I confirm I am 18 years of age or older (verified adult status required for all spaces).
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2 pt-2">
+                <input
+                  id="onb-discovery-consent"
+                  type="checkbox"
+                  checked={discoveryConsentGiven}
+                  onChange={(e) => setDiscoveryConsentGiven(e.target.checked)}
+                  className="w-4 h-4 rounded border-[var(--line)] text-[var(--ochre)] focus:ring-[var(--ochre)] mt-0.5"
+                />
+                <label htmlFor="onb-discovery-consent" className="text-xs text-[var(--muted)] leading-tight">
+                  I give explicit discovery consent for my profile to be discoverable in my enabled spaces. (Can be toggled off at any time).
+                </label>
               </div>
             </div>
           </motion.div>
@@ -1786,7 +1841,37 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
         ) : (
           <button
             type="button"
-            onClick={() => onNavigatePath('/member/discover')}
+            onClick={() => {
+              const targetMemberId = activeMemberId ?? 'member-kavya';
+              // 1. Save initial starter reflection answer with measured timing
+              memberStore.saveMemberAnswer(
+                targetMemberId,
+                'q1-deep-listening',
+                sampleAnswer,
+                2500
+              );
+              // 2. Persist onboarding profile data & adult verification state
+              const calculatedAge = Math.max(18, new Date().getFullYear() - (parseInt(birthYear, 10) || 1998));
+              memberStore.upsertMemberProfile({
+                id: targetMemberId,
+                city: selectedCity,
+                languages: selectedLanguages,
+                intentions: activeIntentions,
+                ageRange: `${calculatedAge}–${calculatedAge + 3}`,
+                eligibility: {
+                  isAdult: isAdultConfirmed && calculatedAge >= 18,
+                  isAdultVerified: isAdultConfirmed && calculatedAge >= 18,
+                  enabledIntentions: activeIntentions,
+                  discoverableInIntentions: discoveryConsentGiven ? activeIntentions : [],
+                  discoveryConsentGiven: discoveryConsentGiven,
+                  discoveryEnabledByIntention: Object.fromEntries(
+                    activeIntentions.map((i) => [i, discoveryConsentGiven])
+                  ),
+                  blockedMemberIds: [],
+                },
+              });
+              onNavigatePath('/member/discover');
+            }}
             className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] px-5 py-3 text-sm font-bold cursor-pointer min-h-[44px]"
           >
             Enter Member Discovery →

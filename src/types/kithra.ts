@@ -372,7 +372,7 @@ export interface QualitativeAlignment {
   summary: string;
   sharedSignals: string[];
   conversationPrompt: string;
-  applicableIntentions: IntentionId[];
+  applicableIntentions: ExtendedIntentionId[];
 }
 
 export interface MeasuredAlignmentDimension {
@@ -395,6 +395,7 @@ export interface MemberEligibilityRequirements {
   enabledIntentions: ExtendedIntentionId[];
   discoverableInIntentions?: ExtendedIntentionId[];
   discoveryEnabledByIntention?: Partial<Record<ExtendedIntentionId, boolean>>;
+  discoveryConsentGiven?: boolean;
   blockedMemberIds: string[];
   pairExclusions?: PairExclusionRule[];
   connectedMemberIdsByIntention?: Partial<Record<ExtendedIntentionId, string[]>>;
@@ -465,8 +466,8 @@ export interface MemberProfile {
   city: string;
   neighborhood?: string;
   languages: string[];
-  intentions: IntentionId[];
-  primaryIntention: IntentionId;
+  intentions: ExtendedIntentionId[];
+  primaryIntention: ExtendedIntentionId;
   headline: string;
   bio: string;
   interests: string[];
@@ -549,7 +550,7 @@ export interface MemberPhoto {
   variant: string;
   localObjectUrl?: string;
   crop: PhotoCropTransform;
-  visibleIn: Record<IntentionId, boolean>;
+  visibleIn: Record<string, boolean>;
   moderationStatus: 'Approved' | 'Pending review' | 'Rejected — Guideline note';
   moderationNote?: string;
 }

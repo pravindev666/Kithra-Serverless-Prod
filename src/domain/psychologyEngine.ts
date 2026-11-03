@@ -19,7 +19,7 @@ import {
   SmokingHabitStatus,
   SmokingVapingProfile,
 } from '../types/kithra';
-import { PILOT_60_QUESTION_BANK } from '../data/pilotQuestionBank';
+import { PILOT_60_QUESTION_BANK, EXPANDED_PILOT_QUESTION_BANK } from '../data/pilotQuestionBank';
 
 export const PSYCHOLOGY_ENGINE_VERSION = '2026.11-psych-v2.0-deterministic';
 
@@ -122,7 +122,7 @@ export function getMemberFacingLensLabel(
 /* -------------------------------------------------------------------------- */
 
 export const PROVISIONAL_DOMAIN_WEIGHTS: Record<
-  IntentionId,
+  ExtendedIntentionId,
   Record<string, number>
 > = {
   friendship: {
@@ -184,6 +184,29 @@ export const PROVISIONAL_DOMAIN_WEIGHTS: Record<
     romantic_expectations: 1.2,
     family_domestic: 1.4,
     adaptability_change: 1.2,
+    C1_openness: 1.0,
+    C2_planfulness: 1.0,
+    C3_social_energy: 1.0,
+    C4_warmth: 1.0,
+    C5_steadiness: 1.0,
+    C1: 1.0,
+    C2: 1.0,
+    C3: 1.0,
+    C4: 1.0,
+  },
+  cofounders: {
+    personality_traits: 1.0,
+    personal_values: 1.25,
+    communication: 1.35,
+    emotional_regulation: 1.2,
+    conflict_repair: 1.35,
+    trust_reliability: 1.4,
+    autonomy_boundaries: 1.25,
+    daily_lifestyle: 1.0,
+    social_friendship: 0.6,
+    romantic_expectations: 0.0,
+    family_domestic: 0.0,
+    adaptability_change: 1.3,
     C1_openness: 1.0,
     C2_planfulness: 1.0,
     C3_social_energy: 1.0,
@@ -623,7 +646,7 @@ export function classifySimilarityPresetBucket(
 export function computeAttributeSimilarity(
   viewerConstructs: ConstructVectorPoint[],
   candidateConstructs: ConstructVectorPoint[],
-  intention: IntentionId = 'friendship'
+  intention: ExtendedIntentionId = 'friendship'
 ): AttributeSimilarityEvaluation {
   const weights = PROVISIONAL_DOMAIN_WEIGHTS[intention];
   const candidateMap = new Map<ConstructLayerId, ConstructVectorPoint>();
@@ -938,7 +961,7 @@ export function evaluateWeBalanceEachOther(
 /* -------------------------------------------------------------------------- */
 
 export interface FullRangeDiscoveryFilterCriteria {
-  intention: IntentionId | 'all';
+  intention: ExtendedIntentionId | 'all';
   city: string;
   searchQuery: string;
   savedOnly: boolean;
@@ -1002,7 +1025,11 @@ export function filterProfilesByFullSimilaritySpectrum(
 
   const filtered = profiles.filter((profile) => {
     // 1 & 2. Intention & Stage A Mutual Eligibility check
-    if (criteria.viewerEligibility && profile.eligibility) {
+    if (criteria.viewerEligibility) {
+      if (!profile.eligibility) {
+        // P0.4 Fix: Candidates without eligibility records must NEVER bypass mutual eligibility!
+        return false;
+      }
       if (criteria.intention !== 'all') {
         if (!profile.intentions.includes(criteria.intention)) {
           return false;
@@ -2068,7 +2095,7 @@ export function formatConstructLayerName(layer: ConstructLayerId): string {
 
 export function deriveConstructProfileFromAnswers(
   answers: Record<string, string>,
-  questions: AssessmentQuestion[] = PILOT_60_QUESTION_BANK
+  questions: AssessmentQuestion[] = EXPANDED_PILOT_QUESTION_BANK
 ): ConstructVectorPoint[] {
   const buckets: Record<
     string,
@@ -2167,7 +2194,7 @@ export function deriveConstructProfileFromAnswers(
 export interface MemberPairwiseMatchResult {
   viewerId: string;
   candidateId: string;
-  intention: IntentionId;
+  intention: ExtendedIntentionId;
   eligibility: MutualEligibilityEvaluation;
   similarity: AttributeSimilarityEvaluation;
   complementarity: ComplementarityEvaluation;
@@ -2183,21 +2210,21 @@ export interface MemberPairwiseMatchResult {
 export function evaluateMemberPairwiseMatch(
   viewer: MemberProfile,
   candidate: MemberProfile,
-  intention: IntentionId = 'friendship'
+  intention: ExtendedIntentionId = 'friendship'
 ): MemberPairwiseMatchResult {
-  // 1. Stage A Mutual Eligibility
+  // 1. Stage A Mutual Eligibility (Strict Fail-Closed on missing verification)
   const viewerEligibility = viewer.eligibility ?? {
     memberId: viewer.id,
-    isAdultVerified: true,
+    isAdultVerified: false,
     enabledIntentions: viewer.intentions,
-    discoverableInIntentions: viewer.intentions,
+    discoverableInIntentions: [],
     blockedMemberIds: [],
   };
   const candidateEligibility = candidate.eligibility ?? {
     memberId: candidate.id,
-    isAdultVerified: true,
+    isAdultVerified: false,
     enabledIntentions: candidate.intentions,
-    discoverableInIntentions: candidate.intentions,
+    discoverableInIntentions: [],
     blockedMemberIds: [],
   };
 

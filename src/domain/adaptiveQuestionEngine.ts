@@ -25,6 +25,7 @@
 import {
   AssessmentQuestion,
   ConstructLayerId,
+  ExtendedIntentionId,
   IntentionId,
   ProfileSectionId,
   QuestionFormatType,
@@ -91,7 +92,7 @@ export type AdaptiveSelectionCategory =
 export interface AdaptiveSelectionContext {
   answeredQuestionIds: Iterable<string>;
   memberAnswers?: Record<string, unknown>;
-  intentions?: readonly IntentionId[] | IntentionId[];
+  intentions?: readonly ExtendedIntentionId[] | ExtendedIntentionId[];
   questionBank?: AssessmentQuestion[];
   targetSectionId?: ProfileSectionId;
   sessionAnswersCount?: number;
@@ -158,12 +159,12 @@ function getAnswerOptionId(raw: unknown): string | null {
  */
 export function selectNextAdaptiveQuestion(
   contextOrAnsweredIds: Iterable<string> | AdaptiveSelectionContext,
-  maybeIntentions?: IntentionId[],
+  maybeIntentions?: ExtendedIntentionId[],
   maybeQuestionBank?: AssessmentQuestion[]
 ): AdaptiveSelectionResult {
   let answeredQuestionIds: Iterable<string>;
   let memberAnswers: Record<string, unknown> = {};
-  let intentions: readonly IntentionId[] = ['friendship'];
+  let intentions: readonly ExtendedIntentionId[] = ['friendship'];
   let questionBank: AssessmentQuestion[] = EXPANDED_PILOT_QUESTION_BANK;
   let targetSectionId: ProfileSectionId | undefined;
   let sessionAnswersCount = 0;

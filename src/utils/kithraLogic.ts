@@ -2,6 +2,7 @@ import {
   AdminTab,
   AssessmentQuestion,
   DiscoveryLensView,
+  ExtendedIntentionId,
   IntentionId,
   MemberEligibilityRequirements,
   MemberPhoto,
@@ -225,7 +226,7 @@ export function getPageTitleForRoute(route: ParsedRoute): string {
 }
 
 export interface ProfileFilterCriteria {
-  intention: IntentionId | 'all';
+  intention: ExtendedIntentionId | 'all';
   city: string;
   searchQuery: string;
   savedOnly: boolean;
@@ -283,7 +284,7 @@ export function filterProfiles(
       }
     } else if (criteria.viewerEligibility) {
       const viewerIntentions = criteria.viewerEligibility.enabledIntentions ?? [];
-      const shared = viewerIntentions.filter((i) => profile.intentions.includes(i as IntentionId));
+      const shared = viewerIntentions.filter((i) => profile.intentions.includes(i));
       if (shared.length === 0) {
         return false;
       }
@@ -370,7 +371,7 @@ export function validateAuthForm(input: AuthValidationInput): AuthValidationResu
 export function togglePhotoIntentionVisibility(
   photos: MemberPhoto[],
   photoId: string,
-  intention: IntentionId
+  intention: ExtendedIntentionId | string
 ): MemberPhoto[] {
   return photos.map((photo) => {
     if (photo.id !== photoId) return photo;
@@ -386,9 +387,9 @@ export function togglePhotoIntentionVisibility(
 
 export function getVisiblePhotosForIntention(
   photos: MemberPhoto[],
-  intention: IntentionId
+  intention: ExtendedIntentionId | string
 ): MemberPhoto[] {
-  return photos.filter((photo) => photo.visibleIn[intention]);
+  return photos.filter((photo) => Boolean(photo.visibleIn[intention]));
 }
 
 export function reorderPhotos(

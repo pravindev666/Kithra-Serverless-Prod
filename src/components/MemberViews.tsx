@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowDown,
@@ -38,6 +38,7 @@ import {
   CommunityCircle,
   ConversationThread,
   DiscoveryLensView,
+  ExtendedIntentionId,
   IntentionId,
   MemberPhoto,
   MemberProfile,
@@ -93,21 +94,21 @@ interface MemberShellProps {
   activeTab: MemberTab;
   matchMemberId?: string;
   onNavigateMemberPath: (path: string) => void;
-  intentionFilter: IntentionId | 'all';
-  onChangeIntentionFilter: (filter: IntentionId | 'all') => void;
+  intentionFilter: ExtendedIntentionId | 'all';
+  onChangeIntentionFilter: (filter: ExtendedIntentionId | 'all') => void;
   profiles: MemberProfile[];
   onUpdateProfiles: React.Dispatch<React.SetStateAction<MemberProfile[]>>;
   photos: MemberPhoto[];
   onUpdatePhotos: React.Dispatch<React.SetStateAction<MemberPhoto[]>>;
   questions: AssessmentQuestion[];
   assessmentAnswers: Record<string, string>;
-  onSelectAssessmentAnswer: (questionId: string, optionId: string, displayedOptionIndex?: number) => void;
+  onSelectAssessmentAnswer: (questionId: string, optionId: string, displayedOptionIndex?: number, latencyMs?: number) => void;
   conversations: ConversationThread[];
   onSendMessage: (conversationId: string, text: string) => void;
   circles: CommunityCircle[];
   onToggleCircleJoin: (circleId: string) => void;
-  activeIntentions: IntentionId[];
-  onToggleActiveIntention: (intention: IntentionId) => void;
+  activeIntentions: ExtendedIntentionId[];
+  onToggleActiveIntention: (intention: ExtendedIntentionId) => void;
   pacePreference: string;
   onChangePacePreference: (pace: string) => void;
   isDark: boolean;
@@ -149,7 +150,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   onDeleteAssessmentData,
 }) => {
   // Discover states (Scoped by active intention first)
-  const [scopedIntention, setScopedIntention] = useState<IntentionId>(
+  const [scopedIntention, setScopedIntention] = useState<ExtendedIntentionId>(
     intentionFilter !== 'all' ? intentionFilter : activeIntentions[0] || 'friendship'
   );
   const [cityFilter, setCityFilter] = useState<string>('All cities');
@@ -190,6 +191,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   const [simulatedStageAnsweredCount, setSimulatedStageAnsweredCount] = useState<number>(5);
   const [questionLanguage, setQuestionLanguage] = useState<'en' | 'ta' | 'hi'>('en');
   const [shuffleOptionsEnabled, setShuffleOptionsEnabled] = useState<boolean>(true);
+  const questionMountTimeRef = useRef<number>(Date.now());
 
   // PhotoManager states
   const [selectedPhotoId, setSelectedPhotoId] = useState<string>(photos[0]?.id ?? 'photo-1');
@@ -218,7 +220,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
       setSelfBio(activeSelfMember.bio);
     }
   }, [activeMemberId, activeSelfMember]);
-  const [previewIntentionMode, setPreviewIntentionMode] = useState<IntentionId>('friendship');
+  const [previewIntentionMode, setPreviewIntentionMode] = useState<ExtendedIntentionId>('friendship');
 
   // Tier & Pricing Engineering: Free vs Plus Tiers
   const [memberTier, setMemberTier] = useState<
@@ -348,6 +350,10 @@ export const MemberShell: React.FC<MemberShellProps> = ({
     visibleQuestions[0] ??
     questions[activeQuestionIndex] ??
     questions[0];
+
+  useEffect(() => {
+    questionMountTimeRef.current = Date.now();
+  }, [currentQuestion?.id]);
 
   const matchTargetProfile =
     profiles.find((p) => p.id === matchMemberId) ?? profiles[0];
@@ -539,7 +545,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
             aria-label="Choose active relationship intention"
             className="inline-flex flex-wrap items-center gap-1 p-1 bg-[var(--surface2)] border border-[var(--line)] rounded-[10px]"
           >
-            {(['friendship', 'dating', 'matrimony'] as IntentionId[]).map((intentKey) => {
+            {(['friendship', 'dating', 'matrimony', 'cofounders'] as ExtendedIntentionId[]).map((intentKey) => {
               const active = scopedIntention === intentKey;
               const isEnabledOnAccount = activeIntentions.includes(intentKey);
               const info = INTENTION_METADATA[intentKey];
@@ -2860,9 +2866,10 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                           key={opt.id}
                           type="button"
                           aria-pressed={isChosen}
-                          onClick={() =>
-                            onSelectAssessmentAnswer(currentQuestion.id, opt.id, optIdx)
-                          }
+                          onClick={() => {
+                            const measuredLatency = Math.max(250, Date.now() - questionMountTimeRef.current);
+                            onSelectAssessmentAnswer(currentQuestion.id, opt.id, optIdx, measuredLatency);
+                          }}
                           className={`w-full text-left p-4 rounded-[12px] border transition-colors cursor-pointer ${isChosen
                             ? 'bg-[var(--surface2)] border-[var(--heading)]'
                             : 'bg-[var(--bg)] border-[var(--line)] hover:bg-[var(--surface2)]/50'
@@ -4070,7 +4077,15 @@ export const MemberShell: React.FC<MemberShellProps> = ({
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  showToast('Updated your local preview profile.');
+                  const targetId = activeSelfMember?.id ?? activeMemberId ?? 'member-kavya';
+                  memberStore.upsertMemberProfile({
+                    id: targetId,
+                    name: selfName,
+                    city: selfCity,
+                    headline: selfHeadline,
+                    bio: selfBio,
+                  });
+                  showToast('Profile updated and saved.');
                 }}
                 className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-6 space-y-4"
               >
@@ -4149,7 +4164,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                     Preview as seen in:
                   </span>
                   <div className="flex items-center gap-1">
-                    {(['friendship', 'dating', 'matrimony'] as IntentionId[]).map(
+                    {(['friendship', 'dating', 'matrimony', 'cofounders'] as ExtendedIntentionId[]).map(
                       (intentKey) => (
                         <button
                           key={intentKey}
@@ -4219,9 +4234,9 @@ export const MemberShell: React.FC<MemberShellProps> = ({
               <h2 className="font-serif-editorial text-[28px] font-semibold text-[var(--heading)]">
                 Cross-intention isolation rules
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                {(['friendship', 'dating', 'matrimony'] as IntentionId[]).map((intentKey) => {
-                  const enabled = activeIntentions.includes(intentKey);
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                {(['friendship', 'dating', 'matrimony', 'cofounders'] as ExtendedIntentionId[]).map((intentKey) => {
+                  const enabled = activeIntentions.includes(intentKey as any);
                   const visPhotos = getVisiblePhotosForIntention(photos, intentKey).length;
                   return (
                     <div
@@ -4595,7 +4610,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                 Pause or enable any intention without losing your saved connections or reflections.
               </p>
               <div className="flex flex-wrap gap-2.5">
-                {(['friendship', 'dating', 'matrimony'] as IntentionId[]).map((intentKey) => {
+                {(['friendship', 'dating', 'matrimony', 'cofounders'] as ExtendedIntentionId[]).map((intentKey) => {
                   const active = activeIntentions.includes(intentKey);
                   return (
                     <button

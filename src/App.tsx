@@ -9,6 +9,7 @@ import {
   AuditLogEntry,
   CommunityCircle,
   ConversationThread,
+  ExtendedIntentionId,
   IntentionId,
   MemberPhoto,
   MemberProfile,
@@ -136,13 +137,13 @@ export default function App() {
 
   const [devStateCode, setDevStateCode] = useState<SystemErrorCode>('inventory');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-  const [intentionFilter, setIntentionFilter] = useState<IntentionId | 'all'>('all');
+  const [intentionFilter, setIntentionFilter] = useState<ExtendedIntentionId | 'all'>('all');
 
   // Interactive application state
   const [activeMemberId, setActiveMemberId] = useState<string>(() =>
     memberStore.getActiveMemberId()
   );
-  const [activeIntentions, setActiveIntentions] = useState<IntentionId[]>([
+  const [activeIntentions, setActiveIntentions] = useState<ExtendedIntentionId[]>([
     'friendship',
     'matrimony',
   ]);
@@ -201,7 +202,7 @@ export default function App() {
 
   const handleNavigatePath = (
     targetPath: string,
-    options?: { intentionFilter?: IntentionId | 'all' }
+    options?: { intentionFilter?: ExtendedIntentionId | 'all' }
   ) => {
     if (options?.intentionFilter) {
       setIntentionFilter(options.intentionFilter);
@@ -275,7 +276,7 @@ export default function App() {
     });
   };
 
-  const handleToggleActiveIntention = (intention: IntentionId) => {
+  const handleToggleActiveIntention = (intention: ExtendedIntentionId) => {
     setActiveIntentions((prev) => {
       if (prev.includes(intention)) {
         return prev.length > 1 ? prev.filter((i) => i !== intention) : prev;
@@ -296,9 +297,12 @@ export default function App() {
   const handleSelectAssessmentAnswer = (
     questionId: string,
     optionId: string,
-    displayedOptionIndex?: number
+    displayedOptionIndex?: number,
+    latencyMs?: number
   ) => {
-    memberStore.saveMemberAnswer(activeMemberId, questionId, optionId, 3000, displayedOptionIndex);
+    // P1 Fix: Record actual measured user interaction latency (fallback to 3000ms only if untracked)
+    const measuredLatency = latencyMs ?? 3000;
+    memberStore.saveMemberAnswer(activeMemberId, questionId, optionId, measuredLatency, displayedOptionIndex);
     setAssessmentAnswers((prev) => ({ ...prev, [questionId]: optionId }));
     const dynamicCandidates = memberStore.getDynamicMatchesForActiveMember(
       activeMemberId,
@@ -666,6 +670,7 @@ export default function App() {
               pacePreference={pacePreference}
               onChangePacePreference={setPacePreference}
               manualReduceMotion={manualReduceMotion}
+              activeMemberId={activeMemberId}
             />
           )}
 

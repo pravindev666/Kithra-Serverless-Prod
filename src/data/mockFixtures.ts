@@ -3,6 +3,7 @@ import {
   AuditLogEntry,
   CommunityCircle,
   ConversationThread,
+  ExtendedIntentionId,
   IntentionId,
   MemberPhoto,
   MemberProfile,
@@ -18,7 +19,7 @@ import {
 } from './pilotQuestionBank';
 
 export const INTENTION_METADATA: Record<
-  IntentionId,
+  ExtendedIntentionId,
   {
     label: string;
     colorVar: string;
@@ -53,6 +54,15 @@ export const INTENTION_METADATA: Record<
       'Explore serious partnership with honesty about expectations, life rhythms, family context and shared future goals.',
     boundarySummary:
       'Dedicated space for marriage-minded introductions with explicit control over which photos and family notes are visible.',
+  },
+  cofounders: {
+    label: 'Cofounders',
+    colorVar: 'var(--ochre)',
+    shortTagline: 'Complementary skills, shared vision, and aligned working styles.',
+    description:
+      'Find startup partners and collaborators based on complementary capabilities, risk appetite, availability, and collaborative working styles.',
+    boundarySummary:
+      'Visible only to founders and builders; strictly isolated from personal, romantic, and family contexts.',
   },
 };
 
