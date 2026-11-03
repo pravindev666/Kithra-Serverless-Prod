@@ -172,3 +172,23 @@ test('Phase 15 — Cloudflare Worker Dynamic Route-Specific Open Graph Injection
   const cofounderHtml = await cofounderRes.text();
   assert.ok(cofounderHtml.includes('Kithra_Cofounders_OG_1200x630.png'), 'Cofounders route must inject Cofounders OG card');
 });
+
+test('Phase 15 — Brand Easter Egg: Wordmark uses dotless "ı" with Ochre tittle and zero trailing period', () => {
+  const appTsx = fs.readFileSync(path.join(ROOT_DIR, 'src/App.tsx'), 'utf-8');
+  const appShellTsx = fs.readFileSync(path.join(ROOT_DIR, 'src/components/AppShell.tsx'), 'utf-8');
+  const wordmarkTsx = fs.readFileSync(path.join(ROOT_DIR, 'src/components/KithraWordmark.tsx'), 'utf-8');
+
+  // 1. KithraWordmark defines the subtle ochre dot on 'i' (kı̇thra)
+  assert.ok(wordmarkTsx.includes('ı'), 'Wordmark must use dotless ı for stem isolation');
+  assert.ok(wordmarkTsx.includes('bg-[var(--ochre)]'), 'Wordmark dot must be colored in brand ochre');
+  assert.ok(wordmarkTsx.includes('aria-label="kithra"'), 'Wordmark must be accessible to screen readers');
+
+  // 2. Trailing period is completely removed from both headers
+  assert.ok(!appTsx.includes('kithra<b className="text-[var(--ochre)]">.</b>'), 'App.tsx must not contain trailing period');
+  assert.ok(!appShellTsx.includes('kithra<b className="text-[var(--ochre)]">.</b>'), 'AppShell.tsx must not contain trailing period');
+
+  // 3. Both headers integrate KithraWordmark
+  assert.ok(appTsx.includes('<KithraWordmark'), 'App.tsx header must use KithraWordmark');
+  assert.ok(appShellTsx.includes('<KithraWordmark'), 'AppShell.tsx header must use KithraWordmark');
+});
+
