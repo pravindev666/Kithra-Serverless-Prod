@@ -1,0 +1,156 @@
+{
+  "id": "/#kithra-pwa",
+  "name": "Kithra — Find your kind of people",
+  "short_name": "Kithra",
+  "description": "Not who society thinks you should love. Who truly understands you. Four independent, intention-isolated spaces for Friendship, Dating, Matrimony, and Cofounders.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "portrait-primary",
+  "background_color": "#1B153B",
+  "theme_color": "#1B153B",
+  "categories": [
+    "lifestyle",
+    "social",
+    "community"
+  ],
+  "icons": [
+    {
+      "src": "/assets/kithra/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/kithra/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/kithra/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/kithra/maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/kithra/maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/assets/kithra/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Discover Kindred Spirits",
+      "short_name": "Discover",
+      "description": "Explore thoughtful matches across your active spaces",
+      "url": "/member/discover",
+      "icons": [
+        {
+          "src": "/assets/kithra/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Friendship Circles",
+      "short_name": "Friendship",
+      "description": "Meet thoughtful friends and small-table walking tribes",
+      "url": "/member/discover?intention=friendship",
+      "icons": [
+        {
+          "src": "/assets/kithra/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Intentional Dating",
+      "short_name": "Dating",
+      "description": "Attraction, honest interest, and deliberate conversation",
+      "url": "/member/discover?intention=dating",
+      "icons": [
+        {
+          "src": "/assets/kithra/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Life Matrimony",
+      "short_name": "Matrimony",
+      "description": "Serious partnership grounded in values and long-term clarity",
+      "url": "/member/discover?intention=matrimony",
+      "icons": [
+        {
+          "src": "/assets/kithra/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Cofounder Synergy",
+      "short_name": "Cofounders",
+      "description": "Connect with builders sharing aligned vision and skills",
+      "url": "/member/discover?intention=cofounders",
+      "icons": [
+        {
+          "src": "/assets/kithra/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/landing-desktop-dark.png",
+      "sizes": "1440x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Kithra Landing & Four Intention Spaces"
+    },
+    {
+      "src": "/screenshots/landing-mobile-dark.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Kithra Mobile Experience"
+    },
+    {
+      "src": "/screenshots/discover-desktop-dark.png",
+      "sizes": "1440x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Three-Lens Candidate Discovery"
+    },
+    {
+      "src": "/screenshots/discover-mobile-dark.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile Reflection & Candidate View"
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": []
+}

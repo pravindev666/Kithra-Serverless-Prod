@@ -132,15 +132,64 @@ export default {
       });
     }
 
-    // 4. Delegate to Static Assets or Fallback
+    // 4. Delegate to Static Assets or Fallback (with smart social crawler route metadata)
     if (env.ASSETS) {
+      let response: Response;
       try {
-        return await env.ASSETS.fetch(request);
+        response = await env.ASSETS.fetch(request);
       } catch {
         // Fall back to index.html for Single-Page App client routing
         const spaUrl = new URL('/index.html', request.url);
-        return await env.ASSETS.fetch(new Request(spaUrl.toString(), request));
+        response = await env.ASSETS.fetch(new Request(spaUrl.toString(), request));
       }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        let html = await response.text();
+        const pathLower = url.pathname.toLowerCase() + url.search.toLowerCase();
+
+        let ogImage = 'Kithra_Main_Dark_OG_1200x630.png';
+        let ogTitle = 'Kithra — Find your kind of people';
+        let ogDesc = 'Friendship, Dating, Matrimony and Cofounders. Thoughtful connections, at your own pace.';
+
+        if (pathLower.includes('dating')) {
+          ogImage = 'Kithra_Dating_OG_1200x630.png';
+          ogTitle = 'Kithra Dating — Intentional, Unhurried Romance';
+          ogDesc = 'Find room for attraction, conversation, and authentic discovery without endless swipe fatigue.';
+        } else if (pathLower.includes('friendship')) {
+          ogImage = 'Kithra_Friendship_OG_1200x630.png';
+          ogTitle = 'Kithra Friendship — Curiosity & Community Circles';
+          ogDesc = 'Meet people you can talk to, learn with, and laugh with—whether new to a city or deepening local ties.';
+        } else if (pathLower.includes('matrimony')) {
+          ogImage = 'Kithra_Matrimony_OG_1200x630.png';
+          ogTitle = 'Kithra Matrimony — Serious Life Partnership';
+          ogDesc = 'Explore long-term partnership with honesty about expectations, life rhythms, and shared future goals.';
+        } else if (pathLower.includes('cofounders')) {
+          ogImage = 'Kithra_Cofounders_OG_1200x630.png';
+          ogTitle = 'Kithra Cofounders — Complementary Skills & Shared Vision';
+          ogDesc = 'Find startup partners and collaborators based on complementary capabilities and working styles.';
+        }
+
+        if (ogImage !== 'Kithra_Main_Dark_OG_1200x630.png') {
+          html = html
+            .replace(/Kithra_Main_Dark_OG_1200x630\.png/g, ogImage)
+            .replace(/Kithra — Find your kind of people/g, ogTitle)
+            .replace(/Friendship, Dating, Matrimony and Cofounders\. Thoughtful connections, at your own pace\./g, ogDesc);
+        }
+
+        const headers = new Headers(response.headers);
+        headers.set('Content-Type', 'text/html; charset=UTF-8');
+        for (const [k, v] of Object.entries(SECURITY_HEADERS)) {
+          headers.set(k, v);
+        }
+
+        return new Response(html, {
+          status: response.status,
+          headers,
+        });
+      }
+
+      return response;
     }
 
     return new Response(

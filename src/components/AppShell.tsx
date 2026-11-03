@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { KithraWordmark } from './KithraWordmark';
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                      */
@@ -345,11 +346,17 @@ export const AppShell: React.FC<AppShellProps> = ({
         e.preventDefault();
         navigate(homePath);
       }}
-      className="flex items-baseline gap-2 min-w-0 rounded-[6px]"
+      className="group flex items-center gap-2.5 min-w-0 rounded-[6px] cursor-pointer"
+      aria-label="Kithra — Return to landing page"
     >
-      <span className="font-serif-editorial text-[30px] leading-none font-semibold tracking-[-1px] text-[var(--heading)]">
-        kithra<b className="text-[var(--ochre)]">.</b>
-      </span>
+      <img
+        src="/assets/kithra/apple-touch-icon.png"
+        alt=""
+        width={32}
+        height={32}
+        className="w-7 h-7 sm:w-8 sm:h-8 rounded-[8px] object-cover shadow-sm border border-[var(--ochre)]/35 ring-1 ring-[var(--line)] group-hover:scale-105 transition-all duration-200 shrink-0"
+      />
+      <KithraWordmark className="text-[30px] leading-none font-semibold tracking-[-1px] text-[var(--heading)]" />
       {brandSuffix && (
         <span className="text-[13px] font-semibold text-[var(--muted)] truncate">
           {brandSuffix}

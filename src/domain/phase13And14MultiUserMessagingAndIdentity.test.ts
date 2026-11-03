@@ -482,7 +482,7 @@ test('Phase 13 — Journey E: Block Member Enforces Immediate Messaging & Discov
   assert.equal(blockedSendRes.status, 403);
   assert.ok((blockedSendRes.body as any).message?.includes('blocked'));
 
-  // Aarav attempts to send introduction in Matrimony -> BLOCKED (HTTP 409)
+  // Aarav attempts to send introduction in Matrimony -> BLOCKED (HTTP 403)
   const blockedIntroRes = await handleApiRequest(
     {
       method: 'POST',
@@ -496,7 +496,7 @@ test('Phase 13 — Journey E: Block Member Enforces Immediate Messaging & Discov
     },
     { db: mockD1, allowDevTokens: true }
   );
-  assert.equal(blockedIntroRes.status, 409);
+  assert.equal(blockedIntroRes.status, 403);
 });
 
 // ============================================================================
@@ -629,4 +629,115 @@ test('Phase 13 — Journey G: Negative Security Vectors (Forged Auth, IDOR, Mism
   // Total messages in conversation must still be exactly 1
   const allMsgs = await d1Service.getMessages(conv.id, profileAarav.id);
   assert.equal(allMsgs.length, 1);
+});
+
+test('Phase 13 & 14 — Journey H: All 6 Exit Handles Installed (Trap-Free Member Sovereignty)', async () => {
+  const mockD1 = new LocalD1DatabaseMock();
+  const d1Service = new KithraD1Service(mockD1);
+
+  // 1. Setup two members
+  const provA = await d1Service.resolveOrCreateMemberFromAuth({
+    provider: 'google.com',
+    providerSubjectId: 'firebase_h_aarav',
+    email: 'aarav.h@kithra.internal',
+    displayName: 'Aarav H',
+  });
+  const memberA = provA.user;
+
+  const provB = await d1Service.resolveOrCreateMemberFromAuth({
+    provider: 'google.com',
+    providerSubjectId: 'firebase_h_meera',
+    email: 'meera.h@kithra.internal',
+    displayName: 'Meera H',
+  });
+  const memberB = provB.user;
+
+  const tokenA = `Bearer dev-token-${memberA.id}-member`;
+  const tokenB = `Bearer dev-token-${memberB.id}-member`;
+
+  // HANDLE 1: Circle Join & Leave in D1
+  const circleRes = await d1Service.createCircle(memberA.id, memberA.display_name, {
+    title: 'Sunday Morning Walking Tribe',
+    city: 'Bengaluru',
+    format: 'In-person walk',
+    intention: 'friendship',
+    cadence: 'Bi-weekly Sunday',
+    maxCapacity: 12,
+    description: 'A quiet morning walk in Cubbon Park.',
+  }, 'Cubbon Park Bandstand');
+  const circleId = circleRes.circle!.id;
+
+  // Member B joins
+  const joinRes = await handleApiRequest(
+    { method: 'POST', path: `/api/member/circles/${circleId}/join`, headers: { Authorization: tokenB } },
+    { db: mockD1, allowDevTokens: true }
+  );
+  assert.equal(joinRes.status, 200);
+
+  // Member B leaves (Handle 1: Exit Circle & Cancel RSVP)
+  const leaveRes = await handleApiRequest(
+    { method: 'POST', path: `/api/member/circles/${circleId}/leave`, headers: { Authorization: tokenB } },
+    { db: mockD1, allowDevTokens: true }
+  );
+  assert.equal(leaveRes.status, 200);
+
+  // HANDLE 2: Sent Introduction Withdrawal
+  const introRes = await d1Service.createIntroduction(memberA.id, memberB.id, 'dating', 'Hello Meera, testing introduction withdrawal.');
+  assert.equal(introRes.success, true);
+  const introId = introRes.introduction!.id;
+
+  // Member A withdraws note
+  const withdrawRes = await handleApiRequest(
+    { method: 'POST', path: `/api/member/introductions/${introId}/withdraw`, headers: { Authorization: tokenA } },
+    { db: mockD1, allowDevTokens: true }
+  );
+  assert.equal(withdrawRes.status, 200);
+
+  // HANDLE 3: Part Ways Politely (Graceful Disconnect without Punitive Block)
+  await d1Service.createPairRelationship(memberA.id, memberB.id, 'dating');
+  const [u1, u2] = [memberA.id, memberB.id].sort();
+  const pairId = `pair_${u1}_${u2}`;
+  // Accept connection
+  await d1Service.upsertPairRelationship({
+    pair_id: pairId,
+    member_a_id: u1,
+    member_b_id: u2,
+    active_space: 'dating',
+    relationship_state: 'accepted_connection',
+    suppression_status: 'all_spaces_suppressed',
+    initiated_by: memberA.id,
+    connected_at: Date.now(),
+    created_at: Date.now(),
+    updated_at: Date.now(),
+  });
+  const conv = await d1Service.createOrGetPairConversation(pairId, 'dating');
+  const convId = conv.id;
+
+  // Part ways politely
+  const partWaysRes = await handleApiRequest(
+    { method: 'POST', path: `/api/member/conversations/${convId}/disconnect`, headers: { Authorization: tokenA } },
+    { db: mockD1, allowDevTokens: true }
+  );
+  assert.equal(partWaysRes.status, 200);
+  const updatedPair = await d1Service.getPairRelationship(pairId);
+  assert.equal(updatedPair?.relationship_state, 'disconnected');
+  assert.equal(updatedPair?.suppression_status, 'none');
+
+  // HANDLE 4: Circle Host Archive / Cancel Gathering
+  const archiveRes = await handleApiRequest(
+    { method: 'POST', path: `/api/member/circles/${circleId}/archive`, headers: { Authorization: tokenA }, body: { reason: 'Monsoon rain reschedule' } },
+    { db: mockD1, allowDevTokens: true }
+  );
+  assert.equal(archiveRes.status, 200);
+
+  // HANDLE 5: Block & Unblock Member Management
+  await d1Service.blockMember(memberA.id, memberB.id);
+  assert.equal(await d1Service.isMemberBlocked(memberA.id, memberB.id), true);
+
+  const unblockRes = await handleApiRequest(
+    { method: 'POST', path: '/api/member/unblock', headers: { Authorization: tokenA }, body: { targetMemberId: memberB.id } },
+    { db: mockD1, allowDevTokens: true }
+  );
+  assert.equal(unblockRes.status, 200);
+  assert.equal(await d1Service.isMemberBlocked(memberA.id, memberB.id), false);
 });

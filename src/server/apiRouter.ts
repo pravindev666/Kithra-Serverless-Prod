@@ -536,6 +536,15 @@ export async function handleApiRequest(
     return { status: 200, body: { success: true, unblockedMemberId: targetMemberId } };
   }
 
+  // GET /api/member/blocked
+  if (req.method === 'GET' && req.path === '/api/member/blocked') {
+    if (d1) {
+      const blocked = await d1.listBlockedMembers(user.userId);
+      return { status: 200, body: { success: true, blockedMembers: blocked } };
+    }
+    return { status: 200, body: { success: true, blockedMembers: [] } };
+  }
+
   // POST /api/member/report
   if (req.method === 'POST' && req.path === '/api/member/report') {
     const { targetMemberId, category, summary } = (req.body as {
@@ -627,12 +636,28 @@ export async function handleApiRequest(
     return { status: 200, body: { introductions: intros, total: intros.length } };
   }
 
-  // POST /api/member/introductions/:id/accept
-  if (req.method === 'POST' && req.path.startsWith('/api/member/introductions/') && req.path.endsWith('/accept')) {
+  // POST /api/member/introductions/:id/accept or :id/respond
+  if (
+    req.method === 'POST' &&
+    req.path.startsWith('/api/member/introductions/') &&
+    (req.path.endsWith('/accept') || req.path.endsWith('/respond'))
+  ) {
     const parts = req.path.split('/');
     const introId = parts[4];
     if (!introId) {
       return { status: 400, body: { error: 'INVALID_ID', message: 'Introduction ID is required.' } };
+    }
+
+    const responseType = req.path.endsWith('/accept') ? 'accept' : ((req.body as any)?.response || 'accept');
+    if (responseType === 'decline') {
+      if (d1) {
+        const d1Res = await d1.declineIntroduction(introId, user.userId);
+        if (!d1Res.success) {
+          return { status: 400, body: { error: 'DECLINE_FAILED', message: d1Res.error } };
+        }
+      }
+      memberStore.declineIntroduction(introId, user.userId);
+      return { status: 200, body: { success: true, status: 'declined' } };
     }
 
     let acceptRes: any = null;
@@ -652,6 +677,7 @@ export async function handleApiRequest(
       status: 200,
       body: {
         success: true,
+        status: 'accepted_connection',
         conversationId: acceptRes?.conversationId ?? `conv_${introId}`,
         activeSpace: acceptRes?.activeSpace ?? storeRes.introduction?.intention,
       },
@@ -816,17 +842,31 @@ export async function handleApiRequest(
     return { status: 200, body: { success: true, scope: 'for_me', conversationId } };
   }
 
-  // POST /api/member/block (Block Member Across All Spaces)
-  if (req.method === 'POST' && req.path === '/api/member/block') {
-    const { targetMemberId } = (req.body as { targetMemberId?: string }) ?? {};
-    if (!targetMemberId) {
-      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'targetMemberId is required.' } };
+  // POST /api/member/conversations/:conversationId/disconnect (Part Ways Politely / Graceful Disconnect)
+  if (req.method === 'POST' && req.path.startsWith('/api/member/conversations/') && req.path.endsWith('/disconnect')) {
+    const parts = req.path.split('/');
+    const conversationId = parts[4];
+    if (!conversationId) {
+      return { status: 400, body: { error: 'INVALID_CONVERSATION_ID', message: 'Conversation ID required.' } };
     }
 
-    await d1.blockMember(user.userId, targetMemberId);
-    memberStore.blockMember(user.userId, targetMemberId);
-    return { status: 200, body: { success: true, blocked: targetMemberId } };
+    const conv = await d1.getConversationById(conversationId);
+    if (!conv) {
+      return { status: 404, body: { error: 'CONVERSATION_NOT_FOUND', message: 'Conversation not found.' } };
+    }
+
+    const pair = await d1.getPairRelationship(conv.pair_id);
+    if (!pair || (pair.member_a_id !== user.userId && pair.member_b_id !== user.userId)) {
+      return { status: 403, body: { error: 'UNAUTHORIZED', message: 'Unauthorized for this connection.' } };
+    }
+
+    const res = await d1.disconnectPair(pair.pair_id, user.userId);
+    if (!res.success) {
+      return { status: 400, body: { error: 'DISCONNECT_FAILED', message: res.error } };
+    }
+    return { status: 200, body: { success: true, message: 'Connection gracefully concluded and spaces restored.' } };
   }
+
 
   // POST /api/member/account/delete (Complete User Account Erasure - DPDP Act 2023)
   if (req.method === 'POST' && req.path === '/api/member/account/delete') {
@@ -952,6 +992,17 @@ export async function handleApiRequest(
       return { status: 400, body: { error: 'LEAVE_FAILED', message: res.error } };
     }
     return { status: 200, body: { success: true } };
+  }
+
+  // POST /api/member/circles/:id/archive (Host Cancels/Archives Gathering)
+  if (req.method === 'POST' && req.path.startsWith('/api/member/circles/') && (req.path.endsWith('/archive') || req.path.endsWith('/cancel'))) {
+    const circleId = req.path.split('/')[4];
+    const { reason } = (req.body as { reason?: string }) ?? {};
+    const res = await d1.archiveCircle(circleId, user.userId, reason);
+    if (!res.success) {
+      return { status: 400, body: { error: 'ARCHIVE_FAILED', message: res.error } };
+    }
+    return { status: 200, body: { success: true, message: 'Circle gathering archived.' } };
   }
 
   // POST /api/member/circles/:id/invite (Invite candidate from Discovery)

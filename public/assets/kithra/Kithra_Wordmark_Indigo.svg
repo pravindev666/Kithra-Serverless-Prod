@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="200" viewBox="0 0 760 200">
+ <g transform="translate(12,17) scale(1.25)">
+  <path d="M 43 27 C 42 43 43 85 43 102" stroke="#1F2F46" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M 52 66 C 68 62 75 42 91 32" stroke="#3D7570" stroke-width="11" fill="none" stroke-linecap="round"/>
+  <path d="M 52 68 C 68 76 76 94 92 102" stroke="#C4876A" stroke-width="11" fill="none" stroke-linecap="round"/>
+  <circle cx="52" cy="67" r="7" fill="#C9962E" />
+ </g>
+ <text x="172" y="133" font-family="EB Garamond" font-size="116" fill="#1F2F46">kithra</text>
+ <circle cx="467" cy="124" r="8" fill="#C9962E" />
+ </svg>

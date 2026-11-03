@@ -122,10 +122,20 @@ interface MemberShellProps {
   onSelectAssessmentAnswer: (questionId: string, optionId: string, displayedOptionIndex?: number, latencyMs?: number) => void;
   conversations: ConversationThread[];
   onSendMessage: (conversationId: string, text: string) => void;
+  onDeleteMessage?: (conversationId: string, messageId: string, scope: 'for_me' | 'unsend') => void;
+  onDeleteConversation?: (conversationId: string) => void;
+  onBlockMember?: (partnerId: string, conversationId?: string) => void;
+  onRetrySendMessage?: (conversationId: string, messageId: string, text: string) => void;
   circles: CommunityCircle[];
   onToggleCircleJoin: (circleId: string) => void;
   onProposeCircle?: (newCircle: CommunityCircle) => void;
   onInviteMemberToCircle?: (circleId: string, memberId: string) => void;
+  onArchiveCircle?: (circleId: string, reason?: string) => void;
+  onWithdrawIntroduction?: (introId: string, targetMemberId: string) => void;
+  onDisconnectPartner?: (conversationId: string, partnerId: string) => void;
+  onUnblockMember?: (targetMemberId: string) => void;
+  discoveryPaused?: boolean;
+  onToggleDiscoveryPause?: (paused: boolean) => void;
   activeIntentions: ExtendedIntentionId[];
   onToggleActiveIntention: (intention: ExtendedIntentionId) => void;
   pacePreference: string;
@@ -154,10 +164,20 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   onSelectAssessmentAnswer,
   conversations,
   onSendMessage,
+  onDeleteMessage,
+  onDeleteConversation,
+  onBlockMember,
+  onRetrySendMessage,
   circles,
   onToggleCircleJoin,
   onProposeCircle,
   onInviteMemberToCircle,
+  onArchiveCircle,
+  onWithdrawIntroduction,
+  onDisconnectPartner,
+  onUnblockMember,
+  discoveryPaused,
+  onToggleDiscoveryPause,
   activeIntentions,
   onToggleActiveIntention,
   pacePreference,
@@ -315,6 +335,9 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   const [newNoticeTitle, setNewNoticeTitle] = useState<string>('');
   const [newNoticeContent, setNewNoticeContent] = useState<string>('');
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState<boolean>(false);
+  const [blockedList, setBlockedList] = useState<Array<{ id: string; name: string }>>([
+    { id: 'usr-demo-blocked', name: 'Rohan Sharma' },
+  ]);
 
   // Tier & Pricing Engineering: Free vs Plus Tiers
   const [memberTier, setMemberTier] = useState<
@@ -1487,6 +1510,24 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                 </p>
               </div>
 
+            {discoveryPaused && (
+              <div className="p-4 rounded-[12px] bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm text-amber-900 dark:text-amber-200">
+                  <span className="text-lg">🌿</span>
+                  <span>
+                    <strong>Discovery Sabbatical Active:</strong> Your profile is currently resting and hidden from member discovery. Your existing connections, circles, and chats remain completely active.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onToggleDiscoveryPause?.(false)}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
+                >
+                  Resume Discovery
+                </button>
+              </div>
+            )}
+
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -2144,9 +2185,23 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                               Open conversation →
                             </button>
                           ) : member.connectionState === 'note-sent' ? (
-                            <span className="text-sm font-bold text-[var(--muted)]">
-                              ✓ Note sent
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-[var(--muted)] bg-[var(--surface2)] px-2.5 py-1.5 rounded-[8px]">
+                                ✓ Note sent
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm(`Withdraw your introduction note to ${member.name}?\n\nThey will not be notified, and you can reach out again in the future if your paths cross.`)) {
+                                    onWithdrawIntroduction?.(`intro-${member.id}`, member.id);
+                                    showToast('Introduction note quietly withdrawn.');
+                                  }
+                                }}
+                                className="text-xs font-semibold text-[var(--muted)] hover:text-rose-500 underline cursor-pointer"
+                              >
+                                Withdraw note
+                              </button>
+                            </div>
                           ) : (
                             <button
                               type="button"
@@ -2530,13 +2585,29 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                           Match signals
                         </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleSaveProfile(p.id)}
-                        className="text-sm text-[var(--muted)] hover:text-[var(--heading)] cursor-pointer"
-                      >
-                        {p.saved ? 'Remove bookmark' : 'Bookmark'}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {p.connectionState === 'note-sent' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Withdraw your introduction note to ${p.name}?`)) {
+                                onWithdrawIntroduction?.(`intro-${p.id}`, p.id);
+                                showToast('Introduction note quietly withdrawn.');
+                              }
+                            }}
+                            className="text-xs font-semibold text-rose-500 hover:underline cursor-pointer"
+                          >
+                            Withdraw note
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleSaveProfile(p.id)}
+                          className="text-sm text-[var(--muted)] hover:text-[var(--heading)] cursor-pointer"
+                        >
+                          {p.saved ? 'Remove bookmark' : 'Bookmark'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -2549,7 +2620,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
           <div>
             <div className="mb-5">
               <p className="uppercase tracking-[2.3px] text-xs font-bold text-[var(--ochre-text)]">
-                Conversations · Simulated preview
+                Conversations · Authenticated & Unhurried
               </p>
               <h1 className="font-serif-editorial text-[38px] sm:text-[43px] leading-[1.05] font-semibold text-[var(--heading)] mt-1">
                 Unhurried messages.
@@ -2610,9 +2681,50 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                             {INTENTION_METADATA[activeConversation.intention].label}
                           </span>
                         </div>
-                        <span className="text-sm text-[var(--muted)]">
-                          {activeConversation.city}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-[var(--muted)]">
+                            {activeConversation.city}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`Part ways politely with ${activeConversation.memberName}?\n\nThis will gracefully conclude your connection and restore your discovery across all spaces without blocking either member.`)) {
+                                  onDisconnectPartner?.(activeConversation.id, activeConversation.memberId);
+                                  showToast('Connection concluded with grace. All spaces restored.');
+                                }
+                              }}
+                              className="text-xs text-[var(--ochre-text)] hover:text-[var(--heading)] px-2.5 py-1 rounded border border-[var(--ochre-text)]/40 hover:border-[var(--ochre-text)] cursor-pointer transition-colors"
+                              title="Part ways politely and restore discovery"
+                            >
+                              Part Ways
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`Delete conversation with ${activeConversation.memberName}? It will be hidden from your inbox.`)) {
+                                  onDeleteConversation?.(activeConversation.id);
+                                }
+                              }}
+                              className="text-xs text-[var(--muted)] hover:text-rose-500 px-2 py-1 rounded border border-[var(--line)] hover:border-rose-400 cursor-pointer transition-colors"
+                              title="Delete conversation for me"
+                            >
+                              Delete Thread
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`Block ${activeConversation.memberName}? All messaging and discovery in all 4 spaces will be immediately terminated.`)) {
+                                  onBlockMember?.(activeConversation.memberId, activeConversation.id);
+                                }
+                              }}
+                              className="text-xs text-[var(--muted)] hover:text-rose-600 px-2 py-1 rounded border border-[var(--line)] hover:border-rose-500 cursor-pointer transition-colors"
+                              title="Block member across all spaces"
+                            >
+                              Block
+                            </button>
+                          </div>
+                        </div>
                       </div>
                       <p className="text-sm text-[var(--muted)] mt-1">
                         {activeConversation.contextNote}
@@ -2620,23 +2732,85 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                     </div>
 
                     <div className="py-4 space-y-3 max-h-[300px] overflow-y-auto">
-                      {activeConversation.messages.map((m) => (
-                        <motion.div
-                          key={m.id}
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.14 }}
-                          className={`max-w-[82%] rounded-[12px] p-4 text-sm leading-relaxed ${m.sender === 'self'
-                            ? 'ml-auto bg-[var(--primary)] text-[var(--on-primary)]'
-                            : 'bg-[var(--surface2)] text-[var(--text)]'
-                            }`}
-                        >
-                          <p>{m.text}</p>
-                          <span className="block text-xs opacity-75 mt-1.5">
-                            {m.timestamp}
-                          </span>
-                        </motion.div>
-                      ))}
+                      {activeConversation.messages.map((m) => {
+                        if (m.isUnsent) {
+                          return (
+                            <motion.div
+                              key={m.id}
+                              initial={{ opacity: 0, y: 4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.14 }}
+                              className={`max-w-[82%] rounded-[12px] p-3 text-xs leading-relaxed italic border ${m.sender === 'self' ? 'ml-auto' : ''
+                                } bg-stone-100/60 dark:bg-stone-900/40 text-stone-500 dark:text-stone-400 border-stone-200/60 dark:border-stone-800/60`}
+                            >
+                              <p>[Message un-sent by sender]</p>
+                              <span className="block text-[10px] opacity-60 mt-1">{m.timestamp}</span>
+                            </motion.div>
+                          );
+                        }
+
+                        return (
+                          <motion.div
+                            key={m.id}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.14 }}
+                            className={`group relative max-w-[82%] rounded-[12px] p-4 text-sm leading-relaxed ${m.sender === 'self'
+                              ? 'ml-auto bg-[var(--primary)] text-[var(--on-primary)]'
+                              : 'bg-[var(--surface2)] text-[var(--text)]'
+                              }`}
+                          >
+                            <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                            <div className="flex items-center justify-between gap-3 text-xs opacity-80 mt-1.5 flex-wrap">
+                              <span>{m.timestamp}</span>
+                              <div className="flex items-center gap-2">
+                                {m.sender === 'self' && (
+                                  <span>
+                                    {m.deliveryStatus === 'sending' && (
+                                      <span className="text-[10px] text-amber-300 font-medium">Sending...</span>
+                                    )}
+                                    {m.deliveryStatus === 'failed' && (
+                                      <button
+                                        type="button"
+                                        onClick={() => onRetrySendMessage?.(activeConversation.id, m.id, m.text)}
+                                        className="text-[10px] text-rose-300 font-bold hover:underline cursor-pointer"
+                                      >
+                                        Failed • Click to Retry
+                                      </button>
+                                    )}
+                                    {(m.deliveryStatus === 'sent' || (!m.deliveryStatus && m.sender === 'self')) && (
+                                      <span className="text-[10px] opacity-75">Sent</span>
+                                    )}
+                                  </span>
+                                )}
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 ml-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => onDeleteMessage?.(activeConversation.id, m.id, 'for_me')}
+                                    className="text-[10px] hover:underline cursor-pointer opacity-75 hover:opacity-100"
+                                    title="Delete message for me"
+                                  >
+                                    Delete for Me
+                                  </button>
+                                  {m.sender === 'self' && (
+                                    <>
+                                      <span className="text-[10px] opacity-40">•</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => onDeleteMessage?.(activeConversation.id, m.id, 'unsend')}
+                                        className="text-[10px] hover:underline cursor-pointer opacity-75 hover:opacity-100"
+                                        title="Unsend for everyone"
+                                      >
+                                        Unsend
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -2851,19 +3025,54 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                         </p>
                       </div>
 
-                      <div className="mt-5 pt-4 border-t border-[var(--line)] flex items-center justify-between">
-                        <button
-                          type="button"
-                          onClick={() => onToggleCircleJoin(circle.id)}
-                          className={`rounded-[9px] px-4 py-2.5 text-sm font-bold cursor-pointer min-h-[42px] transition-colors ${
-                            circle.joined
-                              ? 'bg-[var(--surface2)] border border-[var(--line)] text-[var(--heading)]'
-                              : 'bg-[var(--primary)] text-[var(--on-primary)]'
-                          }`}
-                        >
-                          {circle.joined ? '✓ Joined Circle (Leave)' : 'Join Circle (Reserve Seat)'}
-                        </button>
+                      <div className="mt-5 pt-4 border-t border-[var(--line)] flex flex-wrap items-center justify-between gap-3">
+                        {circle.joined ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSalonCircleId(circle.id)}
+                              className="rounded-[9px] px-4 py-2.5 text-xs sm:text-sm font-bold bg-[var(--primary)] text-[var(--on-primary)] cursor-pointer min-h-[42px] hover:opacity-95 transition-opacity inline-flex items-center gap-1.5"
+                            >
+                              <span>Enter Tribe Hive →</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`Cancel your RSVP for "${circle.title}"?\n\nYour seat will be released for the waitlist, and you will step out of this Hive.`)) {
+                                  onToggleCircleJoin(circle.id);
+                                  showToast('RSVP cancelled. Your seat has been released.');
+                                }
+                              }}
+                              className="rounded-[9px] px-3 py-2 text-xs font-semibold border border-[var(--line)] text-[var(--muted)] hover:text-rose-500 cursor-pointer min-h-[42px] transition-colors"
+                            >
+                              Cancel RSVP
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onToggleCircleJoin(circle.id)}
+                            className="rounded-[9px] px-4 py-2.5 text-sm font-bold bg-[var(--primary)] text-[var(--on-primary)] cursor-pointer min-h-[42px] hover:opacity-95 transition-opacity"
+                          >
+                            Join Tribe (Reserve Seat)
+                          </button>
+                        )}
                         <div className="flex items-center gap-2">
+                          {isHost && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const reason = window.prompt(`Archive and cancel "${circle.title}"?\n\nPlease enter a brief reason for confirmed guests (e.g. rescheduling or venue conflict):`, 'Rescheduling gathering');
+                                if (reason !== null) {
+                                  onArchiveCircle?.(circle.id, reason);
+                                  showToast('Tribe gathering archived.');
+                                }
+                              }}
+                              className="text-xs text-rose-500 hover:underline cursor-pointer"
+                            >
+                              Cancel Gathering
+                            </button>
+                          )}
                           {isHost && (
                             <span className="text-xs font-bold text-[var(--ochre-text)]">👑 You are Host</span>
                           )}
@@ -3157,6 +3366,206 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                 </div>
               </div>
             )}
+
+            {/* The Tribe Hive Sanctuary Modal */}
+            {salonCircleId && (() => {
+              const activeHiveCircle = circles.find((c) => c.id === salonCircleId);
+              if (!activeHiveCircle) return null;
+              const isHiveHost = activeHiveCircle.creatorMemberId === (activeSelfMember?.id || activeMemberId);
+              return (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="tribe-hive-title"
+                >
+                  <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[20px] max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto my-8">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-4 pb-4 border-b border-[var(--line)]">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <span
+                            className="text-xs uppercase tracking-[1px] font-bold"
+                            style={{ color: INTENTION_METADATA[activeHiveCircle.intention]?.colorVar || 'var(--primary)' }}
+                          >
+                            Kindred Tribe · {activeHiveCircle.format}
+                          </span>
+                          {activeHiveCircle.cohortComfort && activeHiveCircle.cohortComfort !== 'all_genders' && (
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-700 dark:text-pink-300">
+                              {activeHiveCircle.cohortComfort === 'women_only' ? '🌸 Women-only' : '🛡️ Men-only'}
+                            </span>
+                          )}
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                            ✓ Your Seat is Confirmed
+                          </span>
+                        </div>
+                        <h2 id="tribe-hive-title" className="font-serif-editorial text-[28px] sm:text-[32px] font-semibold text-[var(--heading)]">
+                          {activeHiveCircle.title} · Tribe Hive
+                        </h2>
+                        <p className="text-xs text-[var(--muted)] mt-1">
+                          Hosted by {activeHiveCircle.creatorMemberName || 'Community Steward'} · {activeHiveCircle.city} · {activeHiveCircle.cadence}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSalonCircleId(null)}
+                        className="p-1.5 rounded-full hover:bg-[var(--surface2)] text-[var(--muted)] hover:text-[var(--heading)] cursor-pointer"
+                        aria-label="Close Hive"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Sanctuary Coordinates (Restricted to Confirmed Members) */}
+                    <div className="p-4 rounded-[14px] bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                        <MapPin className="w-4 h-4" />
+                        <span>Private Sanctuary Location (Confirmed Members Only)</span>
+                      </div>
+                      <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                        {activeHiveCircle.venueDetails || 'Third Wave Coffee, Private Verandah, 12th Main, Indiranagar, Bengaluru'}
+                      </p>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                        Sanctuary coordinates are private and shared only with confirmed attendees to protect psychological safety and unhurried focus.
+                      </p>
+                    </div>
+
+                    {/* Host Broadcasts */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--ochre-text)]">
+                          Host Broadcasts &amp; Updates
+                        </h3>
+                        {isHiveHost && (
+                          <button
+                            type="button"
+                            onClick={() => setIsNoticeModalOpen((prev) => !prev)}
+                            className="text-xs font-bold text-[var(--primary)] hover:underline cursor-pointer"
+                          >
+                            + Add Broadcast
+                          </button>
+                        )}
+                      </div>
+
+                      {isNoticeModalOpen && (
+                        <form onSubmit={handlePostHostNotice} className="p-4 rounded-[12px] bg-[var(--surface2)] space-y-3">
+                          <input
+                            type="text"
+                            placeholder="Notice Title (e.g. Table reservation details)"
+                            value={newNoticeTitle}
+                            onChange={(e) => setNewNoticeTitle(e.target.value)}
+                            className="w-full text-xs font-semibold px-3 py-2 rounded-md border border-[var(--line)] bg-[var(--bg)] text-[var(--text)]"
+                            required
+                          />
+                          <textarea
+                            placeholder="Notice message for the tribe..."
+                            value={newNoticeContent}
+                            onChange={(e) => setNewNoticeContent(e.target.value)}
+                            className="w-full text-xs px-3 py-2 rounded-md border border-[var(--line)] bg-[var(--bg)] text-[var(--text)]"
+                            rows={2}
+                            required
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setIsNoticeModalOpen(false)}
+                              className="text-xs px-3 py-1.5 rounded border border-[var(--line)]"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              className="text-xs font-bold px-4 py-1.5 rounded bg-[var(--primary)] text-[var(--on-primary)]"
+                            >
+                              Publish Broadcast
+                            </button>
+                          </div>
+                        </form>
+                      )}
+
+                      <div className="space-y-2">
+                        {salonNotices.map((n) => (
+                          <div key={n.id} className="p-3.5 rounded-[12px] bg-[var(--surface2)]/70 border border-[var(--line)] space-y-1">
+                            <p className="text-xs font-bold text-[var(--heading)]">{n.title}</p>
+                            <p className="text-xs text-[var(--text)]">{n.content}</p>
+                            <span className="text-[10px] text-[var(--muted)]">From {n.hostName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tribe Reflections */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--ochre-text)]">
+                        Kindred Reflections &amp; Discussions
+                      </h3>
+                      <div className="space-y-2 max-h-[160px] overflow-y-auto">
+                        {salonReflections.map((r) => (
+                          <div key={r.id} className="p-3 rounded-[12px] bg-[var(--surface2)]/50 border border-[var(--line)] space-y-0.5">
+                            <span className="text-xs font-bold text-[var(--heading)]">{r.authorName}</span>
+                            <p className="text-xs text-[var(--text)]">{r.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <form onSubmit={handlePostReflection} className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Share a quiet reflection with this Hive..."
+                          value={newReflectionText}
+                          onChange={(e) => setNewReflectionText(e.target.value)}
+                          className="flex-1 text-xs px-3 py-2 rounded-lg border border-[var(--line)] bg-[var(--bg)] text-[var(--text)]"
+                        />
+                        <button
+                          type="submit"
+                          className="px-4 py-2 rounded-lg bg-[var(--primary)] text-[var(--on-primary)] text-xs font-bold shrink-0 cursor-pointer"
+                        >
+                          Share
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* Confirmed Members Roster */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--ochre-text)]">
+                        Confirmed Kindred Members ({salonAttendees.length} seats)
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {salonAttendees.map((att) => (
+                          <div key={att.memberId} className="p-2.5 rounded-[10px] bg-[var(--surface2)]/60 flex items-center justify-between text-xs">
+                            <span className="font-semibold text-[var(--heading)]">{att.name}</span>
+                            <span className="text-[10px] font-bold text-[var(--muted)] capitalize">{att.role}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Footer Actions / Exit Handle */}
+                    <div className="pt-4 border-t border-[var(--line)] flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Cancel your RSVP for "${activeHiveCircle.title}"?\n\nYour seat will be released for someone on the waitlist, and you will step out of this Hive.`)) {
+                            onToggleCircleJoin(activeHiveCircle.id);
+                            setSalonCircleId(null);
+                            showToast('RSVP cancelled. Your seat has been released.');
+                          }
+                        }}
+                        className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline px-3.5 py-2 rounded border border-rose-200 dark:border-rose-900/40 hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer"
+                      >
+                        Cancel RSVP &amp; Release My Seat
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSalonCircleId(null)}
+                        className="px-5 py-2.5 rounded-[9px] bg-[var(--surface2)] border border-[var(--line)] text-xs font-bold text-[var(--heading)] cursor-pointer hover:bg-[var(--line)]"
+                      >
+                        Close Hive Sanctuary
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -5417,6 +5826,75 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                   );
                 })}
               </div>
+            </div>
+
+            {/* DISCOVERY SABBATICAL / PAUSE MATCHING */}
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--ochre-text)]">
+                  Pacing &amp; Presence Control
+                </span>
+                <h2 className="font-serif-editorial text-[26px] font-semibold text-[var(--heading)]">
+                  Discovery Sabbatical (Pause Matching)
+                </h2>
+                <p className="text-sm text-[var(--muted)]">
+                  Temporarily step away from new recommendations. Your profile will be resting and hidden from discovery feeds, while all your active chats, circles, and reflections remain completely safe.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !discoveryPaused;
+                  onToggleDiscoveryPause?.(next);
+                  showToast(next ? '🌿 Discovery sabbatical activated. Your profile is resting.' : 'Discovery resumed. Welcome back!');
+                }}
+                className={`px-5 py-2.5 rounded-[9px] text-sm font-bold cursor-pointer transition-colors shrink-0 ${
+                  discoveryPaused
+                    ? 'bg-amber-600 text-white hover:bg-amber-700'
+                    : 'bg-[var(--surface2)] border border-[var(--line)] text-[var(--heading)] hover:bg-[var(--line)]'
+                }`}
+              >
+                {discoveryPaused ? '🌿 Sabbatical Active (Resume)' : 'Take a Sabbatical'}
+              </button>
+            </div>
+
+            {/* BLOCKED MEMBERS MANAGEMENT */}
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-6 space-y-4">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--ochre-text)]">
+                  Privacy &amp; Safety Controls
+                </span>
+                <h2 className="font-serif-editorial text-[26px] font-semibold text-[var(--heading)]">
+                  Blocked Members
+                </h2>
+                <p className="text-sm text-[var(--muted)]">
+                  Members you have blocked across all 4 spaces. Unblocking restores mutual discovery if your criteria align.
+                </p>
+              </div>
+              {blockedList.length === 0 ? (
+                <p className="text-xs text-[var(--muted)] italic">
+                  You have not blocked any members.
+                </p>
+              ) : (
+                <div className="divide-y divide-[var(--line)]">
+                  {blockedList.map((bm) => (
+                    <div key={bm.id} className="py-2.5 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-[var(--heading)]">{bm.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onUnblockMember?.(bm.id);
+                          setBlockedList((prev) => prev.filter((b) => b.id !== bm.id));
+                          showToast(`${bm.name} has been unblocked.`);
+                        }}
+                        className="text-xs text-[var(--ochre-text)] hover:underline cursor-pointer"
+                      >
+                        Unblock
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* DIGNITY-FIRST DATING PURPOSE & SLOW CONNECTION MODE */}

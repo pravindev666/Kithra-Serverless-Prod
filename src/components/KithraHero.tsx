@@ -48,7 +48,7 @@ export const KithraHero: React.FC<KithraHeroProps> = ({
             Find your kind of people.
           </h1>
           <p className="mt-6 text-[17px] sm:text-lg text-[var(--muted)] leading-[1.65] max-w-[30em]">
-            Friendship, dating or a life partner — Kithra helps you meet people who share
+            Friendship, dating, a life partner or a cofounder — Kithra helps you meet people who share
             your values, with a separate, private profile for each kind of connection.
           </p>
 

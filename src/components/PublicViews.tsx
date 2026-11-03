@@ -133,12 +133,12 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
             Different intentions. One thoughtful account.
           </h2>
           <p className="text-base text-[var(--muted)] leading-relaxed">
-            Not every meaningful human connection is romantic. Kithra separates Friendship, Dating, and Matrimony so your photos and questionnaire reflections only appear in the intention you choose to enter.
+            Not every meaningful human connection is romantic. Kithra separates Friendship, Dating, Matrimony, and Cofounders so your photos, professional details, and questionnaire reflections only appear in the intention you choose to enter.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {(['friendship', 'dating', 'matrimony'] as IntentionId[]).map((intentKey) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {(['friendship', 'dating', 'matrimony', 'cofounders'] as ExtendedIntentionId[]).map((intentKey) => {
             const info = INTENTION_METADATA[intentKey];
             return (
               <article
@@ -855,7 +855,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode, onNavigatePath 
             return;
           }
           if ((normalizedEmail === 'annual.member@kithra.in' || normalizedEmail === 'matrimony.vip@kithra.in') &&
-              (password === 'KithraAnnual2026!' || password === 'KithraVip2026!')) {
+            (password === 'KithraAnnual2026!' || password === 'KithraVip2026!')) {
             if (typeof window !== 'undefined' && window.sessionStorage) {
               window.sessionStorage.setItem('kithra_active_member_id', 'member-meera');
               window.localStorage.setItem('kithra_tier_member-meera', 'matrimony_annual');
@@ -1904,10 +1904,10 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
               const ageAssuranceStatus = (!isValidYear || calculatedAge <= 0)
                 ? 'rejected_invalid'
                 : !isAdult
-                ? 'rejected_underage'
-                : isVerified
-                ? 'self_declared'
-                : 'unverified';
+                  ? 'rejected_underage'
+                  : isVerified
+                    ? 'self_declared'
+                    : 'unverified';
 
               // P0.3 Invariant: Age declaration check fails closed on underage or unverified
               if (!isVerified) {

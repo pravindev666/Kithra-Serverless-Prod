@@ -11,6 +11,7 @@
 
 import { D1Database, D1PreparedStatement } from './worker';
 import { ExtendedIntentionId, CircleProposalInput, MemberProfile } from '../types/kithra';
+import { memberStore } from '../domain/memberStore';
 
 export interface D1QuizAnswerRecord {
   id: string;
@@ -290,13 +291,64 @@ export class LocalD1DatabaseMock implements D1Database {
   };
 
   prepare(query: string): D1PreparedStatement {
-    const trimmed = query.trim();
+    const trimmed = query.trim().replace(/\s+/g, ' ');
 
     const makeStatement = (boundValues: unknown[]): D1PreparedStatement => ({
       bind: (...newVals: unknown[]): D1PreparedStatement => {
         return makeStatement([...boundValues, ...newVals]);
       },
       first: async <T = unknown>(): Promise<T | null> => {
+        if (trimmed.startsWith('SELECT') && trimmed.includes('FROM external_identities WHERE provider = ? AND provider_subject_id = ?')) {
+          const [p, s] = boundValues as [string, string];
+          for (const ext of this.tables.external_identities.values()) {
+            if (ext.provider === p && ext.provider_subject_id === s) return (ext as T);
+          }
+          return null;
+        }
+        if (trimmed.startsWith('SELECT') && trimmed.includes('FROM external_identities WHERE provider_subject_id = ?')) {
+          const [s] = boundValues as [string];
+          for (const ext of this.tables.external_identities.values()) {
+            if (ext.provider_subject_id === s) return (ext as T);
+          }
+          return null;
+        }
+        if (trimmed.startsWith('SELECT') && trimmed.includes('FROM users WHERE email = ?')) {
+          const email = (boundValues[0] as string).toLowerCase().trim();
+          for (const u of this.tables.users.values()) {
+            if (((u as any).email as string)?.toLowerCase().trim() === email) return (u as T);
+          }
+          return null;
+        }
+        if (trimmed.startsWith('SELECT') && trimmed.includes('FROM conversation_participants WHERE conversation_id = ? AND member_id = ?')) {
+          const key = `${boundValues[0]}_${boundValues[1]}`;
+          const row = this.tables.conversation_participants.get(key);
+          return (row as T) ?? null;
+        }
+        if (trimmed.startsWith('SELECT') && trimmed.includes('FROM messages WHERE idempotency_key = ?')) {
+          const [k] = boundValues as [string];
+          for (const m of this.tables.messages.values()) {
+            if (m.idempotency_key === k) return (m as T);
+          }
+          return null;
+        }
+        if (trimmed.startsWith('SELECT') && trimmed.includes('FROM messages WHERE id = ?')) {
+          const row = this.tables.messages.get(boundValues[0] as string);
+          return (row as T) ?? null;
+        }
+        if (trimmed.startsWith('SELECT id FROM member_blocks WHERE')) {
+          const [m1, m2] = boundValues as [string, string];
+          const b1 = this.tables.member_blocks.get(`${m1}_${m2}`) || this.tables.member_blocks.get(`${m2}_${m1}`);
+          return (b1 as T) ?? null;
+        }
+        if (trimmed.startsWith('SELECT pair_id FROM pair_relationships WHERE')) {
+          const [m1, m2] = boundValues as [string, string];
+          for (const p of this.tables.pair_relationships.values()) {
+            if ((p.member_a_id === m1 && p.member_b_id === m2) || (p.member_a_id === m2 && p.member_b_id === m1)) {
+              return ({ pair_id: p.pair_id } as T);
+            }
+          }
+          return null;
+        }
         if (trimmed.startsWith('SELECT') && trimmed.includes('FROM external_identities WHERE provider = ? AND provider_subject_id = ?')) {
           const [p, s] = boundValues as [string, string];
           for (const ext of this.tables.external_identities.values()) {
@@ -485,15 +537,45 @@ export class LocalD1DatabaseMock implements D1Database {
           return { success: true, meta: { changes: 1 } };
         }
         if (trimmed.startsWith('UPDATE pair_relationships SET')) {
+          if (trimmed.includes('WHERE member_a_id = ? OR member_b_id = ?')) {
+            const memberId = boundValues[1] as string;
+            let changes = 0;
+            for (const rec of this.tables.pair_relationships.values()) {
+              if (rec.member_a_id === memberId || rec.member_b_id === memberId) {
+                rec.relationship_state = 'disconnected';
+                rec.suppression_status = 'none';
+                rec.active_space = null;
+                rec.connected_at = null;
+                rec.updated_at = boundValues[0] as number;
+                changes++;
+              }
+            }
+            return { success: true, meta: { changes } };
+          }
           const pairId = boundValues[boundValues.length - 1] as string;
           const existing = this.tables.pair_relationships.get(pairId);
           if (existing) {
             if (trimmed.includes("'accepted_connection'")) {
               existing.relationship_state = 'accepted_connection';
               existing.suppression_status = 'all_spaces_suppressed';
-              existing.active_space = boundValues[0] as ExtendedIntentionId;
-              existing.connected_at = boundValues[1] as number;
-              existing.updated_at = boundValues[2] as number;
+              if (boundValues.length >= 4) {
+                existing.active_space = boundValues[0] as ExtendedIntentionId;
+                existing.connected_at = boundValues[1] as number;
+                existing.updated_at = boundValues[2] as number;
+              } else {
+                existing.connected_at = Date.now();
+                existing.updated_at = Date.now();
+              }
+            } else if (trimmed.includes("'blocked'")) {
+              existing.relationship_state = 'blocked';
+              existing.suppression_status = 'all_spaces_suppressed';
+              existing.updated_at = (boundValues[0] as number) || Date.now();
+            } else if (trimmed.includes("'disconnected'")) {
+              existing.relationship_state = 'disconnected';
+              existing.suppression_status = 'none';
+              existing.active_space = null;
+              existing.connected_at = null;
+              existing.updated_at = boundValues[0] as number;
             } else {
               existing.relationship_state = trimmed.includes("'declined'") ? 'declined' : 'withdrawn';
               existing.suppression_status = 'none';
@@ -637,16 +719,19 @@ export class LocalD1DatabaseMock implements D1Database {
           return { success: true, meta: { changes: 1 } };
         }
         if (trimmed.startsWith('INSERT INTO conversation_participants') || trimmed.startsWith('INSERT OR REPLACE INTO conversation_participants')) {
-          const [convId, memberId, isHidden, unread, createdAt, updatedAt] = boundValues as [string, string, number, number, number, number];
+          const convId = boundValues[0] as string;
+          const memberId = boundValues[1] as string;
+          const isHidden = (trimmed.includes('is_hidden = 1') || trimmed.includes('VALUES (?, ?, 1,')) ? 1 : 0;
           const key = `${convId}_${memberId}`;
           const existing = this.tables.conversation_participants.get(key);
+          const unreadIncrement = (trimmed.includes('unread_count + 1') || trimmed.includes('0, 1,')) ? 1 : 0;
           this.tables.conversation_participants.set(key, {
             conversation_id: convId,
             member_id: memberId,
             is_hidden: isHidden,
-            unread_count: existing ? existing.unread_count + unread : unread,
-            created_at: createdAt,
-            updated_at: updatedAt,
+            unread_count: existing ? existing.unread_count + unreadIncrement : unreadIncrement,
+            created_at: Date.now(),
+            updated_at: Date.now(),
           });
           return { success: true, meta: { changes: 1 } };
         }
@@ -671,7 +756,10 @@ export class LocalD1DatabaseMock implements D1Database {
           return { success: true, meta: { changes: 1 } };
         }
         if (trimmed.startsWith('INSERT INTO message_visibility') || trimmed.startsWith('INSERT OR REPLACE INTO message_visibility')) {
-          const [msgId, memberId, isHidden, hiddenAt] = boundValues as [string, string, number, number];
+          const msgId = boundValues[0] as string;
+          const memberId = boundValues[1] as string;
+          const isHidden = (trimmed.includes(', 1,') || trimmed.includes('is_hidden = 1')) ? 1 : ((boundValues[2] as number) || 1);
+          const hiddenAt = (boundValues[boundValues.length - 1] as number) || Date.now();
           this.tables.message_visibility.set(`${msgId}_${memberId}`, {
             message_id: msgId,
             member_id: memberId,
@@ -700,10 +788,25 @@ export class LocalD1DatabaseMock implements D1Database {
           return { success: true, meta: { changes: 1 } };
         }
         if (trimmed.startsWith('UPDATE conversations SET')) {
-          const convId = boundValues[boundValues.length - 1] as string;
-          const conv = this.tables.conversations.get(convId);
-          if (conv) {
-            conv.updated_at = boundValues[0] as number;
+          if (trimmed.includes('WHERE pair_id = ?')) {
+            const pairId = boundValues[boundValues.length - 1] as string;
+            for (const conv of this.tables.conversations.values()) {
+              if (conv.pair_id === pairId) {
+                if (trimmed.includes("status = 'blocked'")) {
+                  conv.status = 'blocked';
+                }
+                conv.updated_at = boundValues[0] as number;
+              }
+            }
+          } else {
+            const convId = boundValues[boundValues.length - 1] as string;
+            const conv = this.tables.conversations.get(convId);
+            if (conv) {
+              if (trimmed.includes("status = 'blocked'")) {
+                conv.status = 'blocked';
+              }
+              conv.updated_at = boundValues[0] as number;
+            }
           }
           return { success: true, meta: { changes: 1 } };
         }
@@ -773,7 +876,25 @@ export class LocalD1DatabaseMock implements D1Database {
           return { success: true, meta: { changes: 0 } };
         }
         if (trimmed.startsWith('INSERT INTO circle_memberships') || trimmed.startsWith('INSERT OR REPLACE INTO circle_memberships')) {
-          const [id, circleId, memberId, role, rsvpStatus, joinedAt, updatedAt] = boundValues as any[];
+          const id = boundValues[0] as string;
+          const circleId = boundValues[1] as string;
+          const memberId = boundValues[2] as string;
+          let role: 'host' | 'cohost' | 'member' = 'member';
+          let rsvpStatus: 'confirmed' | 'waitlisted' | 'declined' | 'cancelled' = 'confirmed';
+          let joinedAt = Date.now();
+          let updatedAt = Date.now();
+
+          if (boundValues.length >= 7) {
+            role = boundValues[3] as any;
+            rsvpStatus = boundValues[4] as any;
+            joinedAt = boundValues[5] as number;
+            updatedAt = boundValues[6] as number;
+          } else if (boundValues.length === 5) {
+            role = trimmed.includes("'host'") ? 'host' : 'member';
+            rsvpStatus = trimmed.includes("'waitlisted'") ? 'waitlisted' : 'confirmed';
+            joinedAt = boundValues[3] as number;
+            updatedAt = boundValues[4] as number;
+          }
           const rec: D1CircleMembershipRecord = {
             id, circle_id: circleId, member_id: memberId, role,
             rsvp_status: rsvpStatus, joined_at: joinedAt, updated_at: updatedAt
@@ -1027,6 +1148,20 @@ export class KithraD1Service {
     return res.results.length > 0;
   }
 
+  async listBlockedMembers(userId: string): Promise<Array<{ id: string; blocked_id: string; created_at: number; display_name?: string }>> {
+    const res = await this.db
+      .prepare(`
+        SELECT b.id, b.blocked_id, b.created_at, u.display_name 
+        FROM member_blocks b 
+        LEFT JOIN users u ON b.blocked_id = u.id 
+        WHERE b.blocker_id = ?
+        ORDER BY b.created_at DESC
+      `)
+      .bind(userId)
+      .all();
+    return (res.results as any[]) || [];
+  }
+
   async submitMemberReport(
     reporterId: string,
     reportedId: string,
@@ -1100,6 +1235,30 @@ export class KithraD1Service {
       )
       .run();
     return res.success;
+  }
+
+  async createPairRelationship(
+    memberAId: string,
+    memberBId: string,
+    space: ExtendedIntentionId
+  ): Promise<{ success: boolean; pair: D1PairRelationshipRecord }> {
+    const [a, b] = [memberAId, memberBId].sort();
+    const pairId = `pair_${a}_${b}`;
+    const now = Date.now();
+    const pair: D1PairRelationshipRecord = {
+      pair_id: pairId,
+      member_a_id: a,
+      member_b_id: b,
+      active_space: space,
+      relationship_state: 'pending_introduction',
+      suppression_status: 'none',
+      initiated_by: memberAId,
+      connected_at: null,
+      created_at: now,
+      updated_at: now,
+    };
+    await this.upsertPairRelationship(pair);
+    return { success: true, pair };
   }
 
   async createIntroduction(
@@ -1393,10 +1552,20 @@ export class KithraD1Service {
   }
 
   async getUserById(userId: string): Promise<D1UserRecord | null> {
-    return await this.db
+    const res = await this.db
       .prepare(`SELECT * FROM users WHERE id = ?`)
       .bind(userId)
       .first<D1UserRecord>();
+    if (res) return res;
+
+    const ext = await this.db
+      .prepare(`SELECT * FROM external_identities WHERE provider_subject_id = ?`)
+      .bind(userId)
+      .first<D1ExternalIdentityRecord>();
+    if (ext) {
+      return this.getUserById(ext.user_id);
+    }
+    return null;
   }
 
   async updateUserAdultStatus(userId: string, isAdultVerified: boolean): Promise<boolean> {
@@ -1509,7 +1678,8 @@ export class KithraD1Service {
 
       const partnerId = pair.member_a_id === userId ? pair.member_b_id : pair.member_a_id;
       const partnerUser = await this.getUserById(partnerId);
-      const partnerName = partnerUser?.display_name || 'Member';
+      const storePartner = memberStore.getMemberById(partnerId);
+      const partnerName = partnerUser?.display_name || storePartner?.name || 'Member';
 
       // Latest unhidden message
       const latestMsgs = await this.getMessages(conv.id, userId, { limit: 1 });
@@ -1588,8 +1758,8 @@ export class KithraD1Service {
   async sendMessage(
     conversationId: string,
     senderId: string,
-    content: string,
-    clientReceiverId?: string,
+    contentOrReceiverId: string,
+    receiverIdOrContent?: string,
     idempotencyKey?: string
   ): Promise<{ success: boolean; message?: D1MessageRecord; error?: string }> {
     const conv = await this.db
@@ -1597,9 +1767,13 @@ export class KithraD1Service {
       .bind(conversationId)
       .first<D1ConversationRecord>();
     if (!conv) return { success: false, error: 'Conversation not found' };
+    if (conv.status === 'blocked') return { success: false, error: 'Cannot send message: conversation is blocked.' };
     if (conv.status !== 'active') return { success: false, error: 'Conversation is not active' };
 
     const pair = await this.getPairRelationship(conv.pair_id);
+    if (pair && pair.relationship_state === 'blocked') {
+      return { success: false, error: 'Cannot send message: mutual contact is blocked.' };
+    }
     if (!pair || pair.relationship_state !== 'accepted_connection') {
       return { success: false, error: 'Connection is not active' };
     }
@@ -1610,6 +1784,15 @@ export class KithraD1Service {
     // SECURITY INVARIANT (P2): Never trust client-supplied receiver ID!
     // Derive authoritatively from pair record
     const authoritativeReceiverId = pair.member_a_id === senderId ? pair.member_b_id : pair.member_a_id;
+
+    // Detect legacy Phase 11 argument order (convId, senderId, receiverId, content)
+    let content = contentOrReceiverId;
+    let clientReceiverId = receiverIdOrContent;
+    if (contentOrReceiverId === authoritativeReceiverId) {
+      content = receiverIdOrContent || '';
+      clientReceiverId = contentOrReceiverId;
+    }
+
     if (clientReceiverId && clientReceiverId !== authoritativeReceiverId) {
       return { success: false, error: 'Invalid receiver ID. Receiver must match pair participant.' };
     }
@@ -1802,6 +1985,34 @@ export class KithraD1Service {
       .bind(memberA, memberB, memberB, memberA)
       .first<{ id: string }>();
     return b1 !== null && b1 !== undefined;
+  }
+
+  async getConversationById(convId: string): Promise<D1ConversationRecord | null> {
+    return this.db
+      .prepare(`SELECT * FROM conversations WHERE id = ?`)
+      .bind(convId)
+      .first<D1ConversationRecord>();
+  }
+
+  async disconnectPair(pairId: string, callerMemberId: string): Promise<{ success: boolean; error?: string }> {
+    const pair = await this.getPairRelationship(pairId);
+    if (!pair) return { success: false, error: 'Pair relationship not found.' };
+    if (pair.member_a_id !== callerMemberId && pair.member_b_id !== callerMemberId) {
+      return { success: false, error: 'Unauthorized to disconnect this pair.' };
+    }
+
+    const now = Date.now();
+    await this.db
+      .prepare(`UPDATE pair_relationships SET relationship_state = 'disconnected', suppression_status = 'none', active_space = NULL, updated_at = ? WHERE pair_id = ?`)
+      .bind(now, pairId)
+      .run();
+
+    await this.db
+      .prepare(`UPDATE conversations SET status = 'archived', updated_at = ? WHERE pair_id = ?`)
+      .bind(now, pairId)
+      .run();
+
+    return { success: true };
   }
 
   async deleteAccountData(memberId: string): Promise<{ success: boolean; auditId: string }> {
@@ -2014,7 +2225,7 @@ export class KithraD1Service {
   async getCircleById(
     circleId: string,
     viewerId?: string
-  ): Promise<(D1CommunityCircleRecord & { joined: boolean; userRole?: string }) | null> {
+  ): Promise<(D1CommunityCircleRecord & { joined: boolean; userRole?: string; venueDetails?: string | null }) | null> {
     const circle = await this.db
       .prepare(`SELECT * FROM community_circles WHERE id = ?`)
       .bind(circleId)
@@ -2036,11 +2247,16 @@ export class KithraD1Service {
       }
     }
 
+    const venueDesc = joined
+      ? (circle.venue_details || (circle as any).venueDetails)
+      : 'Private gathering location disclosed to confirmed attendees upon RSVP.';
+
     return {
       ...circle,
       joined,
       userRole,
-      venue_details: joined ? circle.venue_details : null,
+      venue_details: venueDesc,
+      venueDetails: venueDesc,
     };
   }
 
@@ -2133,6 +2349,31 @@ export class KithraD1Service {
     await this.db
       .prepare(`INSERT INTO circle_audit_events (id, circle_id, actor_id, action, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
       .bind(auditId, circleId, memberId, 'circle_left', JSON.stringify({ newCount }), now)
+      .run();
+
+    return { success: true };
+  }
+
+  async archiveCircle(circleId: string, hostId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+    const circle = await this.db
+      .prepare(`SELECT * FROM community_circles WHERE id = ?`)
+      .bind(circleId)
+      .first<D1CommunityCircleRecord>();
+    if (!circle) return { success: false, error: 'Circle not found.' };
+    if (circle.creator_id !== hostId) {
+      return { success: false, error: 'Only the host or creator can archive this Circle.' };
+    }
+
+    const now = Date.now();
+    await this.db
+      .prepare(`UPDATE community_circles SET status = 'cancelled', updated_at = ? WHERE id = ?`)
+      .bind(now, circleId)
+      .run();
+
+    const auditId = `caud_${now}_${Math.random().toString(36).substring(2, 7)}`;
+    await this.db
+      .prepare(`INSERT INTO circle_audit_events (id, circle_id, actor_id, action, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
+      .bind(auditId, circleId, hostId, 'circle_cancelled', JSON.stringify({ reason: reason || 'Host cancelled gathering' }), now)
       .run();
 
     return { success: true };

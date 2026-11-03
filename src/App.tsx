@@ -13,6 +13,7 @@ import {
   IntentionId,
   MemberPhoto,
   MemberProfile,
+  MessageItem,
   PhotoModerationItem,
   StaffCase,
   SystemErrorCode,
@@ -41,6 +42,7 @@ import {
 import { MemberShell } from './components/MemberViews';
 import { AdminLoginView, AdminShell } from './components/AdminViews';
 import { SystemStatesView } from './components/SystemStatesView';
+import { KithraWordmark } from './components/KithraWordmark';
 import { memberStore } from './domain/memberStore';
 
 function resolveInitialPathname(): string {
@@ -337,31 +339,198 @@ export default function App() {
     setProfiles(dynamicCandidates);
   };
 
-  const handleSendMessage = (conversationId: string, text: string) => {
+  const handleSendMessage = async (conversationId: string, text: string) => {
+    const tempId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const optimisticMessage: MessageItem = {
+      id: tempId,
+      sender: 'self',
+      text,
+      timestamp: 'Sending...',
+      deliveryStatus: 'sending',
+      sentAt: Date.now(),
+    };
+
     setConversations((prev) =>
       prev.map((conv) => {
         if (conv.id !== conversationId) return conv;
         return {
           ...conv,
-          messages: [
-            ...conv.messages,
-            {
-              id: `msg-${Date.now()}`,
-              sender: 'self',
-              text,
-              timestamp: 'Just now',
-            },
-          ],
+          messages: [...conv.messages, optimisticMessage],
         };
       })
     );
+
+    try {
+      const token = localStorage.getItem('kithra_auth_token') || `dev-token-${activeMemberId}-member`;
+      const res = await fetch(`/api/member/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: text, idempotencyKey: tempId }),
+      });
+
+      if (res.ok) {
+        setConversations((prev) =>
+          prev.map((conv) => {
+            if (conv.id !== conversationId) return conv;
+            return {
+              ...conv,
+              messages: conv.messages.map((m) =>
+                m.id === tempId
+                  ? { ...m, timestamp: 'Just now', deliveryStatus: 'sent' }
+                  : m
+              ),
+            };
+          })
+        );
+      } else {
+        setConversations((prev) =>
+          prev.map((conv) => {
+            if (conv.id !== conversationId) return conv;
+            return {
+              ...conv,
+              messages: conv.messages.map((m) =>
+                m.id === tempId
+                  ? { ...m, timestamp: 'Failed to send', deliveryStatus: 'failed' }
+                  : m
+              ),
+            };
+          })
+        );
+      }
+    } catch {
+      // Local development or simulated fallback
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id !== conversationId) return conv;
+          return {
+            ...conv,
+            messages: conv.messages.map((m) =>
+              m.id === tempId
+                ? { ...m, timestamp: 'Just now', deliveryStatus: 'sent' }
+                : m
+            ),
+          };
+        })
+      );
+    }
   };
 
-  const handleToggleCircleJoin = (circleId: string) => {
+  const handleRetrySendMessage = (conversationId: string, messageId: string, text: string) => {
+    setConversations((prev) =>
+      prev.map((conv) => {
+        if (conv.id !== conversationId) return conv;
+        return {
+          ...conv,
+          messages: conv.messages.filter((m) => m.id !== messageId),
+        };
+      })
+    );
+    handleSendMessage(conversationId, text);
+  };
+
+  const handleDeleteMessage = async (conversationId: string, messageId: string, scope: 'for_me' | 'unsend') => {
+    if (scope === 'unsend') {
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id !== conversationId) return conv;
+          return {
+            ...conv,
+            messages: conv.messages.map((m) =>
+              m.id === messageId
+                ? { ...m, text: '[Message un-sent by sender]', isUnsent: true, unsentAt: Date.now() }
+                : m
+            ),
+          };
+        })
+      );
+    } else {
+      setConversations((prev) =>
+        prev.map((conv) => {
+          if (conv.id !== conversationId) return conv;
+          return {
+            ...conv,
+            messages: conv.messages.filter((m) => m.id !== messageId),
+          };
+        })
+      );
+    }
+
+    try {
+      const token = localStorage.getItem('kithra_auth_token') || `dev-token-${activeMemberId}-member`;
+      await fetch(`/api/member/conversations/${conversationId}/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ scope }),
+      });
+    } catch {
+      // silent fallback
+    }
+  };
+
+  const handleDeleteConversation = async (conversationId: string) => {
+    setConversations((prev) => prev.filter((conv) => conv.id !== conversationId));
+    try {
+      const token = localStorage.getItem('kithra_auth_token') || `dev-token-${activeMemberId}-member`;
+      await fetch(`/api/member/conversations/${conversationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ scope: 'for_me' }),
+      });
+    } catch {
+      // silent fallback
+    }
+  };
+
+  const handleBlockPartner = async (partnerId: string, conversationId?: string) => {
+    if (conversationId) {
+      setConversations((prev) => prev.filter((conv) => conv.id !== conversationId));
+    }
+    memberStore.blockMember(activeMemberId, partnerId);
+    setProfiles((prev) => prev.filter((p) => p.id !== partnerId));
+
+    try {
+      const token = localStorage.getItem('kithra_auth_token') || `dev-token-${activeMemberId}-member`;
+      await fetch('/api/member/block', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ targetMemberId: partnerId }),
+      });
+    } catch {
+      // silent fallback
+    }
+  };
+
+  const [discoveryPaused, setDiscoveryPaused] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && window.localStorage?.getItem('kithra_discovery_paused') === 'true';
+  });
+
+  const handleToggleDiscoveryPause = (paused: boolean) => {
+    setDiscoveryPaused(paused);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('kithra_discovery_paused', paused ? 'true' : 'false');
+    }
+  };
+
+  const handleToggleCircleJoin = async (circleId: string) => {
+    const target = circles.find((c) => c.id === circleId);
+    if (!target) return;
+    const nextJoined = !target.joined;
+
     setCircles((prev) =>
       prev.map((c) => {
         if (c.id !== circleId) return c;
-        const nextJoined = !c.joined;
         return {
           ...c,
           joined: nextJoined,
@@ -369,6 +538,97 @@ export default function App() {
         };
       })
     );
+
+    try {
+      const token = (typeof window !== 'undefined' && window.localStorage?.getItem('kithra_auth_token')) || `dev-token-${activeMemberId}-member`;
+      const endpoint = nextJoined ? `/api/member/circles/${circleId}/join` : `/api/member/circles/${circleId}/leave`;
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch {
+      // offline fallback
+    }
+  };
+
+  const handleArchiveCircle = async (circleId: string, reason?: string) => {
+    setCircles((prev) =>
+      prev.map((c) => (c.id === circleId ? { ...c, status: 'archived' } : c))
+    );
+
+    try {
+      const token = (typeof window !== 'undefined' && window.localStorage?.getItem('kithra_auth_token')) || `dev-token-${activeMemberId}-member`;
+      await fetch(`/api/member/circles/${circleId}/archive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason }),
+      });
+    } catch {
+      // offline fallback
+    }
+  };
+
+  const handleWithdrawIntroduction = async (introId: string, targetMemberId: string) => {
+    memberStore.withdrawIntroduction(introId, activeMemberId);
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === targetMemberId ? { ...p, connectionState: 'discover' } : p))
+    );
+
+    try {
+      const token = (typeof window !== 'undefined' && window.localStorage?.getItem('kithra_auth_token')) || `dev-token-${activeMemberId}-member`;
+      await fetch(`/api/member/introductions/${introId}/withdraw`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch {
+      // offline fallback
+    }
+  };
+
+  const handleDisconnectPartner = async (conversationId: string, partnerId: string) => {
+    setConversations((prev) => prev.filter((conv) => conv.id !== conversationId));
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === partnerId ? { ...p, connectionState: 'discover' } : p))
+    );
+
+    try {
+      const token = (typeof window !== 'undefined' && window.localStorage?.getItem('kithra_auth_token')) || `dev-token-${activeMemberId}-member`;
+      await fetch(`/api/member/conversations/${conversationId}/disconnect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch {
+      // offline fallback
+    }
+  };
+
+  const handleUnblockMember = async (targetMemberId: string) => {
+    memberStore.unblockMember(activeMemberId, targetMemberId);
+    try {
+      const token = (typeof window !== 'undefined' && window.localStorage?.getItem('kithra_auth_token')) || `dev-token-${activeMemberId}-member`;
+      await fetch('/api/member/unblock', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ targetMemberId }),
+      });
+    } catch {
+      // offline fallback
+    }
   };
 
   const handleProposeCircle = (newCircle: CommunityCircle) => {
@@ -433,10 +693,20 @@ export default function App() {
               onSelectAssessmentAnswer={handleSelectAssessmentAnswer}
               conversations={conversations}
               onSendMessage={handleSendMessage}
+              onDeleteMessage={handleDeleteMessage}
+              onDeleteConversation={handleDeleteConversation}
+              onBlockMember={handleBlockPartner}
+              onRetrySendMessage={handleRetrySendMessage}
               circles={circles}
               onToggleCircleJoin={handleToggleCircleJoin}
               onProposeCircle={handleProposeCircle}
               onInviteMemberToCircle={handleInviteMemberToCircle}
+              onArchiveCircle={handleArchiveCircle}
+              onWithdrawIntroduction={handleWithdrawIntroduction}
+              onDisconnectPartner={handleDisconnectPartner}
+              onUnblockMember={handleUnblockMember}
+              discoveryPaused={discoveryPaused}
+              onToggleDiscoveryPause={handleToggleDiscoveryPause}
               activeIntentions={activeIntentions}
               onToggleActiveIntention={handleToggleActiveIntention}
               pacePreference={pacePreference}
@@ -479,16 +749,24 @@ export default function App() {
       <div className="w-[min(1160px,calc(100%-32px))] sm:w-[min(1160px,calc(100%-48px))] mx-auto flex-1 flex flex-col">
         {/* CONSUMER HEADER */}
         <header className="flex items-center justify-between gap-4 sm:gap-8 min-h-[76px] border-b border-[var(--line)]">
-          {/* Zone 1: Wordmark */}
+          {/* Zone 1: Wordmark with Premium Emblem */}
           <a
             href="/"
             onClick={(e) => {
               e.preventDefault();
               handleNavigatePath('/');
             }}
-            className="font-serif-editorial text-[34px] sm:text-[37px] leading-[0.9] font-semibold tracking-[-1.3px] text-[var(--heading)] whitespace-nowrap shrink-0"
+            className="group flex items-center gap-2.5 sm:gap-3 font-serif-editorial text-[34px] sm:text-[37px] leading-[0.9] font-semibold tracking-[-1.3px] text-[var(--heading)] whitespace-nowrap shrink-0 cursor-pointer"
+            aria-label="Kithra — Return to landing page"
           >
-            kithra<b className="text-[var(--ochre)]">.</b>
+            <img
+              src="/assets/kithra/apple-touch-icon.png"
+              alt=""
+              width={38}
+              height={38}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-[9px] object-cover shadow-[0_2px_8px_rgba(27,21,59,0.14)] border border-[var(--ochre)]/35 ring-1 ring-[var(--line)] group-hover:scale-105 group-hover:shadow-[0_4px_12px_rgba(143,82,10,0.2)] transition-all duration-200 shrink-0"
+            />
+            <KithraWordmark className="leading-[0.9] tracking-[-1.3px]" />
           </a>
 
           {/* Zone 2: Desktop Primary Navigation */}

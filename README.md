@@ -12,6 +12,25 @@ A warm, unhurried, human-centered relationship and community platform for India 
 - **Complete Frontend Photo Studio (`/member/photos`):** Local file picker (`URL.createObjectURL` preview), interactive 4:5 crop/zoom/pan/rotate studio with keyboard nudge controls, primary photo selector, caption editor, gallery reordering, delete confirmation dialog, moderation badge previewer, and independent `Friendship` / `Dating` / `Matrimony` visibility toggles.
 - **Licensed Editorial Photography + Coromandel SVG Fallback:** Warm editorial portraits with automatic offline/error fallback to deterministic Coromandel SVG compositions.
 
+## Project Documentation
+
+All specifications, architectural blueprints, psychometric models, and release audits are organized under [`documentation/`](file:///C:/Users/hp/Desktop/Kithra/documentation/INDEX.md):
+
+* **[01-architecture-and-infrastructure](file:///C:/Users/hp/Desktop/Kithra/documentation/01-architecture-and-infrastructure)** — Cloudflare D1 schemas, migrations, conversation REST APIs, R2 storage.
+* **[02-psychology-and-matching-engine](file:///C:/Users/hp/Desktop/Kithra/documentation/02-psychology-and-matching-engine)** — KCA construct dictionaries, adaptive selection, item bank provenance, triangulation.
+* **[03-four-spaces-and-intentions](file:///C:/Users/hp/Desktop/Kithra/documentation/03-four-spaces-and-intentions)** — 4 intention spaces, cofounder synergy, cross-context privacy firewall.
+* **[04-circles-and-tribes](file:///C:/Users/hp/Desktop/Kithra/documentation/04-circles-and-tribes)** — Tribe Hive sanctuary, community circles, 6 sovereign exit handles.
+* **[05-security-privacy-and-compliance](file:///C:/Users/hp/Desktop/Kithra/documentation/05-security-privacy-and-compliance)** — DPDP Act Section 12 erasure, RBAC, age assurance, block firewalls.
+* **[06-phase-audits-and-release-gates](file:///C:/Users/hp/Desktop/Kithra/documentation/06-phase-audits-and-release-gates)** — Cloud release gates, code reality audits, E2E test reports (Phases 9–14).
+* **[07-founder-eli5-and-workflows](file:///C:/Users/hp/Desktop/Kithra/documentation/07-founder-eli5-and-workflows)** — Plain-English explainers, data flow diagrams, user journey workflows.
+* **[08-business-and-market-research](file:///C:/Users/hp/Desktop/Kithra/documentation/08-business-and-market-research)** — Pricing tiers, subscription research, user segment roadmap.
+* **[09-product-ux-discovery](file:///C:/Users/hp/Desktop/Kithra/documentation/09-product-ux-discovery)** — 17-part UX discovery report and information architecture redesign.
+* **[10-psychology-engine-reference](file:///C:/Users/hp/Desktop/Kithra/documentation/10-psychology-engine-reference)** — Academic literature reviews, construct specs, and scoring pseudocode.
+* **[11-mom-test-customer-evidence](file:///C:/Users/hp/Desktop/Kithra/documentation/11-mom-test-customer-evidence)** — Customer discovery interview scripts and customer evidence ledgers.
+* **[12-ux-audit](file:///C:/Users/hp/Desktop/Kithra/documentation/12-ux-audit)** — Route inventories and navigation state matrices.
+
+*See the master catalog in [documentation/INDEX.md](file:///C:/Users/hp/Desktop/Kithra/documentation/INDEX.md).*
+
 ## Local Development & Verification
 
 ```bash
