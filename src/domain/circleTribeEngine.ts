@@ -1,6 +1,7 @@
 import {
   CommunityCircle,
   CircleProposalInput,
+  CircleCohortComfort,
   ExtendedIntentionId,
   MemberProfile,
 } from '../types/kithra';
@@ -259,56 +260,95 @@ export function inviteMemberToCircle(
 
 export interface AffinityCohortEstimate {
   estimatedCount: number;
-  sampleMemberNames: string[];
+  isSuppressed: boolean;
+  sampleMemberNames: string[]; // Deprecated, strictly empty array for privacy
   summaryNote: string;
 }
 
 /**
  * Estimates how many kindred spirits in the target city share the specified
  * intention and character affinity traits, giving User A instant feedback.
+ * 
+ * Phase 12 Privacy Guardrails:
+ * - Checks 18+ adult verification AND explicit discovery consent.
+ * - Applies mutual block and exclusion rules.
+ * - Enforces cohort comfort settings (all_genders, women_only, men_only).
+ * - Requires candidate to have actually answered items for the target construct.
+ * - Zero member names exposed.
+ * - Enforces k >= 5 small-cohort suppression: returns "Not enough information yet" if count < 5.
  */
 export function estimateTribeAffinityCohort(
   allProfiles: MemberProfile[],
   creatorId: string,
   intention: ExtendedIntentionId,
   city: string,
-  targetConstructId?: string
+  targetConstructId?: string,
+  cohortComfort?: CircleCohortComfort
 ): AffinityCohortEstimate {
   const normalizedCity = city.trim().toLowerCase();
+  const creator = allProfiles.find((p) => p.id === creatorId);
+  const creatorBlocked = creator?.eligibility?.blockedMemberIds || [];
 
   const candidates = allProfiles.filter((p) => {
     if (p.id === creatorId) return false;
+    // 1. Adult verification check
     if (p.eligibility?.isAdultVerified !== true) return false;
+    // 2. Intention enabled check
     if (!p.intentions.includes(intention)) return false;
+    // 3. Explicit discovery consent check
+    const hasConsent =
+      p.eligibility?.discoveryConsentGiven ??
+      (p.eligibility?.discoverableInIntentions && p.eligibility.discoverableInIntentions.length > 0);
+    if (!hasConsent) return false;
+    if (p.eligibility?.discoverableInIntentions && !p.eligibility.discoverableInIntentions.includes(intention)) {
+      return false;
+    }
+    // 4. Mutual block rules
+    if (creatorBlocked.includes(p.id)) return false;
+    if (p.eligibility?.blockedMemberIds?.includes(creatorId)) return false;
 
-    // Proximity check (city matching or online)
+    // 5. Proximity check (city matching or online)
     if (normalizedCity !== 'online' && p.city.trim().toLowerCase() !== normalizedCity) {
       return false;
     }
 
-    // Optional Construct Affinity Filter
-    if (targetConstructId && p.constructProfile) {
+    // 6. Cohort comfort check
+    if (cohortComfort === 'women_only') {
+      const g = (p as any).gender;
+      if (g && g !== 'female' && g !== 'woman') return false;
+    } else if (cohortComfort === 'men_only') {
+      const g = (p as any).gender;
+      if (g && g !== 'male' && g !== 'man') return false;
+    }
+
+    // 7. Construct completion check: Must have answered items
+    if (targetConstructId) {
+      if (!p.constructProfile || p.constructProfile.length === 0) return false;
       const point = p.constructProfile.find((v) => v.constructId === targetConstructId);
-      // Affinity threshold: score >= 60 indicates positive trait alignment
-      if (point && point.score < 60) {
-        return false;
-      }
+      const answered = point?.answeredItemCount ?? point?.itemCount ?? 0;
+      if (!point || answered < 3) return false;
+      if (point.score < 50) return false;
     }
 
     return true;
   });
 
-  const sampleNames = candidates.slice(0, 3).map((p) => p.name);
   const count = candidates.length;
 
-  let summaryNote = `${count} members in ${city} match your intention (${intention}).`;
-  if (targetConstructId) {
-    summaryNote = `${count} members in ${city} share this character affinity and intention.`;
+  // Small Cohort Privacy Suppression (k >= 5 invariant):
+  if (count < 5) {
+    return {
+      estimatedCount: 0,
+      isSuppressed: true,
+      sampleMemberNames: [],
+      summaryNote: 'Not enough information yet. (Local cohort count suppressed for member privacy).',
+    };
   }
 
   return {
     estimatedCount: count,
-    sampleMemberNames: sampleNames,
-    summaryNote,
+    isSuppressed: false,
+    sampleMemberNames: [],
+    summaryNote: `Approximately ${count} members in ${city} share this community rhythm and intention.`,
   };
 }

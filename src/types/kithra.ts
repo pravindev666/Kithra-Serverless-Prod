@@ -392,6 +392,12 @@ export interface MemberEligibilityRequirements {
   memberId?: string;
   isAdult?: boolean;
   isAdultVerified?: boolean;
+  /** Phase 12 Age Assurance & Legal Affirmation */
+  ageSelfDeclared?: number;
+  birthYearDeclared?: number;
+  ageAssuranceStatus?: 'unverified' | 'self_declared' | 'kyc_verified' | 'rejected_underage' | 'rejected_invalid';
+  ageVerifiedAt?: string | null;
+  verificationMethod?: 'self_declaration_with_affirmation' | 'digilocker_kyc' | 'pan_verification' | 'staff_attested';
   enabledIntentions: ExtendedIntentionId[];
   discoverableInIntentions?: ExtendedIntentionId[];
   discoveryEnabledByIntention?: Partial<Record<ExtendedIntentionId, boolean>>;
@@ -692,8 +698,14 @@ export interface ProfileReadinessBreakdown {
 export interface MessageItem {
   id: string;
   sender: 'self' | 'member';
+  senderId?: string;
+  receiverId?: string;
   text: string;
   timestamp: string;
+  sentAt?: number;
+  deliveryStatus?: 'sending' | 'sent' | 'delivered' | 'failed';
+  isUnsent?: boolean;
+  unsentAt?: number;
 }
 
 export interface ConversationThread {
@@ -701,10 +713,15 @@ export interface ConversationThread {
   memberId: string;
   memberName: string;
   city: string;
-  intention: IntentionId;
+  intention: ExtendedIntentionId;
   portraitVariant: string;
   contextNote: string;
   messages: MessageItem[];
+  pairId?: string;
+  unreadCount?: number;
+  lastMessagePreview?: string;
+  lastMessageAt?: number;
+  status?: 'active' | 'archived' | 'blocked';
 }
 
 export type CircleCohortComfort = 'all_genders' | 'women_only' | 'men_only';
@@ -740,6 +757,55 @@ export interface CommunityCircle {
   status?: 'active' | 'pending_steward_review' | 'archived';
   stewardReviewNotes?: string;
   createdAt?: number;
+  /** Phase 12 Gathering Salon Provisions */
+  venueDetails?: string;
+  upcomingEventAt?: number;
+}
+
+export interface CircleHostNotice {
+  id: string;
+  circleId: string;
+  hostId: string;
+  hostName: string;
+  title: string;
+  content: string;
+  createdAt: number;
+}
+
+export interface CircleReflection {
+  id: string;
+  circleId: string;
+  authorId: string;
+  authorName: string;
+  content: string;
+  createdAt: number;
+}
+
+export interface CircleAttendee {
+  memberId: string;
+  name: string;
+  avatarUrl?: string;
+  city: string;
+  role: 'host' | 'cohost' | 'member';
+  rsvpStatus: 'confirmed' | 'waitlisted';
+  joinedAt: number;
+  affinityNote?: string;
+}
+
+export interface CircleInvitation {
+  id: string;
+  circleId: string;
+  circleTitle: string;
+  circleFormat: string;
+  circleCity: string;
+  intention: ExtendedIntentionId;
+  inviterId: string;
+  inviterName: string;
+  inviteeId: string;
+  lensRationale?: string;
+  status: 'pending' | 'accepted' | 'declined' | 'ignored' | 'reported';
+  createdAt: number;
+  respondedAt?: number;
 }
 
 export interface CircleProposalInput {

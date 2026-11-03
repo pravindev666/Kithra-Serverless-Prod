@@ -819,69 +819,77 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode, onNavigatePath 
           onNavigatePath('/onboarding');
         }, 800);
       } else {
-        // Check for dedicated test accounts first
-        const normalizedEmail = email.trim().toLowerCase();
-        if (
-          normalizedEmail === 'founder@kithra.in' &&
-          (password === 'KithraFounder2026!' || password.length >= 6)
-        ) {
-          setStatusMessage('Authenticated as Founder & CEO! Redirecting to Command Center...');
-          setTimeout(() => onNavigatePath('/admin/overview'), 500);
-          return;
-        }
-        if (
-          normalizedEmail === 'admin@kithra.in' &&
-          (password === 'KithraSecureAdmin2026!' || password.length >= 6)
-        ) {
-          setStatusMessage('Authenticated as Operations Admin! Redirecting to Command Center...');
-          setTimeout(() => onNavigatePath('/admin/overview'), 500);
-          return;
-        }
-        if (
-          normalizedEmail === 'free.tester@kithra.in' &&
-          (password === 'KithraFree2026!' || password.length >= 6)
-        ) {
-          if (typeof window !== 'undefined' && window.sessionStorage) {
-            window.sessionStorage.setItem('kithra_active_member_id', 'member-kavya');
-            window.localStorage.setItem('kithra_tier_member-kavya', 'free');
+        // P0.1 Security Fix: Test accounts are strictly restricted to local dev builds
+        const allowDevTestAccounts =
+          import.meta.env.DEV &&
+          (import.meta.env.VITE_ENABLE_LOCAL_TEST_ACCOUNTS === 'true' || import.meta.env.MODE === 'development');
+
+        if (allowDevTestAccounts) {
+          const normalizedEmail = email.trim().toLowerCase();
+          if (normalizedEmail === 'founder@kithra.in' && password === 'KithraFounder2026!') {
+            setStatusMessage('Authenticated as Founder & CEO (Dev Test)! Redirecting to Command Center...');
+            setTimeout(() => onNavigatePath('/admin/overview'), 500);
+            return;
           }
-          setStatusMessage('Authenticated as Free Member (Effort-Based)! Entering Kithra...');
-          setTimeout(() => onNavigatePath('/member/discover'), 500);
-          return;
-        }
-        if (
-          normalizedEmail === 'paid.plus@kithra.in' &&
-          (password === 'KithraPlus2026!' || password.length >= 6)
-        ) {
-          if (typeof window !== 'undefined' && window.sessionStorage) {
-            window.sessionStorage.setItem('kithra_active_member_id', 'member-aarav');
-            window.localStorage.setItem('kithra_tier_member-aarav', 'plus_quarterly');
+          if (normalizedEmail === 'admin@kithra.in' && password === 'KithraSecureAdmin2026!') {
+            setStatusMessage('Authenticated as Operations Admin (Dev Test)! Redirecting to Command Center...');
+            setTimeout(() => onNavigatePath('/admin/overview'), 500);
+            return;
           }
-          setStatusMessage('Authenticated as Paid Plus Member (3-Month ₹999)! Entering Kithra...');
-          setTimeout(() => onNavigatePath('/member/discover'), 500);
-          return;
-        }
-        if (
-          (normalizedEmail === 'annual.member@kithra.in' || normalizedEmail === 'matrimony.vip@kithra.in') &&
-          (password === 'KithraAnnual2026!' || password === 'KithraVip2026!' || password.length >= 6)
-        ) {
-          if (typeof window !== 'undefined' && window.sessionStorage) {
-            window.sessionStorage.setItem('kithra_active_member_id', 'member-meera');
-            window.localStorage.setItem('kithra_tier_member-meera', 'matrimony_annual');
+          if (normalizedEmail === 'free.tester@kithra.in' && password === 'KithraFree2026!') {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+              window.sessionStorage.setItem('kithra_active_member_id', 'member-kavya');
+              window.localStorage.setItem('kithra_tier_member-kavya', 'free');
+            }
+            setStatusMessage('Authenticated as Free Member (Dev Test)! Entering Kithra...');
+            setTimeout(() => onNavigatePath('/member/discover'), 500);
+            return;
           }
-          setStatusMessage('Authenticated as 1-Year All-Access Member (365-Day Pass · ₹2,499)! Entering Kithra...');
-          setTimeout(() => onNavigatePath('/member/discover'), 500);
-          return;
+          if (normalizedEmail === 'paid.plus@kithra.in' && password === 'KithraPlus2026!') {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+              window.sessionStorage.setItem('kithra_active_member_id', 'member-aarav');
+              window.localStorage.setItem('kithra_tier_member-aarav', 'plus_quarterly');
+            }
+            setStatusMessage('Authenticated as Paid Plus Member (Dev Test)! Entering Kithra...');
+            setTimeout(() => onNavigatePath('/member/discover'), 500);
+            return;
+          }
+          if ((normalizedEmail === 'annual.member@kithra.in' || normalizedEmail === 'matrimony.vip@kithra.in') &&
+              (password === 'KithraAnnual2026!' || password === 'KithraVip2026!')) {
+            if (typeof window !== 'undefined' && window.sessionStorage) {
+              window.sessionStorage.setItem('kithra_active_member_id', 'member-meera');
+              window.localStorage.setItem('kithra_tier_member-meera', 'matrimony_annual');
+            }
+            setStatusMessage('Authenticated as 1-Year Pass Member (Dev Test)! Entering Kithra...');
+            setTimeout(() => onNavigatePath('/member/discover'), 500);
+            return;
+          }
         }
 
         setStatusMessage(`Authenticating with Firebase...`);
         const { user } = await loginMemberWithFirebase(email, password);
-        setStatusMessage(
-          `Authenticated as ${user.email ?? email}! Redirecting to member workspace...`
-        );
-        setTimeout(() => {
-          onNavigatePath('/member/home');
-        }, 700);
+        const uid = user.uid || (user.email ? user.email.replace(/[^a-zA-Z0-9_-]/g, '_') : 'member-user');
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.setItem('kithra_active_member_id', uid);
+          window.sessionStorage.setItem('kithra_firebase_uid', user.uid);
+        }
+
+        // P0.2 Invariant: Check if onboarding & age verification are completed
+        const existingProfile = memberStore.getMemberById(uid);
+        const isAdultOk = existingProfile?.eligibility?.isAdultVerified === true;
+        const hasConsent = existingProfile?.eligibility?.discoveryConsentGiven === true;
+
+        if (!existingProfile || !isAdultOk || !hasConsent) {
+          setStatusMessage(
+            `Authenticated as ${user.email ?? email}! Please complete your 18+ age declaration and spaces setup.`
+          );
+          setTimeout(() => onNavigatePath('/onboarding'), 600);
+        } else {
+          setStatusMessage(
+            `Authenticated as ${user.email ?? email}! Entering member workspace...`
+          );
+          setTimeout(() => onNavigatePath('/member/home'), 600);
+        }
       }
     } catch (err: any) {
       let msg = err?.message || 'Authentication failed. Please check credentials.';
@@ -1071,10 +1079,28 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode, onNavigatePath 
                               setIsSubmitting(true);
                               setStatusMessage('Connecting to Google Identity Provider (kithra-d3ae1)...');
                               const { user } = await loginWithGoogle();
-                              setStatusMessage(
-                                `Authenticated as ${user.displayName || user.email}! Entering Kithra...`
-                              );
-                              setTimeout(() => onNavigatePath('/member/home'), 700);
+                              const uid = user.uid || (user.email ? user.email.replace(/[^a-zA-Z0-9_-]/g, '_') : 'member-google');
+                              if (typeof window !== 'undefined' && window.sessionStorage) {
+                                window.sessionStorage.setItem('kithra_active_member_id', uid);
+                                window.sessionStorage.setItem('kithra_firebase_uid', user.uid);
+                              }
+
+                              // P0.2 Google sign-in routing invariant: lookup authenticated profile
+                              const existingProfile = memberStore.getMemberById(uid);
+                              const isAdultOk = existingProfile?.eligibility?.isAdultVerified === true;
+                              const hasConsent = existingProfile?.eligibility?.discoveryConsentGiven === true;
+
+                              if (!existingProfile || !isAdultOk || !hasConsent) {
+                                setStatusMessage(
+                                  `Authenticated via Google as ${user.displayName || user.email}! Directing to complete 18+ age assurance & spaces...`
+                                );
+                                setTimeout(() => onNavigatePath('/onboarding'), 600);
+                              } else {
+                                setStatusMessage(
+                                  `Welcome back, ${user.displayName || user.email}! Entering Kithra...`
+                                );
+                                setTimeout(() => onNavigatePath('/member/home'), 600);
+                              }
                             } catch (err: any) {
                               if (err?.code === 'auth/popup-closed-by-user') {
                                 setStatusMessage('Google authentication popup closed.');
@@ -1467,6 +1493,7 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
   const [birthYear, setBirthYear] = useState('1998');
   const [discoveryConsentGiven, setDiscoveryConsentGiven] = useState(true);
   const [sampleAnswer, setSampleAnswer] = useState('opt-slow');
+  const [ageError, setAgeError] = useState<string | null>(null);
 
   const toggleLanguage = (lang: string) => {
     setSelectedLanguages((prev) =>
@@ -1679,6 +1706,12 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
                   I give explicit discovery consent for my profile to be discoverable in my enabled spaces. (Can be toggled off at any time).
                 </label>
               </div>
+
+              {ageError && (
+                <p className="text-xs font-bold text-red-500 pt-1" role="alert">
+                  ⚠️ {ageError}
+                </p>
+              )}
             </div>
           </motion.div>
         )}
@@ -1833,7 +1866,24 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
         {step < 5 ? (
           <button
             type="button"
-            onClick={() => setStep((step + 1) as 1 | 2 | 3 | 4 | 5)}
+            onClick={() => {
+              if (step === 2) {
+                const parsedYear = parseInt(birthYear, 10);
+                const currentYear = new Date().getFullYear();
+                const isValidYear = !isNaN(parsedYear) && parsedYear >= 1920 && parsedYear <= currentYear;
+                const calculatedAge = isValidYear ? currentYear - parsedYear : 0;
+                if (!isValidYear || calculatedAge < 18 || !isAdultConfirmed) {
+                  setAgeError(
+                    calculatedAge < 18
+                      ? 'Kithra is strictly for adults (18+). Underage members cannot participate in any space.'
+                      : 'Please enter a valid birth year (18+) and confirm the adult declaration checkbox.'
+                  );
+                  return;
+                }
+                setAgeError(null);
+              }
+              setStep((step + 1) as 1 | 2 | 3 | 4 | 5);
+            }}
             className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] px-5 py-3 text-sm font-bold cursor-pointer min-h-[44px]"
           >
             Next step →
@@ -1842,7 +1892,29 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
           <button
             type="button"
             onClick={() => {
-              const targetMemberId = activeMemberId ?? 'member-kavya';
+              const sessionUser = typeof window !== 'undefined' ? window.sessionStorage?.getItem('kithra_active_member_id') : null;
+              const targetMemberId = activeMemberId || sessionUser || 'member-user';
+
+              const parsedYear = parseInt(birthYear, 10);
+              const currentYear = new Date().getFullYear();
+              const isValidYear = !isNaN(parsedYear) && parsedYear >= 1920 && parsedYear <= currentYear;
+              const calculatedAge = isValidYear ? currentYear - parsedYear : 0;
+              const isAdult = isValidYear && calculatedAge >= 18;
+              const isVerified = isAdult && isAdultConfirmed;
+              const ageAssuranceStatus = (!isValidYear || calculatedAge <= 0)
+                ? 'rejected_invalid'
+                : !isAdult
+                ? 'rejected_underage'
+                : isVerified
+                ? 'self_declared'
+                : 'unverified';
+
+              // P0.3 Invariant: Age declaration check fails closed on underage or unverified
+              if (!isVerified) {
+                alert('Adult verification required: You must be 18 years or older and confirm the legal affirmation to enter member discovery.');
+                return;
+              }
+
               // 1. Save initial starter reflection answer with measured timing
               memberStore.saveMemberAnswer(
                 targetMemberId,
@@ -1850,8 +1922,8 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
                 sampleAnswer,
                 2500
               );
+
               // 2. Persist onboarding profile data & adult verification state
-              const calculatedAge = Math.max(18, new Date().getFullYear() - (parseInt(birthYear, 10) || 1998));
               memberStore.upsertMemberProfile({
                 id: targetMemberId,
                 city: selectedCity,
@@ -1859,17 +1931,27 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
                 intentions: activeIntentions,
                 ageRange: `${calculatedAge}–${calculatedAge + 3}`,
                 eligibility: {
-                  isAdult: isAdultConfirmed && calculatedAge >= 18,
-                  isAdultVerified: isAdultConfirmed && calculatedAge >= 18,
+                  isAdult: isVerified,
+                  isAdultVerified: isVerified,
+                  ageSelfDeclared: calculatedAge,
+                  birthYearDeclared: parsedYear,
+                  ageAssuranceStatus,
+                  ageVerifiedAt: isVerified ? new Date().toISOString() : null,
+                  verificationMethod: 'self_declaration_with_affirmation',
                   enabledIntentions: activeIntentions,
-                  discoverableInIntentions: discoveryConsentGiven ? activeIntentions : [],
-                  discoveryConsentGiven: discoveryConsentGiven,
+                  discoverableInIntentions: discoveryConsentGiven && isVerified ? activeIntentions : [],
+                  discoveryConsentGiven: discoveryConsentGiven && isVerified,
                   discoveryEnabledByIntention: Object.fromEntries(
-                    activeIntentions.map((i) => [i, discoveryConsentGiven])
+                    activeIntentions.map((i) => [i, discoveryConsentGiven && isVerified])
                   ),
                   blockedMemberIds: [],
                 },
               });
+
+              if (typeof window !== 'undefined' && window.sessionStorage) {
+                window.sessionStorage.setItem('kithra_active_member_id', targetMemberId);
+              }
+
               onNavigatePath('/member/discover');
             }}
             className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] px-5 py-3 text-sm font-bold cursor-pointer min-h-[44px]"

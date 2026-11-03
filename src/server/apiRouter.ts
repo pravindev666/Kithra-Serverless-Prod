@@ -41,7 +41,9 @@ import { IntentionId, ExtendedIntentionId } from '../types/kithra';
 import { generateMemberSelfUnderstandingReport } from '../domain/psychologicalInsightsEngine';
 import { generateFounderAnalyticsReport } from '../domain/founderAnalyticsEngine';
 import { D1Database } from './worker';
-import { KithraD1Service } from './d1Database';
+import { KithraD1Service, LocalD1DatabaseMock } from './d1Database';
+
+const sharedLocalDb = new LocalD1DatabaseMock();
 
 export interface ApiResponse<T = unknown> {
   status: number;
@@ -50,7 +52,7 @@ export interface ApiResponse<T = unknown> {
 }
 
 export interface ApiRequest {
-  method: 'GET' | 'POST' | 'DELETE' | 'PUT';
+  method: 'GET' | 'POST' | 'DELETE' | 'PUT' | 'PATCH';
   path: string;
   headers: Record<string, string>;
   body?: unknown;
@@ -72,7 +74,7 @@ export async function handleApiRequest(
 ): Promise<ApiResponse> {
   const authHeader = req.headers['authorization'] ?? req.headers['Authorization'] ?? '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  const d1 = options.db ? new KithraD1Service(options.db) : null;
+  const d1 = options.db ? new KithraD1Service(options.db) : new KithraD1Service(sharedLocalDb);
 
   // Public endpoint 0: Health check
   if (req.method === 'GET' && (req.path === '/api/health' || req.path === '/healthz')) {
@@ -82,7 +84,7 @@ export async function handleApiRequest(
         status: 'healthy',
         timestamp: Date.now(),
         service: 'kithra-api-router',
-        hasD1Binding: !!d1,
+        hasD1Binding: !!options.db,
       },
     };
   }
@@ -367,15 +369,31 @@ export async function handleApiRequest(
         body: { error: auth.errorCode, message: auth.errorMessage },
       };
     }
+
+    // Resolve or provision permanent D1 user record (Phase 14 P1)
+    let d1User = await d1.getUserById(auth.context.userId);
+    if (!d1User && auth.context.email) {
+      const provRes = await d1.resolveOrCreateMemberFromAuth({
+        provider: 'google.com',
+        providerSubjectId: auth.context.userId,
+        email: auth.context.email,
+        displayName: auth.context.email.split('@')[0],
+        isAdultVerified: auth.context.isAdultVerified,
+      });
+      d1User = provRes.user;
+    }
+
     const member = memberStore.getMemberById(auth.context.userId);
     return {
       status: 200,
       body: {
         authenticated: true,
         user: {
-          id: auth.context.userId,
-          email: auth.context.email,
-          role: auth.context.role,
+          id: d1User ? d1User.id : auth.context.userId,
+          email: d1User ? d1User.email : auth.context.email,
+          role: d1User ? d1User.role : auth.context.role,
+          isAdultVerified: d1User ? d1User.is_adult_verified === 1 : auth.context.isAdultVerified,
+          accountStatus: d1User ? d1User.account_status : 'active',
         },
         profile: member ?? null,
       },
@@ -687,49 +705,334 @@ export async function handleApiRequest(
     return { status: 200, body: { connections: connMap } };
   }
 
-  // GET /api/member/conversations
+  // ============================================================================
+  // PHASE 13: REAL-TIME-READY MESSAGING & CONVERSATION ROUTES
+  // ============================================================================
+
+  // GET /api/member/conversations (List Authoritative Conversations for Authenticated Member)
   if (req.method === 'GET' && req.path === '/api/member/conversations') {
-    if (d1) {
-      const conversations = await d1.getConversationsForMember(user.userId);
-      return { status: 200, body: { conversations, total: conversations.length } };
-    }
-    return { status: 200, body: { conversations: [] } };
+    const conversations = await d1.getConversationsForMember(user.userId);
+    return { status: 200, body: { conversations, total: conversations.length } };
   }
 
-  // POST /api/member/messages
-  if (req.method === 'POST' && req.path === '/api/member/messages') {
-    const { conversationId, receiverId, content } = (req.body as {
+  // GET /api/member/conversations/:conversationId/messages (Fetch Message History with Cursor/Pagination)
+  if (req.method === 'GET' && req.path.startsWith('/api/member/conversations/') && req.path.endsWith('/messages')) {
+    const parts = req.path.split('/');
+    const conversationId = parts[4];
+    if (!conversationId) {
+      return { status: 400, body: { error: 'INVALID_CONVERSATION_ID', message: 'Conversation ID required.' } };
+    }
+
+    const url = new URL(req.path, 'https://kithra.local');
+    const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!, 10) : undefined;
+    const before = url.searchParams.get('before') ? parseInt(url.searchParams.get('before')!, 10) : undefined;
+    const after = url.searchParams.get('after') ? parseInt(url.searchParams.get('after')!, 10) : undefined;
+
+    const messages = await d1.getMessages(conversationId, user.userId, { limit, before, after });
+    return { status: 200, body: { messages, conversationId, total: messages.length } };
+  }
+
+  // POST /api/member/conversations/:conversationId/messages OR /api/member/messages (Send Message)
+  if (req.method === 'POST' && (
+    (req.path.startsWith('/api/member/conversations/') && req.path.endsWith('/messages')) ||
+    req.path === '/api/member/messages'
+  )) {
+    const parts = req.path.split('/');
+    const pathConvId = parts.length >= 5 ? parts[4] : undefined;
+    const { conversationId: bodyConvId, receiverId, content, idempotencyKey } = (req.body as {
       conversationId?: string;
       receiverId?: string;
       content?: string;
+      idempotencyKey?: string;
     }) ?? {};
-    if (!conversationId || !receiverId || !content || !content.trim()) {
+
+    const targetConvId = pathConvId || bodyConvId;
+    if (!targetConvId || !content || !content.trim()) {
       return {
         status: 400,
-        body: { error: 'INVALID_PAYLOAD', message: 'conversationId, receiverId, and content are required.' },
+        body: { error: 'INVALID_PAYLOAD', message: 'conversationId and content are required.' },
       };
     }
-    if (d1) {
-      const d1Res = await d1.sendMessage(conversationId, user.userId, receiverId, content.trim());
-      if (!d1Res.success) {
-        return { status: 403, body: { error: 'MESSAGE_FAILED', message: d1Res.error } };
-      }
-      return { status: 201, body: { success: true, message: d1Res.message } };
+
+    const res = await d1.sendMessage(targetConvId, user.userId, content.trim(), receiverId, idempotencyKey);
+    if (!res.success) {
+      const statusCode = res.error?.includes('blocked') ? 403 : res.error?.includes('Receiver must match') ? 400 : 403;
+      return { status: statusCode, body: { error: 'MESSAGE_SEND_FAILED', message: res.error } };
     }
+
+    return { status: 201, body: { success: true, message: res.message } };
+  }
+
+  // PATCH /api/member/conversations/:conversationId/read (Mark Read)
+  if (req.method === 'PATCH' && req.path.startsWith('/api/member/conversations/') && req.path.endsWith('/read')) {
+    const parts = req.path.split('/');
+    const conversationId = parts[4];
+    if (!conversationId) {
+      return { status: 400, body: { error: 'INVALID_CONVERSATION_ID', message: 'Conversation ID required.' } };
+    }
+
+    await d1.markConversationRead(conversationId, user.userId);
+    return { status: 200, body: { success: true, conversationId } };
+  }
+
+  // DELETE /api/member/conversations/:conversationId/messages/:messageId (Delete for Me OR Unsend for Everyone)
+  if (req.method === 'DELETE' && req.path.startsWith('/api/member/conversations/') && req.path.includes('/messages/')) {
+    const parts = req.path.split('/');
+    const messageId = parts[6];
+    const { scope } = (req.body as { scope?: 'for_me' | 'unsend' }) ?? {};
+
+    if (!messageId) {
+      return { status: 400, body: { error: 'INVALID_MESSAGE_ID', message: 'Message ID required.' } };
+    }
+
+    if (scope === 'unsend') {
+      const res = await d1.unsendEligibleMessage(messageId, user.userId);
+      if (!res.success) {
+        return { status: 403, body: { error: 'UNSEND_FAILED', message: res.error } };
+      }
+      return { status: 200, body: { success: true, scope: 'unsend', messageId } };
+    }
+
+    // Default: 'for_me'
+    const res = await d1.deleteMessageForMember(messageId, user.userId);
+    if (!res.success) {
+      return { status: 403, body: { error: 'DELETE_FAILED', message: res.error } };
+    }
+    return { status: 200, body: { success: true, scope: 'for_me', messageId } };
+  }
+
+  // DELETE /api/member/conversations/:conversationId (Delete / Hide Conversation for Me)
+  if (req.method === 'DELETE' && req.path.startsWith('/api/member/conversations/') && !req.path.includes('/messages/')) {
+    const parts = req.path.split('/');
+    const conversationId = parts[4];
+    if (!conversationId) {
+      return { status: 400, body: { error: 'INVALID_CONVERSATION_ID', message: 'Conversation ID required.' } };
+    }
+
+    const res = await d1.deleteConversationForMember(conversationId, user.userId);
+    if (!res.success) {
+      return { status: 403, body: { error: 'CONVERSATION_DELETE_FAILED', message: res.error } };
+    }
+    return { status: 200, body: { success: true, scope: 'for_me', conversationId } };
+  }
+
+  // POST /api/member/block (Block Member Across All Spaces)
+  if (req.method === 'POST' && req.path === '/api/member/block') {
+    const { targetMemberId } = (req.body as { targetMemberId?: string }) ?? {};
+    if (!targetMemberId) {
+      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'targetMemberId is required.' } };
+    }
+
+    await d1.blockMember(user.userId, targetMemberId);
+    memberStore.blockMember(user.userId, targetMemberId);
+    return { status: 200, body: { success: true, blocked: targetMemberId } };
+  }
+
+  // POST /api/member/account/delete (Complete User Account Erasure - DPDP Act 2023)
+  if (req.method === 'POST' && req.path === '/api/member/account/delete') {
+    const delRes = await d1.deleteAccountData(user.userId);
+    memberStore.deleteMemberAssessmentData(user.userId);
+    return { status: 200, body: { success: true, auditId: delRes.auditId, message: 'Account and associated records successfully erased.' } };
+  }
+
+  // ============================================================================
+  // PHASE 12: COMMUNITY CIRCLES, INVITATIONS, RSVP & GATHERING SALON ENDPOINTS
+  // ============================================================================
+
+  // POST /api/member/circles (Create a Member Circle / Tribe)
+  if (req.method === 'POST' && req.path === '/api/member/circles') {
+    if (user.isAdultVerified === false) {
+      return {
+        status: 403,
+        body: { error: 'AGE_VERIFICATION_REQUIRED', message: 'Adult verification (18+) is required to form a Community Circle.' },
+      };
+    }
+
+    const {
+      title, description, intention, city, format, cadence, cohortComfort,
+      targetLens, tribeTheme, targetConstructId, targetAffinityTrait,
+      maxCapacity, venueDetails, upcomingEventAt
+    } = (req.body as any) ?? {};
+
+    const creatorProfile = memberStore.getMemberById(user.userId);
+    const creatorName = creatorProfile?.name || (user.email ? user.email.split('@')[0] : 'Member');
+
+    const res = await d1.createCircle(
+      user.userId,
+      creatorName,
+      {
+        title,
+        description,
+        intention,
+        city,
+        format,
+        cadence,
+        cohortComfort,
+        targetLens,
+        tribeTheme,
+        targetConstructId,
+        targetAffinityTrait,
+        maxCapacity,
+      },
+      venueDetails,
+      upcomingEventAt
+    );
+
+    if (!res.success) {
+      const statusCode = res.error?.includes('strictly restricted') ? 403 : 400;
+      return { status: statusCode, body: { error: 'CIRCLE_CREATION_FAILED', message: res.error } };
+    }
+
+    return { status: 201, body: { success: true, circle: res.circle } };
+  }
+
+  // GET /api/member/circles (List Available Circles)
+  if (req.method === 'GET' && req.path === '/api/member/circles') {
+    const url = new URL(req.path, 'https://kithra.local');
+    const intention = (url.searchParams.get('intention') as ExtendedIntentionId) || undefined;
+    const city = url.searchParams.get('city') || undefined;
+
+    const circles = await d1.listCircles(user.userId, intention, city);
+    return { status: 200, body: { circles, total: circles.length } };
+  }
+
+  // GET /api/member/circles/invitations (List Member Inbound Invitations)
+  if (req.method === 'GET' && req.path === '/api/member/circles/invitations') {
+    const invitations = await d1.listCircleInvitationsForMember(user.userId);
+    return { status: 200, body: { invitations, total: invitations.length } };
+  }
+
+  // POST /api/member/circles/invitations/:id/respond (Accept / Decline / Report)
+  if (req.method === 'POST' && req.path.startsWith('/api/member/circles/invitations/') && req.path.endsWith('/respond')) {
+    const parts = req.path.split('/');
+    const invId = parts[5];
+    const { response } = (req.body as { response?: 'accept' | 'decline' | 'report' }) ?? {};
+
+    if (!invId || !response) {
+      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'Invitation ID and response action (accept/decline/report) are required.' } };
+    }
+
+    const res = await d1.respondToCircleInvitation(invId, user.userId, response);
+    if (!res.success) {
+      return { status: 400, body: { error: 'INVITATION_RESPONSE_FAILED', message: res.error } };
+    }
+    return { status: 200, body: { success: true, action: response } };
+  }
+
+  // GET /api/member/circles/:id (Get Circle details)
+  if (req.method === 'GET' && req.path.startsWith('/api/member/circles/') && !req.path.includes('/salon') && !req.path.includes('/invitations')) {
+    const circleId = req.path.split('/')[4];
+    const circle = await d1.getCircleById(circleId, user.userId);
+    if (!circle) {
+      return { status: 404, body: { error: 'CIRCLE_NOT_FOUND', message: 'Circle not found.' } };
+    }
+    return { status: 200, body: { circle } };
+  }
+
+  // POST /api/member/circles/:id/join
+  if (req.method === 'POST' && req.path.startsWith('/api/member/circles/') && req.path.endsWith('/join')) {
+    const circleId = req.path.split('/')[4];
+    if (user.isAdultVerified === false) {
+      return { status: 403, body: { error: 'AGE_VERIFICATION_REQUIRED', message: 'Adult verification (18+) is required to join a Community Circle.' } };
+    }
+
+    const res = await d1.joinCircle(circleId, user.userId);
+    if (!res.success) {
+      const statusCode = res.error?.includes('capacity') ? 409 : 400;
+      return { status: statusCode, body: { error: 'JOIN_FAILED', message: res.error } };
+    }
+    return { status: 200, body: { success: true } };
+  }
+
+  // POST /api/member/circles/:id/leave
+  if (req.method === 'POST' && req.path.startsWith('/api/member/circles/') && req.path.endsWith('/leave')) {
+    const circleId = req.path.split('/')[4];
+    const res = await d1.leaveCircle(circleId, user.userId);
+    if (!res.success) {
+      return { status: 400, body: { error: 'LEAVE_FAILED', message: res.error } };
+    }
+    return { status: 200, body: { success: true } };
+  }
+
+  // POST /api/member/circles/:id/invite (Invite candidate from Discovery)
+  if (req.method === 'POST' && req.path.startsWith('/api/member/circles/') && req.path.endsWith('/invite')) {
+    const circleId = req.path.split('/')[4];
+    const { inviteeId, lensRationale } = (req.body as { inviteeId?: string; lensRationale?: string }) ?? {};
+    if (!inviteeId) {
+      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'inviteeId is required.' } };
+    }
+
+    // Mutual block check
+    const isBlocked = (await d1.isMemberBlocked(user.userId, inviteeId)) || (await d1.isMemberBlocked(inviteeId, user.userId));
+    if (isBlocked) {
+      return { status: 403, body: { error: 'MUTUAL_BLOCK_ACTIVE', message: 'Cannot invite member due to privacy and safety block settings.' } };
+    }
+
+    const res = await d1.inviteToCircle(circleId, user.userId, inviteeId, lensRationale);
+    if (!res.success) {
+      const statusCode = res.error?.includes('capacity') ? 409 : 400;
+      return { status: statusCode, body: { error: 'INVITE_FAILED', message: res.error } };
+    }
+    return { status: 201, body: { success: true, invitation: res.invitation } };
+  }
+
+  // GET /api/member/circles/:id/salon (Gathering Salon bundle)
+  if (req.method === 'GET' && req.path.startsWith('/api/member/circles/') && req.path.endsWith('/salon')) {
+    const circleId = req.path.split('/')[4];
+    const circle = await d1.getCircleById(circleId, user.userId);
+    if (!circle) {
+      return { status: 404, body: { error: 'CIRCLE_NOT_FOUND', message: 'Circle not found.' } };
+    }
+    if (!circle.joined) {
+      return { status: 403, body: { error: 'NOT_A_MEMBER', message: 'Only confirmed attendees can access the Gathering Salon.' } };
+    }
+
+    const notices = await d1.listCircleNotices(circleId, user.userId);
+    const reflections = await d1.listCircleReflections(circleId, user.userId);
+    const members = await d1.listCircleMembers(circleId, user.userId);
+
     return {
-      status: 201,
+      status: 200,
       body: {
-        success: true,
-        message: {
-          id: `msg_${Date.now()}`,
-          conversation_id: conversationId,
-          sender_id: user.userId,
-          receiver_id: receiverId,
-          content: content.trim(),
-          sent_at: Date.now(),
-        },
+        circle,
+        notices,
+        reflections,
+        attendees: members,
       },
     };
+  }
+
+  // POST /api/member/circles/:id/notices (Host posts notice)
+  if (req.method === 'POST' && req.path.startsWith('/api/member/circles/') && req.path.endsWith('/notices')) {
+    const circleId = req.path.split('/')[4];
+    const { title, content } = (req.body as { title?: string; content?: string }) ?? {};
+    if (!title || !content || !title.trim() || !content.trim()) {
+      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'Title and content are required.' } };
+    }
+
+    const res = await d1.postCircleNotice(circleId, user.userId, title, content);
+    if (!res.success) {
+      return { status: 403, body: { error: 'NOTICE_FAILED', message: res.error } };
+    }
+    return { status: 201, body: { success: true, notice: res.notice } };
+  }
+
+  // POST /api/member/circles/:id/reflections (Attendee posts reflection)
+  if (req.method === 'POST' && req.path.startsWith('/api/member/circles/') && req.path.endsWith('/reflections')) {
+    const circleId = req.path.split('/')[4];
+    const { content } = (req.body as { content?: string }) ?? {};
+    if (!content || !content.trim()) {
+      return { status: 400, body: { error: 'INVALID_PAYLOAD', message: 'Content is required.' } };
+    }
+
+    const authorProfile = memberStore.getMemberById(user.userId);
+    const authorName = authorProfile?.name || (user.email ? user.email.split('@')[0] : 'Attendee');
+
+    const res = await d1.postCircleReflection(circleId, user.userId, authorName, content);
+    if (!res.success) {
+      return { status: 403, body: { error: 'REFLECTION_FAILED', message: res.error } };
+    }
+    return { status: 201, body: { success: true, reflection: res.reflection } };
   }
 
   // GET /api/admin/quiz-answers/:memberId (STRICT PRIVACY TEST)

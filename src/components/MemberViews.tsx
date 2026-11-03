@@ -33,6 +33,8 @@ import {
   Sparkles,
   Plus,
   MapPin,
+  Calendar,
+  Bell,
 } from 'lucide-react';
 import { AppShell, ShellNavGroup, ShellNavItem } from './AppShell';
 import {
@@ -46,6 +48,10 @@ import {
   CommunityCircle,
   CircleCohortComfort,
   CircleDiscoveryLensFocus,
+  CircleHostNotice,
+  CircleReflection,
+  CircleAttendee,
+  CircleInvitation,
   ConversationThread,
   DiscoveryLensView,
   ExtendedIntentionId,
@@ -237,6 +243,79 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   }, [activeMemberId, activeSelfMember]);
   const [previewIntentionMode, setPreviewIntentionMode] = useState<ExtendedIntentionId>('friendship');
 
+  // Phase 12: Community Circles Gathering Salon & Inbound Invitations
+  const [salonCircleId, setSalonCircleId] = useState<string | null>(null);
+  const [inboundCircleInvitations, setInboundCircleInvitations] = useState<CircleInvitation[]>([
+    {
+      id: 'cinv-demo-1',
+      circleId: 'circle-1',
+      circleTitle: 'The Quiet Readers Table',
+      circleFormat: 'Small table conversation',
+      circleCity: 'Bengaluru',
+      intention: 'friendship',
+      inviterId: 'member-aarav',
+      inviterName: 'Aarav Iyer',
+      inviteeId: activeSelfMember?.id || 'member-kavya',
+      lensRationale: 'Invited through shared Similar to Me quiet reading affinity and evening reflection pace.',
+      status: 'pending',
+      createdAt: Date.now() - 3600000,
+    },
+  ]);
+  const [salonNotices, setSalonNotices] = useState<CircleHostNotice[]>([
+    {
+      id: 'not-1',
+      circleId: 'circle-1',
+      hostId: 'member-kavya',
+      hostName: 'Kavya Sundaram',
+      title: 'Table Reserved at Third Wave Indiranagar',
+      content: 'I have reserved the quiet back courtyard table for Saturday 10:30 AM. Looking forward to reading quietly for 45 minutes followed by calm coffee reflections.',
+      createdAt: Date.now() - 86400000,
+    },
+  ]);
+  const [salonReflections, setSalonReflections] = useState<CircleReflection[]>([
+    {
+      id: 'ref-1',
+      circleId: 'circle-1',
+      authorId: 'member-aarav',
+      authorName: 'Aarav Iyer',
+      content: 'Looking forward to this weekend! Bringing Italo Calvino\'s Invisible Cities to read.',
+      createdAt: Date.now() - 43200000,
+    },
+  ]);
+  const [salonAttendees, setSalonAttendees] = useState<CircleAttendee[]>([
+    {
+      memberId: 'member-kavya',
+      name: 'Kavya Sundaram',
+      city: 'Bengaluru',
+      role: 'host',
+      rsvpStatus: 'confirmed',
+      joinedAt: Date.now() - 172800000,
+      affinityNote: 'Host · Literature & Design',
+    },
+    {
+      memberId: 'member-aarav',
+      name: 'Aarav Iyer',
+      city: 'Bengaluru',
+      role: 'member',
+      rsvpStatus: 'confirmed',
+      joinedAt: Date.now() - 86400000,
+      affinityNote: 'Similar to Me · Architecture & Walks',
+    },
+    {
+      memberId: 'member-meera',
+      name: 'Meera Nambiar',
+      city: 'Bengaluru',
+      role: 'member',
+      rsvpStatus: 'confirmed',
+      joinedAt: Date.now() - 3600000,
+      affinityNote: 'We Balance Each Other · Systems & Tech',
+    },
+  ]);
+  const [newReflectionText, setNewReflectionText] = useState<string>('');
+  const [newNoticeTitle, setNewNoticeTitle] = useState<string>('');
+  const [newNoticeContent, setNewNoticeContent] = useState<string>('');
+  const [isNoticeModalOpen, setIsNoticeModalOpen] = useState<boolean>(false);
+
   // Tier & Pricing Engineering: Free vs Plus Tiers
   const [memberTier, setMemberTier] = useState<
     'free' | 'plus_monthly' | 'plus_quarterly' | 'plus_halfyearly' | 'matrimony_annual'
@@ -338,9 +417,13 @@ export const MemberShell: React.FC<MemberShellProps> = ({
     e.preventDefault();
     if (!noteModalMember || !introNoteText.trim()) return;
 
+    const senderId = activeSelfMember?.id || activeMemberId || 'member-self';
+    const token =
+      (typeof window !== 'undefined' && window.localStorage?.getItem('kithra_auth_token')) ||
+      `dev-token-${senderId}-member`;
+
     try {
-      const token = (typeof window !== 'undefined' && window.localStorage?.getItem('kithra_auth_token')) || 'dev-token-member-self';
-      await fetch('/api/member/introductions', {
+      const response = await fetch('/api/member/introductions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -352,18 +435,24 @@ export const MemberShell: React.FC<MemberShellProps> = ({
           noteText: introNoteText.trim(),
         }),
       });
-    } catch {
-      // offline / local fallback
-    }
 
-    const result = memberStore.createIntroduction({
-      senderId: activeMemberId ?? 'member-kavya',
-      receiverId: noteModalMember.id,
-      intention: scopedIntention,
-      noteText: introNoteText.trim(),
-    });
+      const data = await response.json().catch(() => ({}));
 
-    if (result.success) {
+      if (!response.ok) {
+        showToast(data.message || data.error || 'Server rejected introduction request.');
+        setNoteModalMember(null);
+        setIntroNoteText('');
+        return;
+      }
+
+      // Synchronize UI store cache upon confirmed server write
+      memberStore.createIntroduction({
+        senderId,
+        receiverId: noteModalMember.id,
+        intention: scopedIntention,
+        noteText: introNoteText.trim(),
+      });
+
       onUpdateProfiles((prev) =>
         prev.map((p) =>
           p.id === noteModalMember.id ? { ...p, connectionState: 'note-sent' } : p
@@ -372,11 +461,99 @@ export const MemberShell: React.FC<MemberShellProps> = ({
       showToast(
         `Thoughtful introduction note delivered to ${noteModalMember.name} in ${INTENTION_METADATA[scopedIntention].label} space.`
       );
-    } else {
-      showToast(result.error ?? 'Could not send introduction.');
+    } catch {
+      // Local development offline fallback
+      const result = memberStore.createIntroduction({
+        senderId,
+        receiverId: noteModalMember.id,
+        intention: scopedIntention,
+        noteText: introNoteText.trim(),
+      });
+
+      if (result.success) {
+        onUpdateProfiles((prev) =>
+          prev.map((p) =>
+            p.id === noteModalMember.id ? { ...p, connectionState: 'note-sent' } : p
+          )
+        );
+        showToast(
+          `Thoughtful introduction note saved locally for ${noteModalMember.name} in ${INTENTION_METADATA[scopedIntention].label} space.`
+        );
+      } else {
+        showToast(result.error ?? 'Could not send introduction.');
+      }
     }
+
     setNoteModalMember(null);
     setIntroNoteText('');
+  };
+
+  const handleRespondInvitation = async (
+    invitationId: string,
+    action: 'accept' | 'decline' | 'report',
+    circleId: string
+  ) => {
+    try {
+      const token =
+        (typeof window !== 'undefined' && window.localStorage?.getItem('kithra_auth_token')) ||
+        `dev-token-${activeSelfMember?.id || 'member-self'}-member`;
+      await fetch(`/api/member/circles/invitations/${invitationId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ response: action }),
+      });
+    } catch {
+      // Offline fallback
+    }
+
+    setInboundCircleInvitations((prev) => prev.filter((i) => i.id !== invitationId));
+
+    if (action === 'accept') {
+      onToggleCircleJoin(circleId);
+      showToast('RSVP confirmed! Welcome to the Gathering Salon.');
+      setSalonCircleId(circleId);
+    } else if (action === 'decline') {
+      showToast('Gathering invitation declined politely.');
+    } else if (action === 'report') {
+      showToast('Invitation reported to Kithra Trust & Safety.');
+    }
+  };
+
+  const handlePostReflection = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReflectionText.trim() || !salonCircleId) return;
+
+    const newRef: CircleReflection = {
+      id: `ref-${Date.now()}`,
+      circleId: salonCircleId,
+      authorId: activeSelfMember?.id || 'member-self',
+      authorName: activeSelfMember?.name || 'Member',
+      content: newReflectionText.trim(),
+      createdAt: Date.now(),
+    };
+    setSalonReflections((prev) => [...prev, newRef]);
+    setNewReflectionText('');
+    showToast('Reflection shared with the Gathering Salon.');
+  };
+
+  const handlePostHostNotice = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNoticeTitle.trim() || !newNoticeContent.trim() || !salonCircleId) return;
+
+    const notice: CircleHostNotice = {
+      id: `not-${Date.now()}`,
+      circleId: salonCircleId,
+      hostId: activeSelfMember?.id || 'member-self',
+      hostName: activeSelfMember?.name || 'Host',
+      title: newNoticeTitle.trim(),
+      content: newNoticeContent.trim(),
+      createdAt: Date.now(),
+    };
+    setSalonNotices((prev) => [notice, ...prev]);
+    setNewNoticeTitle('');
+    setNewNoticeContent('');
+    setIsNoticeModalOpen(false);
+    showToast('Host notice published to Gathering Salon.');
   };
 
   const selectedTribeTheme =
@@ -2891,14 +3068,11 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                           <span>Live Affinity Cohort Estimate</span>
                         </span>
                         <span className="text-xs font-bold text-[var(--heading)] tabular-nums">
-                          ~{affinityCohortEstimate.estimatedCount} kindred spirits nearby
+                          {affinityCohortEstimate.isSuppressed ? 'Protected Cohort' : `~${affinityCohortEstimate.estimatedCount} nearby`}
                         </span>
                       </div>
                       <p className="text-xs text-[var(--muted)]">
                         {affinityCohortEstimate.summaryNote}
-                        {affinityCohortEstimate.sampleMemberNames.length > 0 && (
-                          <span> (e.g. including {affinityCohortEstimate.sampleMemberNames.join(', ')})</span>
-                        )}
                       </p>
                     </div>
 

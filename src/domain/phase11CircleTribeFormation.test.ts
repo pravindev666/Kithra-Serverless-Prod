@@ -251,9 +251,9 @@ test('Tribe Formation 4: Capacity bounds are strictly enforced between 6 and 22 
   assert.strictEqual(resValid.circle?.maxCapacity, 16);
 });
 
-test('Tribe Formation 5: Live Affinity Cohort Estimation accurately counts compatible peers', () => {
-  // Priya looks for peers in Bengaluru for Friendship with High Openness (C1_openness)
-  const estimate = estimateTribeAffinityCohort(
+test('Tribe Formation 5: Live Affinity Cohort Estimation enforces k >= 5 privacy suppression & zero name leakage', () => {
+  // 1. Small cohort (< 5) is suppressed to prevent member re-identification
+  const smallEstimate = estimateTribeAffinityCohort(
     testCohort,
     'p01-priya', // Excludes self
     'friendship',
@@ -261,12 +261,31 @@ test('Tribe Formation 5: Live Affinity Cohort Estimation accurately counts compa
     'C1_openness'
   );
 
-  // Ananya has C1=82 (matches >= 60) and is adult verified.
-  // Rohit has C1=45 (filtered out because < 60).
-  // Aryan is unverified minor (filtered out).
-  assert.strictEqual(estimate.estimatedCount, 1);
-  assert.deepStrictEqual(estimate.sampleMemberNames, ['Ananya Iyer']);
-  assert.ok(estimate.summaryNote.includes('1 members in Bengaluru share this character affinity'));
+  assert.strictEqual(smallEstimate.isSuppressed, true);
+  assert.strictEqual(smallEstimate.estimatedCount, 0);
+  assert.deepStrictEqual(smallEstimate.sampleMemberNames, []); // Zero names leaked
+  assert.ok(smallEstimate.summaryNote.includes('suppressed for member privacy'));
+
+  // 2. Cohort with >= 5 eligible members returns aggregate count without names
+  const largeCohort = [
+    ...testCohort,
+    { ...peerCandidate1, id: 'c-peer-1', name: 'Peer One' },
+    { ...peerCandidate1, id: 'c-peer-2', name: 'Peer Two' },
+    { ...peerCandidate1, id: 'c-peer-3', name: 'Peer Three' },
+    { ...peerCandidate1, id: 'c-peer-4', name: 'Peer Four' },
+  ];
+  const largeEstimate = estimateTribeAffinityCohort(
+    largeCohort,
+    'p01-priya',
+    'friendship',
+    'Bengaluru',
+    'C1_openness'
+  );
+
+  assert.strictEqual(largeEstimate.isSuppressed, false);
+  assert.strictEqual(largeEstimate.estimatedCount >= 5, true);
+  assert.deepStrictEqual(largeEstimate.sampleMemberNames, []); // Zero names leaked
+  assert.ok(largeEstimate.summaryNote.includes('share this community rhythm'));
 });
 
 test('Tribe Formation 6: Intention Boundary Invariant (Friendship & Cofounders ALLOWED; Dating & Matrimony FORBIDDEN)', () => {
