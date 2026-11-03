@@ -38,3 +38,4 @@ export const KithraWordmark: React.FC<KithraWordmarkProps> = ({
     </span>
   );
 };
+

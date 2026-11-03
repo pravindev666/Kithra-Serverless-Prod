@@ -152,11 +152,11 @@ export const AppShell: React.FC<AppShellProps> = ({
     (label: string): TooltipHandlers | Record<string, never> =>
       collapsed
         ? {
-            onMouseEnter: (e: React.MouseEvent<HTMLElement>) => showTip(label, e.currentTarget),
-            onMouseLeave: hideTip,
-            onFocus: (e: React.FocusEvent<HTMLElement>) => showTip(label, e.currentTarget),
-            onBlur: hideTip,
-          }
+          onMouseEnter: (e: React.MouseEvent<HTMLElement>) => showTip(label, e.currentTarget),
+          onMouseLeave: hideTip,
+          onFocus: (e: React.FocusEvent<HTMLElement>) => showTip(label, e.currentTarget),
+          onBlur: hideTip,
+        }
         : {},
     [collapsed, showTip, hideTip]
   );
@@ -266,13 +266,11 @@ export const AppShell: React.FC<AppShellProps> = ({
                     }}
                     aria-current={active ? 'page' : undefined}
                     {...(compact ? tip(item.label) : {})}
-                    className={`group relative flex items-center gap-3 min-h-[44px] rounded-[10px] text-[15px] transition-colors ${
-                      compact ? 'justify-center px-0' : 'px-3'
-                    } ${
-                      active
+                    className={`group relative flex items-center gap-3 min-h-[44px] rounded-[10px] text-[15px] transition-colors ${compact ? 'justify-center px-0' : 'px-3'
+                      } ${active
                         ? 'bg-[var(--surface2)] text-[var(--heading)] font-semibold'
                         : 'text-[var(--muted)] hover:text-[var(--heading)] hover:bg-[var(--surface2)]/60'
-                    }`}
+                      }`}
                   >
                     {active && (
                       <span
@@ -325,9 +323,8 @@ export const AppShell: React.FC<AppShellProps> = ({
         onClick={onToggleTheme}
         aria-label={compact ? label : undefined}
         {...(compact ? tip(label) : {})}
-        className={`flex items-center gap-3 min-h-[44px] w-full rounded-[10px] text-[15px] text-[var(--muted)] hover:text-[var(--heading)] hover:bg-[var(--surface2)]/60 transition-colors cursor-pointer ${
-          compact ? 'justify-center' : 'px-3'
-        }`}
+        className={`flex items-center gap-3 min-h-[44px] w-full rounded-[10px] text-[15px] text-[var(--muted)] hover:text-[var(--heading)] hover:bg-[var(--surface2)]/60 transition-colors cursor-pointer ${compact ? 'justify-center' : 'px-3'
+          }`}
       >
         {isDark ? (
           <Sun className="w-5 h-5 shrink-0" aria-hidden="true" strokeWidth={1.8} />
@@ -388,9 +385,8 @@ export const AppShell: React.FC<AppShellProps> = ({
         style={{ width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-expanded)' }}
       >
         <div
-          className={`flex items-center h-16 shrink-0 border-b border-[var(--line)] ${
-            collapsed ? 'justify-center px-0' : 'justify-between pl-5 pr-3'
-          }`}
+          className={`flex items-center h-16 shrink-0 border-b border-[var(--line)] ${collapsed ? 'justify-center px-0' : 'justify-between pl-5 pr-3'
+            }`}
         >
           {!collapsed && wordmark}
           <button
@@ -462,9 +458,8 @@ export const AppShell: React.FC<AppShellProps> = ({
         <main
           id="main-content"
           tabIndex={-1}
-          className={`flex-1 outline-none px-4 sm:px-6 lg:px-8 pt-6 lg:pt-8 ${
-            hasBottomNav ? 'pb-28 lg:pb-12' : 'pb-12'
-          }`}
+          className={`flex-1 outline-none px-4 sm:px-6 lg:px-8 pt-6 lg:pt-8 ${hasBottomNav ? 'pb-28 lg:pb-12' : 'pb-12'
+            }`}
         >
           <div className="mx-auto w-full" style={{ maxWidth: contentMaxWidth }}>
             {children}
@@ -496,9 +491,8 @@ export const AppShell: React.FC<AppShellProps> = ({
                       navigate(item.path);
                     }}
                     aria-current={active ? 'page' : undefined}
-                    className={`flex-1 flex flex-col items-center justify-center gap-1 text-xs ${
-                      active ? 'text-[var(--heading)] font-semibold' : 'text-[var(--muted)]'
-                    }`}
+                    className={`flex-1 flex flex-col items-center justify-center gap-1 text-xs ${active ? 'text-[var(--heading)] font-semibold' : 'text-[var(--muted)]'
+                      }`}
                   >
                     <span className="relative">
                       <Icon
