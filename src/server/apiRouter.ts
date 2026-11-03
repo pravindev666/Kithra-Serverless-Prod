@@ -37,7 +37,7 @@ import {
   getSafetyCases,
   resolveSafetyCase,
 } from './founderCommandCenterService';
-import { IntentionId } from '../types/kithra';
+import { IntentionId, ExtendedIntentionId } from '../types/kithra';
 import { generateMemberSelfUnderstandingReport } from '../domain/psychologicalInsightsEngine';
 import { generateFounderAnalyticsReport } from '../domain/founderAnalyticsEngine';
 import { D1Database } from './worker';
@@ -538,6 +538,198 @@ export async function handleApiRequest(
       summary ?? 'Member submitted report'
     );
     return { status: 200, body: { success: true, reportCase } };
+  }
+
+  // ============================================================================
+  // PHASE 11: INTENTION-LOCKED INTRODUCTIONS & CANONICAL PAIR LEDGER ROUTES
+  // ============================================================================
+
+  // POST /api/member/introductions (Create Intention Introduction)
+  if (req.method === 'POST' && req.path === '/api/member/introductions') {
+    const { receiverId, intention, noteText } = (req.body as {
+      receiverId?: string;
+      intention?: ExtendedIntentionId;
+      noteText?: string;
+    }) ?? {};
+
+    if (!receiverId || !intention || !noteText || !noteText.trim()) {
+      return {
+        status: 400,
+        body: { error: 'INVALID_PAYLOAD', message: 'receiverId, intention, and non-empty noteText are required.' },
+      };
+    }
+
+    if (user.userId === receiverId) {
+      return {
+        status: 400,
+        body: { error: 'CANNOT_INTRODUCE_SELF', message: 'Cannot send an introduction note to yourself.' },
+      };
+    }
+
+    // Attempt D1 ledger insert first if D1 binding is active
+    let d1Intro: any = null;
+    if (d1) {
+      const d1Res = await d1.createIntroduction(user.userId, receiverId, intention, noteText.trim());
+      if (!d1Res.success) {
+        const statusCode = d1Res.error?.includes('already connected') || d1Res.error?.includes('already pending') ? 409 : 403;
+        return { status: statusCode, body: { error: 'INTRODUCTION_FAILED', message: d1Res.error } };
+      }
+      d1Intro = d1Res.introduction;
+    }
+
+    // Keep store state synchronized
+    const storeRes = memberStore.createIntroduction({
+      senderId: user.userId,
+      receiverId,
+      intention,
+      noteText: noteText.trim(),
+    });
+
+    if (!storeRes.success) {
+      const statusCode = storeRes.error?.includes('already exists') || storeRes.error?.includes('already connected') ? 409 : 403;
+      return { status: statusCode, body: { error: 'INTRODUCTION_FAILED', message: storeRes.error } };
+    }
+
+    return {
+      status: 201,
+      body: {
+        success: true,
+        introduction: d1Intro ?? storeRes.introduction,
+      },
+    };
+  }
+
+  // GET /api/member/introductions (List Member Introductions)
+  if (req.method === 'GET' && req.path === '/api/member/introductions') {
+    if (d1) {
+      const intros = await d1.getIntroductionsForMember(user.userId);
+      return { status: 200, body: { introductions: intros, total: intros.length } };
+    }
+    const intros = memberStore.getIntroductionsForMember(user.userId);
+    return { status: 200, body: { introductions: intros, total: intros.length } };
+  }
+
+  // POST /api/member/introductions/:id/accept
+  if (req.method === 'POST' && req.path.startsWith('/api/member/introductions/') && req.path.endsWith('/accept')) {
+    const parts = req.path.split('/');
+    const introId = parts[4];
+    if (!introId) {
+      return { status: 400, body: { error: 'INVALID_ID', message: 'Introduction ID is required.' } };
+    }
+
+    let acceptRes: any = null;
+    if (d1) {
+      acceptRes = await d1.acceptIntroduction(introId, user.userId);
+      if (!acceptRes.success) {
+        return { status: 400, body: { error: 'ACCEPT_FAILED', message: acceptRes.error } };
+      }
+    }
+
+    const storeRes = memberStore.acceptIntroduction(introId, user.userId);
+    if (!storeRes.success && !acceptRes) {
+      return { status: 400, body: { error: 'ACCEPT_FAILED', message: storeRes.error } };
+    }
+
+    return {
+      status: 200,
+      body: {
+        success: true,
+        conversationId: acceptRes?.conversationId ?? `conv_${introId}`,
+        activeSpace: acceptRes?.activeSpace ?? storeRes.introduction?.intention,
+      },
+    };
+  }
+
+  // POST /api/member/introductions/:id/decline
+  if (req.method === 'POST' && req.path.startsWith('/api/member/introductions/') && req.path.endsWith('/decline')) {
+    const parts = req.path.split('/');
+    const introId = parts[4];
+    if (!introId) {
+      return { status: 400, body: { error: 'INVALID_ID', message: 'Introduction ID is required.' } };
+    }
+
+    if (d1) {
+      const d1Res = await d1.declineIntroduction(introId, user.userId);
+      if (!d1Res.success) {
+        return { status: 400, body: { error: 'DECLINE_FAILED', message: d1Res.error } };
+      }
+    }
+    memberStore.declineIntroduction(introId, user.userId);
+    return { status: 200, body: { success: true } };
+  }
+
+  // POST /api/member/introductions/:id/withdraw
+  if (req.method === 'POST' && req.path.startsWith('/api/member/introductions/') && req.path.endsWith('/withdraw')) {
+    const parts = req.path.split('/');
+    const introId = parts[4];
+    if (!introId) {
+      return { status: 400, body: { error: 'INVALID_ID', message: 'Introduction ID is required.' } };
+    }
+
+    if (d1) {
+      const d1Res = await d1.withdrawIntroduction(introId, user.userId);
+      if (!d1Res.success) {
+        return { status: 400, body: { error: 'WITHDRAW_FAILED', message: d1Res.error } };
+      }
+    }
+    memberStore.withdrawIntroduction(introId, user.userId);
+    return { status: 200, body: { success: true } };
+  }
+
+  // GET /api/member/connections (List Active Connections)
+  if (req.method === 'GET' && req.path === '/api/member/connections') {
+    if (d1) {
+      const connections = await d1.getActiveConnectionsForMember(user.userId);
+      return { status: 200, body: { connections, total: connections.length } };
+    }
+    const profile = memberStore.getMemberById(user.userId);
+    const connMap = profile?.eligibility?.connectedMemberIdsByIntention ?? {};
+    return { status: 200, body: { connections: connMap } };
+  }
+
+  // GET /api/member/conversations
+  if (req.method === 'GET' && req.path === '/api/member/conversations') {
+    if (d1) {
+      const conversations = await d1.getConversationsForMember(user.userId);
+      return { status: 200, body: { conversations, total: conversations.length } };
+    }
+    return { status: 200, body: { conversations: [] } };
+  }
+
+  // POST /api/member/messages
+  if (req.method === 'POST' && req.path === '/api/member/messages') {
+    const { conversationId, receiverId, content } = (req.body as {
+      conversationId?: string;
+      receiverId?: string;
+      content?: string;
+    }) ?? {};
+    if (!conversationId || !receiverId || !content || !content.trim()) {
+      return {
+        status: 400,
+        body: { error: 'INVALID_PAYLOAD', message: 'conversationId, receiverId, and content are required.' },
+      };
+    }
+    if (d1) {
+      const d1Res = await d1.sendMessage(conversationId, user.userId, receiverId, content.trim());
+      if (!d1Res.success) {
+        return { status: 403, body: { error: 'MESSAGE_FAILED', message: d1Res.error } };
+      }
+      return { status: 201, body: { success: true, message: d1Res.message } };
+    }
+    return {
+      status: 201,
+      body: {
+        success: true,
+        message: {
+          id: `msg_${Date.now()}`,
+          conversation_id: conversationId,
+          sender_id: user.userId,
+          receiver_id: receiverId,
+          content: content.trim(),
+          sent_at: Date.now(),
+        },
+      },
+    };
   }
 
   // GET /api/admin/quiz-answers/:memberId (STRICT PRIVACY TEST)

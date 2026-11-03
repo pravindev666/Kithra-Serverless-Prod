@@ -707,20 +707,54 @@ export interface ConversationThread {
   messages: MessageItem[];
 }
 
+export type CircleCohortComfort = 'all_genders' | 'women_only' | 'men_only';
+export type CircleDiscoveryLensFocus = 'similar_to_me' | 'different_from_me' | 'we_balance_each_other' | 'all';
+
 export interface CommunityCircle {
   id: string;
   title: string;
   city: string;
   format:
-  | 'In-person walk'
-  | 'Listening session'
-  | 'Small table conversation'
-  | 'Online reading circle';
-  intention: IntentionId;
+    | 'In-person walk'
+    | 'Listening session'
+    | 'Small table conversation'
+    | 'Online reading circle'
+    | 'Coworking & sprint'
+    | 'Cultural salon';
+  intention: ExtendedIntentionId;
   cadence: string;
   memberCount: number;
+  maxCapacity?: number;
   description: string;
   joined: boolean;
+  /** Member-Initiated Circle / Tribe Provisions */
+  isMemberInitiated?: boolean;
+  creatorMemberId?: string;
+  creatorMemberName?: string;
+  tribeTheme?: string;
+  targetAffinityTrait?: string;
+  targetConstructId?: string;
+  cohortComfort?: CircleCohortComfort;
+  targetLens?: CircleDiscoveryLensFocus;
+  invitedMemberIds?: string[];
+  status?: 'active' | 'pending_steward_review' | 'archived';
+  stewardReviewNotes?: string;
+  createdAt?: number;
+}
+
+export interface CircleProposalInput {
+  title: string;
+  city: string;
+  format: CommunityCircle['format'];
+  intention: ExtendedIntentionId;
+  cadence: string;
+  description: string;
+  maxCapacity?: number;
+  tribeTheme?: string;
+  targetAffinityTrait?: string;
+  targetConstructId?: string;
+  cohortComfort?: CircleCohortComfort;
+  targetLens?: CircleDiscoveryLensFocus;
 }
 
 export interface StaffCase {

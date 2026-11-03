@@ -285,9 +285,9 @@ export function evaluateMutualEligibility(
     };
   }
 
-  // 1. Adult account verification (Strict fail-closed: requires true boolean)
-  const viewerAdult = viewer.isAdult === true || viewer.isAdultVerified === true;
-  const candidateAdult = candidate.isAdult === true || candidate.isAdultVerified === true;
+  // 1. Adult account verification (Strict fail-closed: requires verified true boolean)
+  const viewerAdult = viewer.isAdultVerified === true;
+  const candidateAdult = candidate.isAdultVerified === true;
   if (!viewerAdult || !candidateAdult) {
     return {
       eligible: false,
@@ -344,13 +344,13 @@ export function evaluateMutualEligibility(
     };
   }
 
-  // Automatic Cross-Context Suppression (Default: Hide people I already connected with in another space)
+  // Automatic Cross-Context Suppression & Already-Connected Suppression (The Founder's Master Invariant)
+  // Once two members connect in ANY space, they must disappear from new discovery across ALL spaces.
   const viewerFirewall = viewer.hideCrossContextConnectionsByDefault ?? true;
   const candidateFirewall = candidate.hideCrossContextConnectionsByDefault ?? true;
   if (viewerFirewall || candidateFirewall) {
     const spaces = ['friendship', 'dating', 'matrimony', 'cofounders'] as const;
     for (const sp of spaces) {
-      if (sp === intention) continue;
       const vConnected = viewer.connectedMemberIdsByIntention?.[sp] ?? [];
       const cConnected = candidate.connectedMemberIdsByIntention?.[sp] ?? [];
       if (vConnected.includes(candidateId) || cConnected.includes(viewerId)) {
@@ -358,7 +358,11 @@ export function evaluateMutualEligibility(
           eligible: false,
           status: 'ineligible_intention_or_privacy',
           intention,
-          reasons: ['cross_context_connection_suppressed'],
+          reasons: [
+            sp === intention
+              ? 'already_connected_in_space'
+              : 'cross_context_connection_suppressed',
+          ],
           unknownFieldsRequiringClarification: [],
           hasUnknownNonNegotiables: false,
           neutralMemberExplanation: 'This profile is not available in discovery.',
@@ -385,18 +389,26 @@ export function evaluateMutualEligibility(
     };
   }
 
-  // Explicit discovery authorization (Fail-Closed: never allow discovery unless explicitly authorized)
-  const viewerDiscoverable = viewer.discoverableInIntentions !== undefined
-    ? viewer.discoverableInIntentions.includes(intention)
-    : viewer.discoveryEnabledByIntention !== undefined
-      ? viewer.discoveryEnabledByIntention[intention] === true
-      : viewerHasIntention; // Requires explicit intention authorization
+  // Explicit discovery authorization (Fail-Closed when discovery restrictions or consent are set)
+  const viewerDiscoverable = viewer.discoveryConsentGiven === false
+    ? false
+    : viewer.discoverableInIntentions !== undefined
+      ? viewer.discoverableInIntentions.includes(intention)
+      : viewer.discoveryEnabledByIntention !== undefined
+        ? viewer.discoveryEnabledByIntention[intention] === true
+        : viewer.discoveryConsentGiven !== undefined
+          ? (viewer.discoveryConsentGiven && viewerHasIntention)
+          : viewerHasIntention;
 
-  const candidateDiscoverable = candidate.discoverableInIntentions !== undefined
-    ? candidate.discoverableInIntentions.includes(intention)
-    : candidate.discoveryEnabledByIntention !== undefined
-      ? candidate.discoveryEnabledByIntention[intention] === true
-      : candidateHasIntention; // Requires explicit intention authorization
+  const candidateDiscoverable = candidate.discoveryConsentGiven === false
+    ? false
+    : candidate.discoverableInIntentions !== undefined
+      ? candidate.discoverableInIntentions.includes(intention)
+      : candidate.discoveryEnabledByIntention !== undefined
+        ? candidate.discoveryEnabledByIntention[intention] === true
+        : candidate.discoveryConsentGiven !== undefined
+          ? (candidate.discoveryConsentGiven && candidateHasIntention)
+          : candidateHasIntention;
 
   if (!viewerDiscoverable || !candidateDiscoverable) {
     return {

@@ -116,7 +116,7 @@ export default {
 
       const allowDevTokens = env.ALLOW_DEV_TOKENS === 'true' || env.ENVIRONMENT === 'test';
       const apiRes: ApiResponse = await handleApiRequest(apiReq, {
-        requireCrypto: env.ENVIRONMENT === 'production',
+        requireCrypto: env.ENVIRONMENT === 'production' || env.ENVIRONMENT === 'staging',
         allowDevTokens,
         db: env.DB || env.kithra_d1_staging,
       });
@@ -151,6 +151,10 @@ export default {
           '/api/member/profile',
           '/api/member/assessment/answers',
           '/api/member/matches',
+          '/api/member/introductions',
+          '/api/member/connections',
+          '/api/member/conversations',
+          '/api/member/messages',
           '/api/member/block',
           '/api/member/report',
           '/api/member/assessment/delete',

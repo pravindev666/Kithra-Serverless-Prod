@@ -76,7 +76,8 @@ test('Phase 9 — Task 1.2: Cloudflare Worker API Health & D1 Binding Verificati
   );
 
   // In router or worker, health endpoint confirms healthy deployment
-  assert.ok([200, 404].includes(healthRes.status));
+  assert.strictEqual(healthRes.status, 200);
+  assert.strictEqual((healthRes.body as any).status, 'healthy');
 });
 
 // ============================================================================

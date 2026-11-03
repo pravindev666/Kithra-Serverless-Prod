@@ -236,6 +236,7 @@ export interface ProfileFilterCriteria {
   lensView?: DiscoveryLensView;
   sortBySimilarity?: 'desc' | 'asc' | 'none';
   viewerEligibility?: MemberEligibilityRequirements;
+  viewerId?: string;
 }
 
 export function filterProfiles(
@@ -248,7 +249,8 @@ export function filterProfiles(
     criteria.similarityPreset !== undefined ||
     criteria.lensView !== undefined ||
     criteria.sortBySimilarity !== undefined ||
-    criteria.viewerEligibility !== undefined;
+    criteria.viewerEligibility !== undefined ||
+    criteria.viewerId !== undefined;
 
   if (hasSpectrumFilter) {
     const presetBounds = criteria.similarityPreset
@@ -272,6 +274,7 @@ export function filterProfiles(
       lensView: criteria.lensView ?? 'all',
       sortBySimilarity: criteria.sortBySimilarity ?? 'none',
       viewerEligibility: criteria.viewerEligibility,
+      viewerId: criteria.viewerId,
     });
   }
 

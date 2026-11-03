@@ -182,9 +182,12 @@ export function calculateCofounderSynergy(
   // Time commitment compatibility
   let timeCompatibility: 'aligned' | 'transition_path' | 'incompatible' = 'aligned';
   let timeExplanation = 'Both founders share compatible time commitment horizons.';
-  if (pA.timeCommitment === pB.timeCommitment) {
+  if (pA.timeCommitment && pA.timeCommitment === pB.timeCommitment) {
     timeCompatibility = 'aligned';
     timeExplanation = `Both founders are prepared for ${pA.timeCommitment.replace(/_/g, ' ')}.`;
+  } else if (!pA.timeCommitment || !pB.timeCommitment) {
+    timeCompatibility = 'aligned';
+    timeExplanation = 'Commitment horizons are open or flexible.';
   } else if (
     (pA.timeCommitment === 'full_time_now' && pB.timeCommitment === 'transition_in_3_months') ||
     (pB.timeCommitment === 'full_time_now' && pA.timeCommitment === 'transition_in_3_months')
@@ -463,12 +466,12 @@ export function calculateCofounderSynergy(
       summaryExplanation: 'Complementary working dynamic: One founder provides execution velocity; the other provides strategic discipline.',
     },
     unresolvedQuestions: {
-      equityDiscussionStatus: `A prefers [${pA.equityExpectation.replace(/_/g, ' ')}]; B prefers [${pB.equityExpectation.replace(/_/g, ' ')}].`,
+      equityDiscussionStatus: `A prefers [${pA.equityExpectation ? pA.equityExpectation.replace(/_/g, ' ') : 'open to discussion'}]; B prefers [${pB.equityExpectation ? pB.equityExpectation.replace(/_/g, ' ') : 'open to discussion'}].`,
       runwayAndCapitalStatus: 'Requires mutual disclosure during second introductory discussion.',
       roleClarityStatus: 'Recommended for formalization in the 30-Day Trial Project agreement.',
       recommendedDiscussionTopics,
     },
-    headlineSynthesis: `${founderA.name} & ${founderB.name} · Complementary ${pA.skillsOffered[0]?.skillId.replace(/_/g, ' ') ?? 'Technical'} + ${pB.skillsOffered[0]?.skillId.replace(/_/g, ' ') ?? 'Business'} Partnership`,
+    headlineSynthesis: `${founderA.name} & ${founderB.name} · Complementary ${pA.skillsOffered[0]?.skillId ? pA.skillsOffered[0].skillId.replace(/_/g, ' ') : 'Technical'} + ${pB.skillsOffered[0]?.skillId ? pB.skillsOffered[0].skillId.replace(/_/g, ' ') : 'Business'} Partnership`,
     whyWeMightBuildWellTogether: whyWeMightBuildTogether,
   };
 }

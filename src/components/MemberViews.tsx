@@ -31,11 +31,21 @@ import {
   Clock,
   Coffee,
   Sparkles,
+  Plus,
+  MapPin,
 } from 'lucide-react';
 import { AppShell, ShellNavGroup, ShellNavItem } from './AppShell';
 import {
+  TRIBE_AFFINITY_THEMES,
+  createMemberCircle,
+  estimateTribeAffinityCohort,
+  inviteMemberToCircle,
+} from '../domain/circleTribeEngine';
+import {
   AssessmentQuestion,
   CommunityCircle,
+  CircleCohortComfort,
+  CircleDiscoveryLensFocus,
   ConversationThread,
   DiscoveryLensView,
   ExtendedIntentionId,
@@ -74,6 +84,7 @@ import {
 import { memberStore } from '../domain/memberStore';
 import { EditorialImage } from './EditorialImage';
 import { EditorialVariant } from '../utils/editorialMedia';
+import { calculateCofounderSynergy } from '../domain/cofounderSynergyEngine';
 import {
   generateMemberSelfUnderstandingReport,
   NON_CLINICAL_DISCLAIMER,
@@ -107,6 +118,8 @@ interface MemberShellProps {
   onSendMessage: (conversationId: string, text: string) => void;
   circles: CommunityCircle[];
   onToggleCircleJoin: (circleId: string) => void;
+  onProposeCircle?: (newCircle: CommunityCircle) => void;
+  onInviteMemberToCircle?: (circleId: string, memberId: string) => void;
   activeIntentions: ExtendedIntentionId[];
   onToggleActiveIntention: (intention: ExtendedIntentionId) => void;
   pacePreference: string;
@@ -137,6 +150,8 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   onSendMessage,
   circles,
   onToggleCircleJoin,
+  onProposeCircle,
+  onInviteMemberToCircle,
   activeIntentions,
   onToggleActiveIntention,
   pacePreference,
@@ -250,6 +265,22 @@ export const MemberShell: React.FC<MemberShellProps> = ({
 
   const answeredQuestionCount = Object.keys(assessmentAnswers).length;
 
+  // Member-Initiated Circle / Tribe Proposal State
+  const [isProposeModalOpen, setIsProposeModalOpen] = useState<boolean>(false);
+  const [proposalTitle, setProposalTitle] = useState<string>('');
+  const [proposalCity, setProposalCity] = useState<string>(() => activeSelfMember?.city || 'Bengaluru');
+  const [proposalFormat, setProposalFormat] = useState<CommunityCircle['format']>('Small table conversation');
+  const [proposalIntention, setProposalIntention] = useState<ExtendedIntentionId>('friendship');
+  const [proposalCadence, setProposalCadence] = useState<string>('Bi-weekly Sunday · 10:30 AM');
+  const [proposalThemeId, setProposalThemeId] = useState<string>(TRIBE_AFFINITY_THEMES[0].id);
+  const [proposalMaxCapacity, setProposalMaxCapacity] = useState<number>(12);
+  const [proposalDesc, setProposalDesc] = useState<string>('');
+  const [proposalCohortComfort, setProposalCohortComfort] = useState<CircleCohortComfort>('all_genders');
+  const [proposalTargetLens, setProposalTargetLens] = useState<CircleDiscoveryLensFocus>('similar_to_me');
+  const [proposalPledgeSigned, setProposalPledgeSigned] = useState<boolean>(false);
+  const [proposalError, setProposalError] = useState<string | null>(null);
+  const [circleFilter, setCircleFilter] = useState<'all' | 'steward' | 'member_initiated'>('all');
+
   // Matrimony & Family Discussion Guides State
   const [showMatrimonyGuidesModal, setShowMatrimonyGuidesModal] = useState<boolean>(false);
   const [activeMatrimonyKitId, setActiveMatrimonyKitId] = useState<string>('kit-finances');
@@ -293,6 +324,8 @@ export const MemberShell: React.FC<MemberShellProps> = ({
     similarityPreset,
     lensView,
     sortBySimilarity,
+    viewerEligibility: activeSelfMember?.eligibility,
+    viewerId: activeSelfMember?.id ?? activeMemberId ?? 'member-kavya',
   });
 
   const toggleSaveProfile = (profileId: string) => {
@@ -301,9 +334,27 @@ export const MemberShell: React.FC<MemberShellProps> = ({
     );
   };
 
-  const handleSendIntroNote = (e: React.FormEvent) => {
+  const handleSendIntroNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!noteModalMember || !introNoteText.trim()) return;
+
+    try {
+      const token = (typeof window !== 'undefined' && window.localStorage?.getItem('kithra_auth_token')) || 'dev-token-member-self';
+      await fetch('/api/member/introductions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          receiverId: noteModalMember.id,
+          intention: scopedIntention,
+          noteText: introNoteText.trim(),
+        }),
+      });
+    } catch {
+      // offline / local fallback
+    }
 
     const result = memberStore.createIntroduction({
       senderId: activeMemberId ?? 'member-kavya',
@@ -326,6 +377,76 @@ export const MemberShell: React.FC<MemberShellProps> = ({
     }
     setNoteModalMember(null);
     setIntroNoteText('');
+  };
+
+  const selectedTribeTheme =
+    TRIBE_AFFINITY_THEMES.find((t) => t.id === proposalThemeId) || TRIBE_AFFINITY_THEMES[0];
+
+  const affinityCohortEstimate = React.useMemo(() => {
+    return estimateTribeAffinityCohort(
+      profiles,
+      activeSelfMember?.id || 'member-kavya',
+      proposalIntention,
+      proposalCity,
+      selectedTribeTheme.constructId
+    );
+  }, [profiles, activeSelfMember?.id, proposalIntention, proposalCity, selectedTribeTheme.constructId]);
+
+  const handleCreateCircleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setProposalError(null);
+
+    if (!proposalPledgeSigned) {
+      setProposalError('You must agree to the Community Host & Respect Pledge to form a circle.');
+      return;
+    }
+
+    const hostProfile: MemberProfile =
+      activeSelfMember ||
+      memberStore.getMemberById(activeMemberId || 'member-kavya') ||
+      profiles[0];
+
+    const result = createMemberCircle(hostProfile, {
+      title: proposalTitle,
+      city: proposalCity,
+      format: proposalFormat,
+      intention: proposalIntention,
+      cadence: proposalCadence,
+      maxCapacity: proposalMaxCapacity,
+      description: proposalDesc,
+      tribeTheme: selectedTribeTheme.label,
+      targetAffinityTrait: selectedTribeTheme.tagline,
+      targetConstructId: selectedTribeTheme.constructId,
+      cohortComfort: proposalCohortComfort,
+      targetLens: proposalTargetLens,
+    });
+
+    if (!result.success || !result.circle) {
+      setProposalError(result.error || 'Failed to create Community Circle.');
+      return;
+    }
+
+    if (onProposeCircle) {
+      onProposeCircle(result.circle);
+    }
+    showToast(`👑 Circle "${result.circle.title}" created! You are the Founding Host.`);
+    setIsProposeModalOpen(false);
+    setProposalTitle('');
+    setProposalDesc('');
+    setProposalPledgeSigned(false);
+  };
+
+  const handleInviteCandidateToCircle = (circle: CommunityCircle, candidate: MemberProfile) => {
+    const activeId = activeSelfMember?.id || activeMemberId || 'member-kavya';
+    const result = inviteMemberToCircle(circle, activeId, candidate);
+    if (!result.success || !result.updatedCircle) {
+      showToast(result.error || 'Could not send invitation.');
+      return;
+    }
+    if (onInviteMemberToCircle) {
+      onInviteMemberToCircle(circle.id, candidate.id);
+    }
+    showToast(`💌 Invitation to "${circle.title}" sent to ${candidate.name}!`);
   };
 
   const activeConversation =
@@ -1617,6 +1738,34 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                   const scopedSignals = member.alignment.filter((a) =>
                     a.applicableIntentions.includes(scopedIntention)
                   );
+                  const cofounderSynergy = scopedIntention === 'cofounders' && activeSelfMember
+                    ? calculateCofounderSynergy(
+                        {
+                          id: activeSelfMember.id,
+                          name: activeSelfMember.name,
+                          profile: (activeSelfMember as any).cofounderProfile ?? {
+                            workStyle: 'collaborative_iterative',
+                            riskTolerance: 'medium',
+                            commitmentLevel: 'full_time',
+                            domainExpertise: ['Product Design', 'Frontend'],
+                            startupInterests: ['Calm Technology', 'AI Applications'],
+                          },
+                          constructs: activeSelfMember.constructProfile ?? [],
+                        },
+                        {
+                          id: member.id,
+                          name: member.name,
+                          profile: (member as any).cofounderProfile ?? {
+                            workStyle: 'autonomous_focused',
+                            riskTolerance: 'medium',
+                            commitmentLevel: 'full_time',
+                            domainExpertise: [member.occupation ?? 'Engineering'],
+                            startupInterests: member.interests ?? [],
+                          },
+                          constructs: member.constructProfile ?? [],
+                        }
+                      )
+                    : null;
                   return (
                     <article
                       key={member.id}
@@ -1640,12 +1789,18 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                               >
                                 {scopeMeta.label}
                               </span>
-                              <span className="px-2.5 py-0.5 rounded-full bg-[var(--surface2)] border border-[var(--line)] text-xs font-bold text-[var(--heading)] tabular-nums">
-                                Attribute Similarity:{' '}
-                                {typeof member.attributeSimilarityScore === 'number'
-                                  ? `${member.attributeSimilarityScore}/100`
-                                  : 'Insufficient info'}
-                              </span>
+                              {cofounderSynergy ? (
+                                <span className="px-2.5 py-0.5 rounded-full bg-[var(--surface2)] border border-[var(--line)] text-xs font-bold text-[var(--heading)] tabular-nums">
+                                  Cofounder Synergy: {cofounderSynergy.skillComplementarity.mutualSynergyScore}/100 ({cofounderSynergy.skillComplementarity.mutualSynergyLabel})
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-0.5 rounded-full bg-[var(--surface2)] border border-[var(--line)] text-xs font-bold text-[var(--heading)] tabular-nums">
+                                  Attribute Similarity:{' '}
+                                  {typeof member.attributeSimilarityScore === 'number'
+                                    ? `${member.attributeSimilarityScore}/100`
+                                    : 'Insufficient info'}
+                                </span>
+                              )}
                             </div>
                             <button
                               type="button"
@@ -1708,6 +1863,19 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                                 )}
                               </div>
                             )}
+
+                          {cofounderSynergy && (
+                            <div className="mt-4 p-3.5 rounded-[11px] bg-[var(--surface2)]/80 border border-[var(--line)] space-y-1.5 text-xs sm:text-sm">
+                              <p className="text-[var(--text)]">
+                                <strong className="text-[var(--heading)]">Key Synergy:</strong>{' '}
+                                {cofounderSynergy.skillComplementarity.keyStrengthsExplanation}
+                              </p>
+                              <p className="text-[var(--text)]">
+                                <strong className="text-[var(--heading)]">Direction Alignment:</strong>{' '}
+                                {cofounderSynergy.sharedDirection.ideaStageExplanation}
+                              </p>
+                            </div>
+                          )}
 
                           <p className="text-sm text-[var(--muted)] mt-4 pt-3 border-t border-[var(--line)]">
                             <strong className="text-[var(--heading)]">Interests:</strong>{' '}
@@ -1826,6 +1994,35 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                           >
                             Compatibility
                           </button>
+
+                          {/* Member Circle / Tribe Invitation Action */}
+                          {(scopedIntention === 'friendship' || scopedIntention === 'cofounders') && (() => {
+                            const userHostedCircles = circles.filter(
+                              (c) =>
+                                c.isMemberInitiated &&
+                                c.creatorMemberId === (activeSelfMember?.id || activeMemberId || 'member-kavya') &&
+                                c.intention === scopedIntention
+                            );
+                            if (userHostedCircles.length === 0) return null;
+                            const targetCircle = userHostedCircles[0];
+                            const isInvited = targetCircle.invitedMemberIds?.includes(member.id);
+
+                            return (
+                              <button
+                                type="button"
+                                disabled={isInvited}
+                                onClick={() => handleInviteCandidateToCircle(targetCircle, member)}
+                                className={`rounded-[9px] px-3.5 py-2.5 text-xs font-bold whitespace-nowrap min-h-[42px] inline-flex items-center gap-1.5 transition-colors ${
+                                  isInvited
+                                    ? 'bg-[var(--surface2)] text-[var(--muted)] cursor-default border border-[var(--line)]'
+                                    : 'bg-[var(--ochre-text)]/15 text-[var(--ochre-text)] border border-[var(--ochre-text)]/30 hover:bg-[var(--ochre-text)]/25 cursor-pointer'
+                                }`}
+                                title={`Invite ${member.name} to your Circle "${targetCircle.title}"`}
+                              >
+                                <span>{isInvited ? '✓ Invited to Circle' : `+ 💌 Invite to Circle`}</span>
+                              </button>
+                            );
+                          })()}
                         </div>
 
                         <span className="text-xs text-[var(--muted)]">
@@ -2312,64 +2509,480 @@ export const MemberShell: React.FC<MemberShellProps> = ({
           </div>
         )}
 
-        {/* TAB 5: CIRCLES */}
+        {/* TAB 5: CIRCLES & MEMBER-INITIATED TRIBES */}
         {activeTab === 'circles' && (
-          <div>
-            <div className="mb-5">
-              <p className="uppercase tracking-[2.3px] text-xs font-bold text-[var(--ochre-text)]">
-                Community Circles · Small tables &amp; walks
-              </p>
-              <h1 className="font-serif-editorial text-[38px] sm:text-[43px] leading-[1.05] font-semibold text-[var(--heading)] mt-1">
-                Meet around shared curiosity.
-              </h1>
-              <p className="text-base text-[var(--muted)] mt-1">
-                Hosted walks, listening rooms, and small-table conversations capped at 12–22 people.
-              </p>
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="uppercase tracking-[2.3px] text-xs font-bold text-[var(--ochre-text)]">
+                  Community Circles &amp; Kindred Tribes · Small tables &amp; walks
+                </p>
+                <h1 className="font-serif-editorial text-[38px] sm:text-[43px] leading-[1.05] font-semibold text-[var(--heading)] mt-1">
+                  Meet around shared curiosity.
+                </h1>
+                <p className="text-base text-[var(--muted)] mt-1">
+                  Hosted walks, listening rooms, and small-table conversations capped at 12–22 people.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setProposalCity(activeSelfMember?.city || 'Bengaluru');
+                  setProposalIntention(scopedIntention === 'cofounders' ? 'cofounders' : 'friendship');
+                  setProposalError(null);
+                  setIsProposeModalOpen(true);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-[11px] bg-[var(--primary)] text-[var(--on-primary)] text-sm font-bold shadow-sm hover:opacity-95 transition-opacity cursor-pointer shrink-0 self-start sm:self-auto"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Form a Circle / Tribe</span>
+              </button>
             </div>
 
+            {/* Member Host Initiative Banner */}
+            <div className="p-4 sm:p-5 rounded-[15px] border border-[var(--line)] bg-[var(--surface)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[1px] text-[var(--ochre-text)]">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Founding Host Initiative</span>
+                </div>
+                <p className="text-sm text-[var(--heading)] font-semibold">
+                  Have an idea for a Sunday morning walk, a small-table supper, or a cofounder sprint?
+                </p>
+                <p className="text-xs text-[var(--muted)]">
+                  Any verified member can take the initiative, name a Circle, and gather a tribe around shared character traits. All gatherings are capped at 6–22 people to preserve psychological safety.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setCircleFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    circleFilter === 'all'
+                      ? 'bg-[var(--primary)] text-[var(--on-primary)]'
+                      : 'bg-[var(--surface2)] text-[var(--muted)] hover:text-[var(--heading)]'
+                  }`}
+                >
+                  All ({circles.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCircleFilter('steward')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    circleFilter === 'steward'
+                      ? 'bg-[var(--primary)] text-[var(--on-primary)]'
+                      : 'bg-[var(--surface2)] text-[var(--muted)] hover:text-[var(--heading)]'
+                  }`}
+                >
+                  Steward-Hosted ({circles.filter((c) => !c.isMemberInitiated).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCircleFilter('member_initiated')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                    circleFilter === 'member_initiated'
+                      ? 'bg-[var(--primary)] text-[var(--on-primary)]'
+                      : 'bg-[var(--surface2)] text-[var(--muted)] hover:text-[var(--heading)]'
+                  }`}
+                >
+                  Member Tribes ({circles.filter((c) => c.isMemberInitiated).length})
+                </button>
+              </div>
+            </div>
+
+            {/* Circles Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {circles.map((circle) => {
-                const meta = INTENTION_METADATA[circle.intention];
-                return (
-                  <article
-                    key={circle.id}
-                    className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-6 flex flex-col justify-between"
+              {circles
+                .filter((circle) => {
+                  if (circleFilter === 'steward') return !circle.isMemberInitiated;
+                  if (circleFilter === 'member_initiated') return circle.isMemberInitiated;
+                  return true;
+                })
+                .map((circle) => {
+                  const meta = INTENTION_METADATA[circle.intention] || INTENTION_METADATA.friendship;
+                  const isHost = circle.creatorMemberId === (activeSelfMember?.id || activeMemberId || 'member-kavya');
+                  const capacityMax = circle.maxCapacity || 20;
+
+                  return (
+                    <article
+                      key={circle.id}
+                      className={`bg-[var(--surface)] border rounded-[15px] p-6 flex flex-col justify-between transition-all ${
+                        circle.isMemberInitiated
+                          ? 'border-[var(--ochre-text)]/40 shadow-sm'
+                          : 'border-[var(--line)]'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span
+                            className="text-xs uppercase tracking-[1px] font-bold"
+                            style={{ color: meta.colorVar }}
+                          >
+                            {meta.label} · {circle.format}
+                          </span>
+                          {circle.isMemberInitiated && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--ochre-text)]/15 text-[var(--ochre-text)]">
+                              👑 Hosted by {circle.creatorMemberName || 'Member'}
+                            </span>
+                          )}
+                          {circle.cohortComfort && circle.cohortComfort !== 'all_genders' && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-700 dark:text-pink-300">
+                              {circle.cohortComfort === 'women_only' ? '🌸 Women-only' : '🛡️ Men-only'}
+                            </span>
+                          )}
+                          {circle.targetLens && circle.targetLens !== 'all' && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--surface2)] text-[var(--heading)]">
+                              🎯 {circle.targetLens === 'similar_to_me' ? 'Similar to Me' : circle.targetLens === 'we_balance_each_other' ? 'We Balance Each Other' : 'Different from Me'}
+                            </span>
+                          )}
+                          {circle.tribeTheme && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--surface2)] text-[var(--heading)]">
+                              ✨ {circle.tribeTheme}
+                            </span>
+                          )}
+                        </div>
+
+                        <h2 className="font-serif-editorial text-[26px] sm:text-[28px] leading-[1.12] font-semibold text-[var(--heading)] mt-1">
+                          {circle.title}
+                        </h2>
+
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[var(--muted)] mt-1.5">
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5" />
+                            {circle.city}
+                          </span>
+                          <span>·</span>
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {circle.cadence}
+                          </span>
+                          <span>·</span>
+                          <span className="tabular-nums font-semibold text-[var(--heading)]">
+                            {circle.memberCount} of {capacityMax} seats filled
+                          </span>
+                        </div>
+
+                        {circle.targetAffinityTrait && (
+                          <div className="mt-2 text-xs text-[var(--ochre-text)] font-medium inline-flex items-center gap-1 bg-[var(--surface2)] px-2.5 py-1 rounded-md">
+                            <span>🎯 Character Focus:</span>
+                            <span>{circle.targetAffinityTrait}</span>
+                          </div>
+                        )}
+
+                        <p className="text-sm sm:text-base text-[var(--text)] leading-relaxed mt-3">
+                          {circle.description}
+                        </p>
+                      </div>
+
+                      <div className="mt-5 pt-4 border-t border-[var(--line)] flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => onToggleCircleJoin(circle.id)}
+                          className={`rounded-[9px] px-4 py-2.5 text-sm font-bold cursor-pointer min-h-[42px] transition-colors ${
+                            circle.joined
+                              ? 'bg-[var(--surface2)] border border-[var(--line)] text-[var(--heading)]'
+                              : 'bg-[var(--primary)] text-[var(--on-primary)]'
+                          }`}
+                        >
+                          {circle.joined ? '✓ Joined Circle (Leave)' : 'Join Circle (Reserve Seat)'}
+                        </button>
+                        <div className="flex items-center gap-2">
+                          {isHost && (
+                            <span className="text-xs font-bold text-[var(--ochre-text)]">👑 You are Host</span>
+                          )}
+                          <span className="text-xs text-[var(--muted)]">
+                            {circle.isMemberInitiated ? 'Member-Initiated' : 'Steward-hosted'}
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+            </div>
+
+            {/* Form a Circle / Tribe Modal */}
+            {isProposeModalOpen && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="propose-circle-title"
+              >
+                <div className="relative w-full max-w-2xl bg-[var(--surface)] border border-[var(--line)] rounded-[20px] shadow-2xl p-6 sm:p-8 my-8 max-h-[90vh] overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsProposeModalOpen(false)}
+                    className="absolute top-5 right-5 p-2 rounded-lg text-[var(--muted)] hover:text-[var(--heading)] hover:bg-[var(--surface2)] transition-colors cursor-pointer"
+                    aria-label="Close modal"
                   >
+                    <X className="w-5 h-5" />
+                  </button>
+
+                  <div className="mb-6">
+                    <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[1px] text-[var(--ochre-text)] mb-1">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Take the Initiative</span>
+                    </div>
+                    <h2
+                      id="propose-circle-title"
+                      className="font-serif-editorial text-[30px] sm:text-[34px] leading-tight font-semibold text-[var(--heading)]"
+                    >
+                      Form a Community Circle &amp; Gather Your Tribe
+                    </h2>
+                    <p className="text-sm text-[var(--muted)] mt-1">
+                      Give your gathering a meaningful name, set the character traits you resonate with, and invite kindred spirits in your city. Member-initiated tribes are exclusively for <strong>Friendship</strong> and <strong>Cofounders</strong> (capped at 6–22 people to preserve emotional safety).
+                    </p>
+                  </div>
+
+                  {proposalError && (
+                    <div className="mb-5 p-3.5 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 text-[var(--danger)] text-sm flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{proposalError}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleCreateCircleSubmit} className="space-y-5">
+                    {/* Circle Name */}
                     <div>
-                      <p
-                        className="text-xs uppercase tracking-[1px] font-bold"
-                        style={{ color: meta.colorVar }}
+                      <label className="block text-xs font-bold uppercase tracking-[1px] text-[var(--muted)] mb-1.5">
+                        Circle / Tribe Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={proposalTitle}
+                        onChange={(e) => setProposalTitle(e.target.value)}
+                        placeholder="e.g. Indiranagar Sunday Filter Coffee &amp; Philosophy Walk"
+                        className="w-full h-[46px] rounded-[10px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3.5 text-sm focus:outline-none focus:border-[var(--primary)]"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Intention Space */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-[1px] text-[var(--muted)] mb-1.5">
+                          Intention Space (Friendship or Cofounders) *
+                        </label>
+                        <select
+                          value={proposalIntention}
+                          onChange={(e) => setProposalIntention(e.target.value as 'friendship' | 'cofounders')}
+                          className="w-full h-[46px] rounded-[10px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3.5 text-sm focus:outline-none focus:border-[var(--primary)] cursor-pointer"
+                        >
+                          <option value="friendship">Friendship (Camaraderie, Arts &amp; Walks)</option>
+                          <option value="cofounders">Cofounders (Startup Sprints &amp; Coworking)</option>
+                        </select>
+                        <p className="text-[11px] text-[var(--muted)] mt-1">
+                          🛡️ Dating &amp; Matrimony remain strictly confidential 1:1 spaces to protect member dignity.
+                        </p>
+                      </div>
+
+                      {/* Format */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-[1px] text-[var(--muted)] mb-1.5">
+                          Format *
+                        </label>
+                        <select
+                          value={proposalFormat}
+                          onChange={(e) => setProposalFormat(e.target.value as CommunityCircle['format'])}
+                          className="w-full h-[46px] rounded-[10px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3.5 text-sm focus:outline-none focus:border-[var(--primary)] cursor-pointer"
+                        >
+                          <option value="Small table conversation">Small table conversation (Supper / Tea)</option>
+                          <option value="In-person walk">In-person walk (Courtyard / Park)</option>
+                          <option value="Listening session">Listening session (Music / Classical)</option>
+                          <option value="Online reading circle">Online reading circle (Virtual discussion)</option>
+                          <option value="Coworking & sprint">Coworking &amp; sprint (Deep work)</option>
+                          <option value="Cultural salon">Cultural salon (Arts &amp; Dialogue)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* City */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-[1px] text-[var(--muted)] mb-1.5">
+                          City / Region *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={proposalCity}
+                          onChange={(e) => setProposalCity(e.target.value)}
+                          placeholder="e.g. Bengaluru, Mumbai, Delhi, Online"
+                          className="w-full h-[46px] rounded-[10px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3.5 text-sm focus:outline-none focus:border-[var(--primary)]"
+                        />
+                      </div>
+
+                      {/* Cadence */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-[1px] text-[var(--muted)] mb-1.5">
+                          Cadence / Rhythm
+                        </label>
+                        <input
+                          type="text"
+                          value={proposalCadence}
+                          onChange={(e) => setProposalCadence(e.target.value)}
+                          placeholder="e.g. Every second Sunday · 10:00 AM"
+                          className="w-full h-[46px] rounded-[10px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3.5 text-sm focus:outline-none focus:border-[var(--primary)]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Character Affinity Theme (Psychological Construct Anchor) */}
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-[1px] text-[var(--muted)] mb-1.5">
+                        Character Affinity / Tribe Focus *
+                      </label>
+                      <select
+                        value={proposalThemeId}
+                        onChange={(e) => setProposalThemeId(e.target.value)}
+                        className="w-full h-[46px] rounded-[10px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3.5 text-sm focus:outline-none focus:border-[var(--primary)] cursor-pointer"
                       >
-                        {meta.label} · {circle.format}
-                      </p>
-                      <h2 className="font-serif-editorial text-[28px] leading-[1.12] font-semibold text-[var(--heading)] mt-1">
-                        {circle.title}
-                      </h2>
-                      <p className="text-sm text-[var(--muted)] mt-1">
-                        {circle.city} · {circle.cadence} ·{' '}
-                        <span className="tabular-nums">{circle.memberCount} members</span>
-                      </p>
-                      <p className="text-base text-[var(--text)] leading-relaxed mt-3">
-                        {circle.description}
+                        {TRIBE_AFFINITY_THEMES.map((theme) => (
+                          <option key={theme.id} value={theme.id}>
+                            {theme.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-[var(--muted)] mt-1.5">
+                        💡 {selectedTribeTheme.description}
                       </p>
                     </div>
-                    <div className="mt-5 pt-4 border-t border-[var(--line)] flex items-center justify-between">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Discovery Lens Focus */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-[1px] text-[var(--muted)] mb-1.5">
+                          Target Discovery Lens Focus *
+                        </label>
+                        <select
+                          value={proposalTargetLens}
+                          onChange={(e) => setProposalTargetLens(e.target.value as CircleDiscoveryLensFocus)}
+                          className="w-full h-[46px] rounded-[10px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3.5 text-sm focus:outline-none focus:border-[var(--primary)] cursor-pointer"
+                        >
+                          <option value="similar_to_me">Similar to Me (Like-minded wavelength &amp; rhythm)</option>
+                          <option value="we_balance_each_other">We Balance Each Other (Complementary strengths)</option>
+                          <option value="different_from_me">Different from Me (Perspective exchange)</option>
+                          <option value="all">All Lenses (Open to any compatible connection)</option>
+                        </select>
+                      </div>
+
+                      {/* Cohort Comfort / Gender Space */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-[1px] text-[var(--muted)] mb-1.5">
+                          Cohort &amp; Gender Comfort *
+                        </label>
+                        <select
+                          value={proposalCohortComfort}
+                          onChange={(e) => setProposalCohortComfort(e.target.value as CircleCohortComfort)}
+                          className="w-full h-[46px] rounded-[10px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] px-3.5 text-sm focus:outline-none focus:border-[var(--primary)] cursor-pointer"
+                        >
+                          <option value="all_genders">Open to all genders (Inclusive)</option>
+                          <option value="women_only">Women-only gathering (Safe &amp; Empowered)</option>
+                          <option value="men_only">Men-only gathering (Reflective)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Live Affinity Cohort Estimator */}
+                    <div className="p-4 rounded-xl border border-[var(--ochre-text)]/30 bg-[var(--surface2)] space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[var(--ochre-text)] uppercase tracking-[1px] inline-flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5" />
+                          <span>Live Affinity Cohort Estimate</span>
+                        </span>
+                        <span className="text-xs font-bold text-[var(--heading)] tabular-nums">
+                          ~{affinityCohortEstimate.estimatedCount} kindred spirits nearby
+                        </span>
+                      </div>
+                      <p className="text-xs text-[var(--muted)]">
+                        {affinityCohortEstimate.summaryNote}
+                        {affinityCohortEstimate.sampleMemberNames.length > 0 && (
+                          <span> (e.g. including {affinityCohortEstimate.sampleMemberNames.join(', ')})</span>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Safety Capacity Limit */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold uppercase tracking-[1px] text-[var(--muted)]">
+                          Safety Member Cap (Small-Table Boundary)
+                        </label>
+                        <span className="text-xs font-bold text-[var(--heading)] tabular-nums">
+                          {proposalMaxCapacity} members maximum
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {[8, 12, 16, 20].map((cap) => (
+                          <button
+                            key={cap}
+                            type="button"
+                            onClick={() => setProposalMaxCapacity(cap)}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                              proposalMaxCapacity === cap
+                                ? 'bg-[var(--primary)] border-[var(--primary)] text-[var(--on-primary)]'
+                                : 'bg-[var(--bg)] border-[var(--line)] text-[var(--muted)] hover:text-[var(--heading)]'
+                            }`}
+                          >
+                            {cap} seats
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-[var(--muted)] mt-1">
+                        Kithra strictly caps gatherings between 6 and 22 people so nobody feels lost in an overwhelming crowd.
+                      </p>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-[1px] text-[var(--muted)] mb-1.5">
+                        Gathering Description &amp; Ground Rules *
+                      </label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={proposalDesc}
+                        onChange={(e) => setProposalDesc(e.target.value)}
+                        placeholder="Describe what members can expect: the quiet tone, conversational flow, topics, and etiquette..."
+                        className="w-full rounded-[10px] border border-[var(--line)] bg-[var(--bg)] text-[var(--heading)] p-3 text-sm focus:outline-none focus:border-[var(--primary)] resize-none"
+                      />
+                    </div>
+
+                    {/* Host Covenant & Respect Pledge Checkbox */}
+                    <div className="p-3.5 rounded-xl border border-[var(--line)] bg-[var(--bg)] flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        id="host-pledge"
+                        checked={proposalPledgeSigned}
+                        onChange={(e) => setProposalPledgeSigned(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded border-[var(--line)] text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
+                      />
+                      <label htmlFor="host-pledge" className="text-xs text-[var(--text)] leading-relaxed cursor-pointer select-none">
+                        <strong>Founding Host Covenant:</strong> I pledge to host with warmth, protect personal boundaries, never allow uninvited solicitation or aggressive pitching, and uphold Kithra's Community Respect Pledge.
+                      </label>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="pt-2 flex items-center justify-end gap-3">
                       <button
                         type="button"
-                        onClick={() => onToggleCircleJoin(circle.id)}
-                        className={`rounded-[9px] px-4 py-2.5 text-sm font-bold cursor-pointer min-h-[42px] ${circle.joined
-                          ? 'bg-[var(--surface2)] border border-[var(--line)] text-[var(--heading)]'
-                          : 'bg-[var(--primary)] text-[var(--on-primary)]'
-                          }`}
+                        onClick={() => setIsProposeModalOpen(false)}
+                        className="px-4 py-2.5 rounded-[9px] border border-[var(--line)] bg-[var(--surface2)] text-xs font-bold text-[var(--heading)] hover:bg-[var(--line)] transition-colors cursor-pointer"
                       >
-                        {circle.joined ? '✓ Joined Circle (Leave)' : 'Join Circle (Preview)'}
+                        Cancel
                       </button>
-                      <span className="text-xs text-[var(--muted)]">Steward-hosted</span>
+                      <button
+                        type="submit"
+                        className="px-5 py-2.5 rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] text-xs font-bold shadow-sm hover:opacity-95 transition-opacity cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        <span>Form This Circle &amp; Become Host</span>
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  </article>
-                );
-              })}
-            </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

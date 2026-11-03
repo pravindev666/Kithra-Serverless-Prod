@@ -68,6 +68,7 @@ const STORAGE_KEYS = {
   RAW_RESPONSES: 'kithra_member_raw_responses_v3',
   PROFILES: 'kithra_member_profiles_v3',
   USER_CONSENTS: 'kithra_member_consents_v3',
+  INTRODUCTIONS: 'kithra_member_introductions_v3',
 };
 
 export interface StoredRawResponse {
@@ -295,6 +296,7 @@ class PersistentStorageBackend {
         window.localStorage.removeItem(STORAGE_KEYS.RAW_RESPONSES);
         window.localStorage.removeItem(STORAGE_KEYS.PROFILES);
         window.localStorage.removeItem(STORAGE_KEYS.USER_CONSENTS);
+        window.localStorage.removeItem(STORAGE_KEYS.INTRODUCTIONS);
       }
     } catch {
       // ignore
@@ -341,14 +343,17 @@ function createInitialStoreState(): MemberStoreState {
     const savedActiveId = storage.getItem(STORAGE_KEYS.ACTIVE_MEMBER_ID);
     const savedResponses = storage.getItem(STORAGE_KEYS.RAW_RESPONSES);
     const savedProfiles = storage.getItem(STORAGE_KEYS.PROFILES);
+    const savedIntros = storage.getItem(STORAGE_KEYS.INTRODUCTIONS);
 
     if (savedActiveId && savedResponses && savedProfiles) {
       const parsedResponses = JSON.parse(savedResponses) as RawResponsesByMember;
       const parsedProfiles = JSON.parse(savedProfiles) as Record<string, MemberProfile>;
+      const parsedIntros = savedIntros ? JSON.parse(savedIntros) : {};
       return {
         activeMemberId: savedActiveId,
         members: parsedProfiles,
         rawResponses: parsedResponses,
+        introductions: parsedIntros,
         consents: {},
       };
     }
@@ -736,6 +741,9 @@ function persistStore(): void {
     storage.setItem(STORAGE_KEYS.ACTIVE_MEMBER_ID, storeState.activeMemberId);
     storage.setItem(STORAGE_KEYS.RAW_RESPONSES, JSON.stringify(storeState.rawResponses));
     storage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(storeState.members));
+    if (storeState.introductions) {
+      storage.setItem(STORAGE_KEYS.INTRODUCTIONS, JSON.stringify(storeState.introductions));
+    }
   } catch {
     // ignore
   }
@@ -1251,7 +1259,7 @@ export const memberStore = {
   getMemberResponseRecord(
     memberId: string,
     questionId: string
-  ): StoredResponseRecord | undefined {
+  ): StoredRawResponse | undefined {
     return storeState.rawResponses[memberId]?.[questionId];
   },
 
@@ -1480,36 +1488,53 @@ export const memberStore = {
       return { success: false, error: 'Introduction note cannot be empty.' };
     }
 
-    // 2. Mutual eligibility check across the requested intention
-    if (sender.eligibility && receiver.eligibility) {
-      const elig = evaluateMutualEligibility(
-        sender.eligibility,
-        receiver.eligibility,
-        receiverId,
-        senderId,
-        intention as IntentionId
-      );
-      if (!elig.eligible) {
+    // 2. Strict fail-closed eligibility check: both members must have complete verified eligibility records
+    if (!sender.eligibility || !receiver.eligibility) {
+      return {
+        success: false,
+        error: 'Cannot create introduction: both members must have complete verified eligibility records.',
+      };
+    }
+
+    const elig = evaluateMutualEligibility(
+      sender.eligibility,
+      receiver.eligibility,
+      receiverId,
+      senderId,
+      intention as IntentionId
+    );
+    if (!elig.eligible) {
+      return {
+        success: false,
+        error: `Cannot create introduction: ${elig.reasons.join(', ')}`,
+      };
+    }
+
+    // 3. Existing connection check across ALL spaces (The Master Invariant: one pair, one active context)
+    const spaces = ['friendship', 'dating', 'matrimony', 'cofounders'] as const;
+    for (const sp of spaces) {
+      const sConn = sender.eligibility.connectedMemberIdsByIntention?.[sp] ?? [];
+      const rConn = receiver.eligibility.connectedMemberIdsByIntention?.[sp] ?? [];
+      if (sConn.includes(receiverId) || rConn.includes(senderId)) {
         return {
           success: false,
-          error: `Cannot create introduction: ${elig.reasons.join(', ')}`,
+          error: `Cannot create introduction: members are already connected in ${sp}. Cross-context introduction prohibited.`,
         };
       }
     }
 
-    // 3. Existing introduction check (prevent duplicate / race condition)
+    // 4. Bidirectional active introduction check across all spaces (prevent duplicate / race condition)
     storeState.introductions = storeState.introductions || {};
     const existing = Object.values(storeState.introductions).find(
       (intro) =>
-        intro.senderId === senderId &&
-        intro.receiverId === receiverId &&
-        intro.intention === intention &&
+        ((intro.senderId === senderId && intro.receiverId === receiverId) ||
+          (intro.senderId === receiverId && intro.receiverId === senderId)) &&
         (intro.state === 'sent' || intro.state === 'accepted')
     );
     if (existing) {
       return {
         success: false,
-        error: `An active introduction for ${intention} already exists with this member.`,
+        error: `An active introduction or connection already exists between these members (${existing.intention}).`,
       };
     }
 

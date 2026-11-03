@@ -371,6 +371,21 @@ export default function App() {
     );
   };
 
+  const handleProposeCircle = (newCircle: CommunityCircle) => {
+    setCircles((prev) => [newCircle, ...prev]);
+  };
+
+  const handleInviteMemberToCircle = (circleId: string, memberId: string) => {
+    setCircles((prev) =>
+      prev.map((c) => {
+        if (c.id !== circleId) return c;
+        const existing = c.invitedMemberIds || [];
+        if (existing.includes(memberId)) return c;
+        return { ...c, invitedMemberIds: [...existing, memberId] };
+      })
+    );
+  };
+
   const handleAppendAudit = (action: string, target: string, detail: string) => {
     const now = new Date();
     const formatted = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
@@ -420,6 +435,8 @@ export default function App() {
               onSendMessage={handleSendMessage}
               circles={circles}
               onToggleCircleJoin={handleToggleCircleJoin}
+              onProposeCircle={handleProposeCircle}
+              onInviteMemberToCircle={handleInviteMemberToCircle}
               activeIntentions={activeIntentions}
               onToggleActiveIntention={handleToggleActiveIntention}
               pacePreference={pacePreference}
