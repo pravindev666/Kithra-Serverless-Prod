@@ -11,9 +11,14 @@
 
 import {
   AssessmentQuestion,
+  ClarificationRequest,
   ConstructVectorPoint,
+  ExtendedIntentionId,
   IntentionId,
+  IntentionIntroduction,
+  IntroductionState,
   MemberProfile,
+  PairExclusionRule,
   PartnerSmokingRequirement,
   ProfileReadinessBreakdown,
   ProfileSectionId,
@@ -36,6 +41,7 @@ import {
 } from './progressiveProfileEngine';
 import {
   evaluateAllTriangulationClusters,
+  countGenuineContradictions,
   TriangulationClusterResult,
 } from './triangulationEngine';
 import {
@@ -308,6 +314,7 @@ export interface MemberStoreState {
   rawResponses: RawResponsesByMember;
   consents: Record<string, { consentGivenAt: number; withdrawnAt?: number }>;
   skippedQuestions?: Record<string, string[]>;
+  introductions?: Record<string, IntentionIntroduction>;
 }
 
 let storeState: MemberStoreState = createInitialStoreState();
@@ -1003,9 +1010,15 @@ export const memberStore = {
       responseTimeMs: rec.responseLatencyMs ?? latencyMs,
     }));
 
+    const directContradictions = countGenuineContradictions(
+      rawAnswersDict,
+      EXPANDED_PILOT_QUESTION_BANK
+    );
+
     const quality = evaluateResponseQuality(
       `sess-${memberId}`,
-      itemResponses
+      itemResponses,
+      directContradictions
     );
 
     // Update stored member profile
@@ -1066,6 +1079,81 @@ export const memberStore = {
       storeState.skippedQuestions[memberId].push(questionId);
     }
     return { success: true, memberId, skippedQuestionId: questionId };
+  },
+
+  /**
+   * Returns active, unresolved clarification requests for a member based on evidence triangulation.
+   * Capped at maximum 2 attempts per facet per session to prevent badgering.
+   */
+  getActiveClarificationRequests(
+    memberId: string,
+    bank: AssessmentQuestion[] = EXPANDED_PILOT_QUESTION_BANK
+  ): ClarificationRequest[] {
+    const rawMap = storeState.rawResponses[memberId] ?? {};
+    const clusterResults = evaluateAllTriangulationClusters(rawMap, bank);
+    const requests: ClarificationRequest[] = [];
+
+    for (const [clusterId, res] of Object.entries(clusterResults)) {
+      if (res.isGenuineContradiction && res.classification === 'clarification_needed') {
+        const storedResolutions = (storeState as any).clarificationResolutions ?? {};
+        if (storedResolutions[`${memberId}:${clusterId}`]?.resolvedAt) {
+          continue; // Already resolved or dismissed
+        }
+        requests.push({
+          id: `clarify-${memberId}-${clusterId}`,
+          clusterId,
+          constructId: clusterId,
+          facetId: clusterId,
+          conflictingQuestionIds: res.answeredQuestionIds,
+          prompt: `We noticed that your responses suggest different preferences across similar scenarios in ${res.clusterName}. Does your preferred approach depend on the situation?`,
+          options: res.clarificationOptions ?? [],
+          attemptCount: 1,
+          maxAttempts: 2,
+          status: 'pending',
+        });
+      }
+    }
+
+    return requests;
+  },
+
+  /**
+   * Submits a member's situational clarification response.
+   * Updates evidence interpretation without deleting prior responses.
+   */
+  resolveClarification(
+    memberId: string,
+    clarificationId: string,
+    optionId: string
+  ) {
+    if (!(storeState as any).clarificationResolutions) {
+      (storeState as any).clarificationResolutions = {};
+    }
+    (storeState as any).clarificationResolutions[`${memberId}:${clarificationId}`] = {
+      optionId,
+      resolvedAt: Date.now(),
+    };
+    persistStore();
+    return { success: true, memberId, clarificationId, optionId };
+  },
+
+  /**
+   * Dismisses a clarification request (member chooses "Skip for now").
+   * Preserves all existing answers without quality penalty.
+   */
+  dismissClarification(
+    memberId: string,
+    clarificationId: string
+  ) {
+    if (!(storeState as any).clarificationResolutions) {
+      (storeState as any).clarificationResolutions = {};
+    }
+    (storeState as any).clarificationResolutions[`${memberId}:${clarificationId}`] = {
+      dismissed: true,
+      resolvedAt: Date.now(),
+    };
+    persistStore();
+    return { success: true, memberId, clarificationId, dismissed: true };
   },
 
   /**
@@ -1210,10 +1298,21 @@ export const memberStore = {
     const candidates = Object.values(storeState.members).filter((m) => m.id !== activeId);
 
     const evaluatedCandidates: MemberProfile[] = candidates.map((candidate) => {
-      const effectiveIntention: IntentionId =
-        intention === 'all'
-          ? candidate.primaryIntention ?? candidate.intentions[0] ?? 'friendship'
-          : intention;
+      // Finding D Fix: When intention === 'all', evaluate against mutually consented shared intentions!
+      let effectiveIntention: IntentionId = 'friendship';
+      if (intention === 'all') {
+        const viewerIntentions = viewer.intentions ?? viewer.eligibility?.enabledIntentions ?? [];
+        const candidateIntentions = candidate.intentions ?? candidate.eligibility?.enabledIntentions ?? [];
+        const shared = viewerIntentions.filter((i) => candidateIntentions.includes(i));
+        effectiveIntention =
+          shared.find((i) => i === viewer.primaryIntention) ??
+          shared.find((i) => i === candidate.primaryIntention) ??
+          shared[0] ??
+          viewer.primaryIntention ??
+          'friendship';
+      } else {
+        effectiveIntention = intention;
+      }
 
       const pairwise = evaluateMemberPairwiseMatch(viewer, candidate, effectiveIntention);
 
@@ -1335,5 +1434,181 @@ export const memberStore = {
       notes: [`Auto-generated report from member ${reporterId}`],
     };
     return newCase;
+  },
+
+  /**
+   * PHASE 10: Real Intention-Locked Introductions Service
+   * Replaces simulated toast with real persisted introduction state machine:
+   * Draft -> Sent -> Accepted / Declined / Expired / Withdrawn
+   */
+  createIntroduction(params: {
+    senderId: string;
+    receiverId: string;
+    intention: ExtendedIntentionId;
+    noteText: string;
+  }): { success: boolean; introduction?: IntentionIntroduction; error?: string } {
+    const { senderId, receiverId, intention, noteText } = params;
+
+    // 1. Anti-self matching invariant
+    if (senderId === receiverId) {
+      return { success: false, error: 'Cannot send an introduction note to yourself.' };
+    }
+
+    const sender = storeState.members[senderId];
+    const receiver = storeState.members[receiverId];
+    if (!sender || !receiver) {
+      return { success: false, error: 'Member not found.' };
+    }
+
+    if (!noteText || !noteText.trim()) {
+      return { success: false, error: 'Introduction note cannot be empty.' };
+    }
+
+    // 2. Mutual eligibility check across the requested intention
+    if (sender.eligibility && receiver.eligibility) {
+      const elig = evaluateMutualEligibility(
+        sender.eligibility,
+        receiver.eligibility,
+        receiverId,
+        senderId,
+        intention as IntentionId
+      );
+      if (!elig.eligible) {
+        return {
+          success: false,
+          error: `Cannot create introduction: ${elig.reasons.join(', ')}`,
+        };
+      }
+    }
+
+    // 3. Existing introduction check (prevent duplicate / race condition)
+    storeState.introductions = storeState.introductions || {};
+    const existing = Object.values(storeState.introductions).find(
+      (intro) =>
+        intro.senderId === senderId &&
+        intro.receiverId === receiverId &&
+        intro.intention === intention &&
+        (intro.state === 'sent' || intro.state === 'accepted')
+    );
+    if (existing) {
+      return {
+        success: false,
+        error: `An active introduction for ${intention} already exists with this member.`,
+      };
+    }
+
+    const newIntro: IntentionIntroduction = {
+      id: `intro-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      senderId,
+      receiverId,
+      intention,
+      noteText: noteText.trim(),
+      state: 'sent',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 14 * 24 * 3600 * 1000, // 14-day expiry window
+    };
+
+    storeState.introductions[newIntro.id] = newIntro;
+    persistStore();
+    return { success: true, introduction: newIntro };
+  },
+
+  acceptIntroduction(introId: string, receiverId: string): { success: boolean; introduction?: IntentionIntroduction; error?: string } {
+    storeState.introductions = storeState.introductions || {};
+    const intro = storeState.introductions[introId];
+    if (!intro) return { success: false, error: 'Introduction not found.' };
+    if (intro.receiverId !== receiverId) return { success: false, error: 'Unauthorized to accept this introduction.' };
+    if (intro.state !== 'sent') return { success: false, error: `Cannot accept introduction in ${intro.state} state.` };
+
+    intro.state = 'accepted';
+    intro.respondedAt = Date.now();
+
+    // Cross-context privacy connection record:
+    const sender = storeState.members[intro.senderId];
+    const receiver = storeState.members[intro.receiverId];
+    if (sender?.eligibility) {
+      sender.eligibility.connectedMemberIdsByIntention = sender.eligibility.connectedMemberIdsByIntention || {};
+      sender.eligibility.connectedMemberIdsByIntention[intro.intention] = sender.eligibility.connectedMemberIdsByIntention[intro.intention] || [];
+      if (!sender.eligibility.connectedMemberIdsByIntention[intro.intention]!.includes(intro.receiverId)) {
+        sender.eligibility.connectedMemberIdsByIntention[intro.intention]!.push(intro.receiverId);
+      }
+    }
+    if (receiver?.eligibility) {
+      receiver.eligibility.connectedMemberIdsByIntention = receiver.eligibility.connectedMemberIdsByIntention || {};
+      receiver.eligibility.connectedMemberIdsByIntention[intro.intention] = receiver.eligibility.connectedMemberIdsByIntention[intro.intention] || [];
+      if (!receiver.eligibility.connectedMemberIdsByIntention[intro.intention]!.includes(intro.senderId)) {
+        receiver.eligibility.connectedMemberIdsByIntention[intro.intention]!.push(intro.senderId);
+      }
+    }
+
+    persistStore();
+    return { success: true, introduction: intro };
+  },
+
+  declineIntroduction(introId: string, receiverId: string): { success: boolean; error?: string } {
+    storeState.introductions = storeState.introductions || {};
+    const intro = storeState.introductions[introId];
+    if (!intro) return { success: false, error: 'Introduction not found.' };
+    if (intro.receiverId !== receiverId) return { success: false, error: 'Unauthorized to decline this introduction.' };
+    if (intro.state !== 'sent') return { success: false, error: `Cannot decline introduction in ${intro.state} state.` };
+
+    intro.state = 'declined';
+    intro.respondedAt = Date.now();
+    persistStore();
+    return { success: true };
+  },
+
+  withdrawIntroduction(introId: string, senderId: string): { success: boolean; error?: string } {
+    storeState.introductions = storeState.introductions || {};
+    const intro = storeState.introductions[introId];
+    if (!intro) return { success: false, error: 'Introduction not found.' };
+    if (intro.senderId !== senderId) return { success: false, error: 'Unauthorized to withdraw this introduction.' };
+    if (intro.state !== 'sent') return { success: false, error: `Cannot withdraw introduction in ${intro.state} state.` };
+
+    intro.state = 'withdrawn';
+    intro.respondedAt = Date.now();
+    persistStore();
+    return { success: true };
+  },
+
+  getIntroductionsForMember(memberId: string): IntentionIntroduction[] {
+    storeState.introductions = storeState.introductions || {};
+    return Object.values(storeState.introductions).filter(
+      (i) => i.senderId === memberId || i.receiverId === memberId
+    );
+  },
+
+  /**
+   * TASK 5: Cross-Context Privacy Firewall: Add/Remove pair exclusions.
+   */
+  addPairExclusion(
+    viewerId: string,
+    targetMemberId: string,
+    scope: 'all_spaces' | 'space_specific' = 'space_specific',
+    excludedSpace?: ExtendedIntentionId,
+    reason: PairExclusionRule['reason'] = 'user_hidden'
+  ): void {
+    const viewer = storeState.members[viewerId];
+    if (!viewer || !viewer.eligibility) return;
+    viewer.eligibility.pairExclusions = viewer.eligibility.pairExclusions || [];
+    viewer.eligibility.pairExclusions.push({
+      id: `excl-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      memberIdA: viewerId,
+      memberIdB: targetMemberId,
+      scope,
+      excludedSpace,
+      reason,
+      createdAt: Date.now(),
+    });
+    persistStore();
+  },
+
+  removePairExclusion(viewerId: string, targetMemberId: string): void {
+    const viewer = storeState.members[viewerId];
+    if (!viewer?.eligibility?.pairExclusions) return;
+    viewer.eligibility.pairExclusions = viewer.eligibility.pairExclusions.filter(
+      (e) => e.memberIdB !== targetMemberId && (e as any).otherMemberId !== targetMemberId
+    );
+    persistStore();
   },
 };

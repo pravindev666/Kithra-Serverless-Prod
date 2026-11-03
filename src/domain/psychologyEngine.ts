@@ -7,6 +7,7 @@ import {
   ConstructVectorPoint,
   DiscoveryLensView,
   ExperimentalArchetypeId,
+  ExtendedIntentionId,
   IntentionId,
   MemberEligibilityRequirements,
   MemberProfile,
@@ -206,7 +207,7 @@ export interface MutualEligibilityEvaluation {
   | 'ineligible_hard_requirement_conflict'
   | 'ineligible_intention_or_privacy'
   | 'clarification_needed_unknown_requirement';
-  intention: IntentionId;
+  intention: ExtendedIntentionId;
   reasons: string[];
   unknownFieldsRequiringClarification: string[];
   hasUnknownNonNegotiables: boolean;
@@ -223,19 +224,20 @@ export interface MutualEligibilityEvaluation {
 export function evaluateMutualEligibility(
   viewer: MemberEligibilityRequirements,
   candidate: MemberEligibilityRequirements,
-  candidateIdOrIntention: string | IntentionId,
+  candidateIdOrIntention: string | ExtendedIntentionId,
   viewerIdArg?: string,
-  intentionArg?: IntentionId
+  intentionArg?: ExtendedIntentionId
 ): MutualEligibilityEvaluation {
   const isThreeArgCall =
     intentionArg === undefined &&
     (candidateIdOrIntention === 'friendship' ||
       candidateIdOrIntention === 'dating' ||
-      candidateIdOrIntention === 'matrimony');
+      candidateIdOrIntention === 'matrimony' ||
+      candidateIdOrIntention === 'cofounders');
 
-  const intention: IntentionId = isThreeArgCall
-    ? (candidateIdOrIntention as IntentionId)
-    : (intentionArg ?? 'friendship');
+  const intention: ExtendedIntentionId = isThreeArgCall
+    ? (candidateIdOrIntention as ExtendedIntentionId)
+    : ((intentionArg ?? 'friendship') as ExtendedIntentionId);
 
   const candidateId = isThreeArgCall
     ? (candidate.memberId ?? 'candidate-id')
@@ -247,19 +249,32 @@ export function evaluateMutualEligibility(
   const reasons: string[] = [];
   const unknownFields: string[] = [];
 
-  // 1. Adult account verification
-  const viewerAdult = viewer.isAdult ?? viewer.isAdultVerified ?? true;
-  const candidateAdult = candidate.isAdult ?? candidate.isAdultVerified ?? true;
+  // 0. Anti-Self-Matching Invariant
+  if (candidateId && viewerId && candidateId === viewerId) {
+    return {
+      eligible: false,
+      status: 'ineligible_intention_or_privacy',
+      intention,
+      reasons: ['self_matching_prohibited'],
+      unknownFieldsRequiringClarification: [],
+      hasUnknownNonNegotiables: false,
+      neutralMemberExplanation: 'A member cannot be matched with themselves.',
+    };
+  }
+
+  // 1. Adult account verification (Strict fail-closed: requires true boolean)
+  const viewerAdult = viewer.isAdult === true || viewer.isAdultVerified === true;
+  const candidateAdult = candidate.isAdult === true || candidate.isAdultVerified === true;
   if (!viewerAdult || !candidateAdult) {
     return {
       eligible: false,
       status: 'ineligible_intention_or_privacy',
       intention,
-      reasons: ['adult_eligibility_required'],
+      reasons: ['adult_verification_required_fail_closed'],
       unknownFieldsRequiringClarification: [],
       hasUnknownNonNegotiables: false,
       neutralMemberExplanation:
-        'Both accounts must meet adult age requirements to participate in discovery.',
+        'Both accounts must explicitly verify adult age requirements to participate in discovery.',
     };
   }
 
@@ -279,24 +294,88 @@ export function evaluateMutualEligibility(
     };
   }
 
-  // 3. Both members have enabled the target relationship intention & allow discovery
-  const viewerDiscoverable = viewer.discoverableInIntentions
+  // 2.5 Cross-Context Privacy Firewall & Pair-Level Suppressions (Task 5)
+  const viewerExclusions = viewer.pairExclusions ?? [];
+  const candidateExclusions = candidate.pairExclusions ?? [];
+  const isExcluded =
+    viewerExclusions.some(
+      (e) =>
+        (e.memberIdA === candidateId || e.memberIdB === candidateId || (e as any).otherMemberId === candidateId) &&
+        (e.scope === 'all_spaces' || e.excludedSpace === intention)
+    ) ||
+    candidateExclusions.some(
+      (e) =>
+        (e.memberIdA === viewerId || e.memberIdB === viewerId || (e as any).otherMemberId === viewerId) &&
+        (e.scope === 'all_spaces' || e.excludedSpace === intention)
+    );
+
+  if (isExcluded) {
+    return {
+      eligible: false,
+      status: 'ineligible_intention_or_privacy',
+      intention,
+      reasons: ['pair_privacy_exclusion_active'],
+      unknownFieldsRequiringClarification: [],
+      hasUnknownNonNegotiables: false,
+      neutralMemberExplanation: 'This profile is not available in discovery.',
+    };
+  }
+
+  // Automatic Cross-Context Suppression (Default: Hide people I already connected with in another space)
+  const viewerFirewall = viewer.hideCrossContextConnectionsByDefault ?? true;
+  const candidateFirewall = candidate.hideCrossContextConnectionsByDefault ?? true;
+  if (viewerFirewall || candidateFirewall) {
+    const spaces = ['friendship', 'dating', 'matrimony', 'cofounders'] as const;
+    for (const sp of spaces) {
+      if (sp === intention) continue;
+      const vConnected = viewer.connectedMemberIdsByIntention?.[sp] ?? [];
+      const cConnected = candidate.connectedMemberIdsByIntention?.[sp] ?? [];
+      if (vConnected.includes(candidateId) || cConnected.includes(viewerId)) {
+        return {
+          eligible: false,
+          status: 'ineligible_intention_or_privacy',
+          intention,
+          reasons: ['cross_context_connection_suppressed'],
+          unknownFieldsRequiringClarification: [],
+          hasUnknownNonNegotiables: false,
+          neutralMemberExplanation: 'This profile is not available in discovery.',
+        };
+      }
+    }
+  }
+
+  // 3. Both members have enabled the target relationship intention & allow discovery (Strict Fail-Closed)
+  const viewerHasIntention =
+    Array.isArray(viewer.enabledIntentions) && viewer.enabledIntentions.includes(intention);
+  const candidateHasIntention =
+    Array.isArray(candidate.enabledIntentions) && candidate.enabledIntentions.includes(intention);
+
+  if (!viewerHasIntention || !candidateHasIntention) {
+    return {
+      eligible: false,
+      status: 'ineligible_intention_or_privacy',
+      intention,
+      reasons: ['intention_not_mutually_enabled'],
+      unknownFieldsRequiringClarification: [],
+      hasUnknownNonNegotiables: false,
+      neutralMemberExplanation: `One or both profiles do not have ${intention} enabled.`,
+    };
+  }
+
+  // Explicit discovery authorization (Fail-Closed: never allow discovery unless explicitly authorized)
+  const viewerDiscoverable = viewer.discoverableInIntentions !== undefined
     ? viewer.discoverableInIntentions.includes(intention)
-    : viewer.discoveryEnabledByIntention
-      ? viewer.discoveryEnabledByIntention[intention] !== false
-      : true;
+    : viewer.discoveryEnabledByIntention !== undefined
+      ? viewer.discoveryEnabledByIntention[intention] === true
+      : viewerHasIntention; // Requires explicit intention authorization
 
-  const candidateDiscoverable = candidate.discoverableInIntentions
+  const candidateDiscoverable = candidate.discoverableInIntentions !== undefined
     ? candidate.discoverableInIntentions.includes(intention)
-    : candidate.discoveryEnabledByIntention
-      ? candidate.discoveryEnabledByIntention[intention] !== false
-      : true;
+    : candidate.discoveryEnabledByIntention !== undefined
+      ? candidate.discoveryEnabledByIntention[intention] === true
+      : candidateHasIntention; // Requires explicit intention authorization
 
-  const viewerEnabled = (viewer.enabledIntentions ?? [intention]).includes(intention) && viewerDiscoverable;
-  const candidateEnabled =
-    (candidate.enabledIntentions ?? [intention]).includes(intention) && candidateDiscoverable;
-
-  if (!viewerEnabled || !candidateEnabled) {
+  if (!viewerDiscoverable || !candidateDiscoverable) {
     return {
       eligible: false,
       status: 'ineligible_intention_or_privacy',
@@ -308,7 +387,46 @@ export function evaluateMutualEligibility(
     };
   }
 
-  // 4. Romantic & Matrimony structure requirements (Friendship does NOT inherit romantic restrictions)
+  // 4. Dating Relationship Purpose Compatibility (Tasks 4 & 5: Dignity-first, no casual hookup matches)
+  if (intention === 'dating') {
+    const vPurpose = viewer.datingPurpose;
+    const cPurpose = candidate.datingPurpose;
+    const vAcceptable = viewer.acceptableDatingPurposes;
+    const cAcceptable = candidate.acceptableDatingPurposes;
+
+    if (vAcceptable && vAcceptable.length > 0 && cPurpose) {
+      if (!vAcceptable.includes(cPurpose)) {
+        reasons.push('incompatible_dating_purpose');
+      }
+    }
+
+    if (cAcceptable && cAcceptable.length > 0 && vPurpose) {
+      if (!cAcceptable.includes(vPurpose)) {
+        reasons.push('incompatible_dating_purpose');
+      }
+    }
+  }
+
+  // 4.5 Cofounder Business Non-Negotiables Compatibility (Task 5: Fire + Air Synergy)
+  if ((intention as ExtendedIntentionId) === 'cofounders') {
+    const vFunding = viewer.cofounderProfile?.fundingPreference;
+    const cFunding = candidate.cofounderProfile?.fundingPreference;
+    const vAccFunding = viewer.acceptableFundingPreferences;
+    const cAccFunding = candidate.acceptableFundingPreferences;
+
+    if (vAccFunding && vAccFunding.length > 0 && cFunding) {
+      if (!vAccFunding.includes(cFunding)) {
+        reasons.push('incompatible_funding_preference');
+      }
+    }
+    if (cAccFunding && cAccFunding.length > 0 && vFunding) {
+      if (!cAccFunding.includes(vFunding)) {
+        reasons.push('incompatible_funding_preference');
+      }
+    }
+  }
+
+  // 4.6 Romantic & Matrimony structure requirements (Friendship & Cofounders do NOT inherit romantic restrictions)
   if (intention === 'dating' || intention === 'matrimony') {
     const vStruct =
       viewer.relationshipStructureByIntention?.[intention] ??
@@ -883,28 +1001,59 @@ export function filterProfilesByFullSimilaritySpectrum(
   const lensView = criteria.lensView ?? 'all';
 
   const filtered = profiles.filter((profile) => {
-    // 1. Intention check
-    if (
-      criteria.intention !== 'all' &&
-      !profile.intentions.includes(criteria.intention)
-    ) {
-      return false;
-    }
+    // 1 & 2. Intention & Stage A Mutual Eligibility check
+    if (criteria.viewerEligibility && profile.eligibility) {
+      if (criteria.intention !== 'all') {
+        if (!profile.intentions.includes(criteria.intention)) {
+          return false;
+        }
+        const elig = evaluateMutualEligibility(
+          criteria.viewerEligibility,
+          profile.eligibility,
+          profile.id,
+          criteria.viewerId ?? criteria.viewerEligibility.memberId ?? 'viewer-self',
+          criteria.intention
+        );
+        if (!elig.eligible) {
+          return false;
+        }
+      } else {
+        // criteria.intention === 'all':
+        // Finding C Fix: MUST NEVER BYPASS MUTUAL ELIGIBILITY!
+        const viewerIntentions = criteria.viewerEligibility.enabledIntentions ?? [];
+        const candidateIntentions =
+          profile.eligibility.enabledIntentions ?? profile.intentions ?? [];
+        const shared = viewerIntentions.filter((i) =>
+          candidateIntentions.includes(i)
+        );
+        if (shared.length === 0) {
+          return false;
+        }
 
-    // 2. Stage A Mutual Eligibility check (when both viewer & candidate have eligibility records)
-    if (
-      criteria.viewerEligibility &&
-      profile.eligibility &&
-      criteria.intention !== 'all'
-    ) {
-      const elig = evaluateMutualEligibility(
-        criteria.viewerEligibility,
-        profile.eligibility,
-        profile.id,
-        criteria.viewerId ?? criteria.viewerEligibility.memberId ?? 'viewer-self',
-        criteria.intention
-      );
-      if (!elig.eligible) {
+        // Must be mutually eligible in AT LEAST ONE shared intention
+        let eligibleInAtLeastOne = false;
+        for (const sharedIntent of shared) {
+          const elig = evaluateMutualEligibility(
+            criteria.viewerEligibility,
+            profile.eligibility,
+            profile.id,
+            criteria.viewerId ?? criteria.viewerEligibility.memberId ?? 'viewer-self',
+            sharedIntent
+          );
+          if (elig.eligible) {
+            eligibleInAtLeastOne = true;
+            break;
+          }
+        }
+        if (!eligibleInAtLeastOne) {
+          return false;
+        }
+      }
+    } else {
+      if (
+        criteria.intention !== 'all' &&
+        !profile.intentions.includes(criteria.intention)
+      ) {
         return false;
       }
     }
@@ -1135,6 +1284,8 @@ export function determineDominantArchetypes(
   primaryArchetype: ExperimentalArchetypeId;
   secondaryArchetype: ExperimentalArchetypeId;
   archetypeScores: Record<ExperimentalArchetypeId, number>;
+  primaryMatchedConstructCount: number;
+  hasSufficientMultidimensionalCoverage: boolean;
 } {
   const cMap = new Map<string, number>();
   for (const c of constructs) {
@@ -1158,16 +1309,19 @@ export function determineDominantArchetypes(
         matched += 1;
       }
     }
-    const avg = matched > 0 ? Math.round(sum / matched) : 50;
-    return { archId, score: avg };
+    // Scientific Fix: Missing information remains missing, never defaulted to 50
+    const avg = matched > 0 ? Math.round(sum / matched) : 0;
+    return { archId, score: avg, matchedCount: matched };
   });
 
   scoredArchetypes.sort((a, b) => {
+    if (b.matchedCount !== a.matchedCount) return b.matchedCount - a.matchedCount;
     if (b.score !== a.score) return b.score - a.score;
     return a.archId.localeCompare(b.archId);
   });
 
   const primary = scoredArchetypes[0]?.archId ?? 'deep_current';
+  const primaryMatched = scoredArchetypes[0]?.matchedCount ?? 0;
   const secondary =
     scoredArchetypes.find((item) => item.archId !== primary)?.archId ??
     (primary === 'warm_bridge' ? 'steady_anchor' : 'warm_bridge');
@@ -1181,6 +1335,8 @@ export function determineDominantArchetypes(
     primaryArchetype: primary,
     secondaryArchetype: secondary,
     archetypeScores,
+    primaryMatchedConstructCount: primaryMatched,
+    hasSufficientMultidimensionalCoverage: primaryMatched >= 2,
   };
 }
 
@@ -1617,7 +1773,7 @@ export function evaluateResponseQuality(
 
   if (responses.length < 5) {
     return {
-      qualityState: 'valid_high_confidence',
+      qualityState: 'insufficient_reliable_information',
       automaticSuspensionTriggered: false,
       deceptionAccusationIssued: false,
       isAccusedOfDishonesty: false,
@@ -1627,8 +1783,9 @@ export function evaluateResponseQuality(
       medianResponseTimeMs: 0,
       maxDisplayPositionStreak: responses.length,
       fastClickRatio: 0,
-      flaggedSignals: [],
-      neutralMemberPrompt: null,
+      flaggedSignals: ['insufficient_items_for_quality_evaluation'],
+      neutralMemberPrompt:
+        'Fewer than 5 scenarios completed. Continue answering at your own pace to establish reliable response quality indicators.',
       adminQualityEvent: null,
       adminEvent: null,
     };

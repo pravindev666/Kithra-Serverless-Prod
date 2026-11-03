@@ -61,13 +61,32 @@ export const ESSENTIAL_GATE_QUESTION_IDS: readonly string[] = [
 
 export type AdaptiveSelectionReason =
   | 'starter_battery'
+  | 'initial_coverage'
   | 'essential_boundary_gate'
+  | 'intention_specific'
   | 'response_triangulation_pair'
+  | 'semantic_branch'
+  | 'contextual_clarification'
   | 'construct_coverage_gap'
+  | 'facet_gap'
   | 'contextual_follow_up'
   | 'section_progression'
+  | 'optional_deeper_exploration'
+  | 'member_requested_review'
   | 'stage_advancement'
-  | 'bank_exhausted';
+  | 'bank_exhausted'
+  | 'assessment_complete';
+
+export type AdaptiveSelectionCategory =
+  | 'initial_coverage'
+  | 'facet_gap'
+  | 'semantic_branch'
+  | 'contextual_clarification'
+  | 'member_requested_review'
+  | 'intention_specific'
+  | 'optional_deeper_exploration'
+  | 'bank_exhausted'
+  | 'assessment_complete';
 
 export interface AdaptiveSelectionContext {
   answeredQuestionIds: Iterable<string>;
@@ -77,11 +96,13 @@ export interface AdaptiveSelectionContext {
   targetSectionId?: ProfileSectionId;
   sessionAnswersCount?: number;
   skippedQuestionIds?: Iterable<string>;
+  pendingClarificationQuestionId?: string;
 }
 
 export interface AdaptiveSelectionResult {
   nextQuestion: AssessmentQuestion | null;
   selectionReason: AdaptiveSelectionReason;
+  adaptiveCategory?: AdaptiveSelectionCategory;
   rationale: string;
   engineVersion: string;
   totalAnswered: number;
@@ -178,6 +199,32 @@ export function selectNextAdaptiveQuestion(
     ? "You've answered 10 thoughtful questions in this session. Taking a break is completely okay and your answers are saved."
     : undefined;
 
+  // 0. Priority: Pending Clarification Request (Task 4 & 7)
+  if (
+    contextOrAnsweredIds &&
+    typeof contextOrAnsweredIds === 'object' &&
+    'pendingClarificationQuestionId' in contextOrAnsweredIds
+  ) {
+    const pId = (contextOrAnsweredIds as AdaptiveSelectionContext).pendingClarificationQuestionId;
+    if (pId && !answeredSet.has(pId) && !skippedSet.has(pId)) {
+      const q = questionBank.find((item) => item.id === pId);
+      if (q) {
+        return {
+          nextQuestion: q,
+          selectionReason: 'contextual_clarification',
+          adaptiveCategory: 'contextual_clarification',
+          rationale: `Targeted situational clarification question (${q.facetId ?? q.id}) administered to resolve divergence without full retake.`,
+          engineVersion: ADAPTIVE_ENGINE_VERSION,
+          totalAnswered,
+          coverageByConstruct: computeConstructCoverage(answeredSet, questionBank),
+          unansweredCount: questionBank.length - totalAnswered,
+          breakRecommended,
+          breakAdvisory,
+        };
+      }
+    }
+  }
+
   // 1. Check Starter Battery (Questions 1–5) in exact order
   for (const starterId of STARTER_BATTERY_QUESTION_IDS) {
     if (!answeredSet.has(starterId) && !skippedSet.has(starterId)) {
@@ -186,6 +233,7 @@ export function selectNextAdaptiveQuestion(
         return {
           nextQuestion: q,
           selectionReason: 'starter_battery',
+          adaptiveCategory: 'initial_coverage',
           rationale: `Starter Battery item ${q.questionNumber} of 5 (${q.facetId ?? q.id}) administered for calm, consistent initial onboarding.`,
           engineVersion: ADAPTIVE_ENGINE_VERSION,
           totalAnswered,
@@ -210,6 +258,7 @@ export function selectNextAdaptiveQuestion(
     return {
       nextQuestion: null,
       selectionReason: 'bank_exhausted',
+      adaptiveCategory: 'assessment_complete',
       rationale: 'All applicable questions for your selected intentions have been answered or skipped.',
       engineVersion: ADAPTIVE_ENGINE_VERSION,
       totalAnswered,
@@ -230,6 +279,7 @@ export function selectNextAdaptiveQuestion(
           return {
             nextQuestion: gateQuestion,
             selectionReason: 'essential_boundary_gate',
+            adaptiveCategory: 'intention_specific',
             rationale: `Stage A Essential Gate (${gateQuestion.facetId}) prioritized for Dating/Matrimony mutual eligibility protection.`,
             engineVersion: ADAPTIVE_ENGINE_VERSION,
             totalAnswered,
@@ -253,6 +303,39 @@ export function selectNextAdaptiveQuestion(
     const baseQuestion = questionBank.find((q) => q.id === answeredId);
     if (!baseQuestion) continue;
 
+    // 4.1 Answer-Dependent Semantic Option Branching (Task 3)
+    const selectedOptionId =
+      typeof rawAnswer === 'string'
+        ? rawAnswer
+        : (rawAnswer as any)?.selectedOptionId ?? (rawAnswer as any)?.optionId;
+
+    if (selectedOptionId && baseQuestion.options) {
+      const chosenOption = baseQuestion.options.find(
+        (opt) => opt.id === selectedOptionId || opt.semanticId === selectedOptionId
+      );
+
+      if (chosenOption?.branchToQuestionId) {
+        const branchQId = chosenOption.branchToQuestionId;
+        if (!answeredSet.has(branchQId) && !skippedSet.has(branchQId)) {
+          const branchQ = eligibleCandidates.find((q) => q.id === branchQId);
+          if (branchQ) {
+            return {
+              nextQuestion: branchQ,
+              selectionReason: 'contextual_follow_up',
+              adaptiveCategory: 'semantic_branch',
+              rationale: `Answer-dependent branch triggered by response "${chosenOption.label}" on ${baseQuestion.id}: exploring ${branchQ.facetId ?? branchQ.id}.`,
+              engineVersion: ADAPTIVE_ENGINE_VERSION,
+              totalAnswered,
+              coverageByConstruct: computeConstructCoverage(answeredSet, questionBank),
+              unansweredCount: eligibleCandidates.length,
+              breakRecommended,
+              breakAdvisory,
+            };
+          }
+        }
+      }
+    }
+
     // Check explicit pairedFollowUpIds
     if (baseQuestion.pairedFollowUpIds && baseQuestion.pairedFollowUpIds.length > 0) {
       for (const followUpId of baseQuestion.pairedFollowUpIds) {
@@ -262,6 +345,7 @@ export function selectNextAdaptiveQuestion(
             return {
               nextQuestion: followUpQ,
               selectionReason: 'response_triangulation_pair',
+              adaptiveCategory: 'contextual_clarification',
               rationale: `Contextual follow-up triggered by response to ${baseQuestion.id}: testing situational variation in ${followUpQ.facetId ?? followUpQ.id}.`,
               engineVersion: ADAPTIVE_ENGINE_VERSION,
               totalAnswered,
@@ -291,6 +375,7 @@ export function selectNextAdaptiveQuestion(
               return {
                 nextQuestion: counterpartQ,
                 selectionReason: 'response_triangulation_pair',
+                adaptiveCategory: 'contextual_clarification',
                 rationale: `Triangulation companion item for cluster '${cluster.name}': measuring situational consistency vs adaptive nuance.`,
                 engineVersion: ADAPTIVE_ENGINE_VERSION,
                 totalAnswered,
@@ -372,6 +457,7 @@ export function selectNextAdaptiveQuestion(
   return {
     nextQuestion,
     selectionReason: targetSectionId ? 'section_progression' : 'construct_coverage_gap',
+    adaptiveCategory: targetSectionId ? 'optional_deeper_exploration' : 'facet_gap',
     rationale: targetSectionId
       ? `Selected item from section '${targetSectionId}' to complete chosen profile module.`
       : `Selected from construct '${nextQuestion.constructId}' (current coverage: ${minCoverage} answered) to balance multidimensional measurement accuracy.`,

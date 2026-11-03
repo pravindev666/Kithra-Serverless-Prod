@@ -7,7 +7,7 @@
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "tsx --test src/utils/kithraLogic.test.ts src/domain/phase3EndToEnd.test.ts src/domain/phase35And4Verification.test.ts src/domain/phase5And6Verification.test.ts src/domain/phase7aTriangulationAndIntegrity.test.ts src/domain/phase7bStagingAndPilotReadiness.test.ts src/domain/phase8StagingAndPilotReadiness.test.ts src/domain/phase8aInsightsAndSecurityAudit.test.ts src/domain/phase9RealCloudE2E.test.ts src/domain/phase9aFounderCommandCenter.test.ts",
+    "test": "tsx --test src/utils/kithraLogic.test.ts src/domain/phase3EndToEnd.test.ts src/domain/phase35And4Verification.test.ts src/domain/phase5And6Verification.test.ts src/domain/phase7aTriangulationAndIntegrity.test.ts src/domain/phase7bStagingAndPilotReadiness.test.ts src/domain/phase8StagingAndPilotReadiness.test.ts src/domain/phase8aInsightsAndSecurityAudit.test.ts src/domain/phase9RealCloudE2E.test.ts src/domain/phase9aFounderCommandCenter.test.ts src/domain/phase10FourIntentionAndPrivacyFirewall.test.ts src/domain/phase10bDatingPurposeAndCofounderSynergy.test.ts src/domain/phase10bAdvancedPsychometricsAndTriangulation.test.ts src/domain/phase10cSharedPsychologyAndFourSpaceAudit.test.ts",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },

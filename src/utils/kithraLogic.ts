@@ -277,8 +277,16 @@ export function filterProfiles(
   const normalizedQuery = criteria.searchQuery.trim().toLowerCase();
 
   return profiles.filter((profile) => {
-    if (criteria.intention !== 'all' && !profile.intentions.includes(criteria.intention)) {
-      return false;
+    if (criteria.intention !== 'all') {
+      if (!profile.intentions.includes(criteria.intention)) {
+        return false;
+      }
+    } else if (criteria.viewerEligibility) {
+      const viewerIntentions = criteria.viewerEligibility.enabledIntentions ?? [];
+      const shared = viewerIntentions.filter((i) => profile.intentions.includes(i as IntentionId));
+      if (shared.length === 0) {
+        return false;
+      }
     }
     if (criteria.city !== 'All cities' && profile.city !== criteria.city) {
       return false;

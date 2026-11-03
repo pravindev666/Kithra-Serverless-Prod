@@ -1,6 +1,159 @@
 export type IntentionId = 'friendship' | 'dating' | 'matrimony';
 
 /**
+ * Phase 10 Extended Intention Space.
+ * Includes proposed fourth space 'cofounders' (professional partnership beta).
+ * Active core in production remains Friendship, Dating, and Matrimony.
+ */
+export type ExtendedIntentionId = 'friendship' | 'dating' | 'matrimony' | 'cofounders';
+
+/**
+ * Explicit Dating Relationship Purpose:
+ * Strictly prioritizes intentional, long-term human connection over casual hookups.
+ */
+export type DatingRelationshipPurpose =
+  | 'committed_long_term' // Seeking a committed long-term relationship
+  | 'open_to_marriage'    // Seeking a relationship that could lead to marriage
+  | 'intentional_dating'; // Exploring meaningful dating, but not seeking casual hookups
+
+export type DatingPacePreference =
+  | 'unhurried'    // Prefer gradual, steady acquaintance
+  | 'moderate'     // Natural, balanced progression
+  | 'spontaneous'; // Open to faster conversational connection
+
+export type DatingBoundariesPreference =
+  | 'clear_early'      // Clear boundaries stated upfront
+  | 'gradual_organic'  // Boundaries communicated as trust builds
+  | 'flexible';        // Low-friction, adaptable boundaries
+
+export type DatingCommunicationPreference =
+  | 'daily_checkins'       // Frequent daily updates
+  | 'thoughtful_unhurried' // Thoughtful, reflective messages without constant urgency
+  | 'flexible';            // Whatever feels natural in the moment
+
+/**
+ * Cofounder Space (Fire + Air Synergy) Types:
+ * Complementary skills, professional working styles, and shared business direction.
+ */
+export type SkillProficiencyLevel =
+  | 'learning'
+  | 'working_knowledge'
+  | 'experienced'
+  | 'advanced';
+
+export type CofounderSkillCategory =
+  | 'engineering'
+  | 'ai_ml'
+  | 'frontend'
+  | 'backend'
+  | 'cloud_devops'
+  | 'mobile'
+  | 'product_management'
+  | 'ui_ux_design'
+  | 'user_research'
+  | 'b2b_sales'
+  | 'growth_marketing'
+  | 'content_branding'
+  | 'partnerships'
+  | 'finance_fundraising'
+  | 'operations'
+  | 'legal_compliance'
+  | 'talent_hiring'
+  | 'industry_specialist';
+
+export interface CofounderOfferedSkill {
+  skillId: CofounderSkillCategory;
+  name: string;
+  proficiency: SkillProficiencyLevel;
+  evidenceSummary?: string; // Optional portfolio link or project description
+}
+
+export interface CofounderNeededSkill {
+  skillId: CofounderSkillCategory;
+  priority: 'critical' | 'preferred';
+  canHireInstead?: boolean;
+}
+
+export type StartupIdeaStage =
+  | 'exploring_ideas'
+  | 'validated_concept'
+  | 'building_prototype'
+  | 'launched_mvp'
+  | 'scaling_revenue';
+
+export type StartupFundingPreference =
+  | 'bootstrapped'
+  | 'venture_capital'
+  | 'open_to_either';
+
+export type FounderTimeCommitment =
+  | 'full_time_now'
+  | 'transition_in_3_months'
+  | 'part_time_evenings'
+  | 'flexible';
+
+export type FounderLocationPreference =
+  | 'in_person_city'
+  | 'hybrid'
+  | 'remote_first';
+
+export type FounderEquityExpectation =
+  | 'equal_split_ethos'
+  | 'contribution_and_risk_weighted'
+  | 'open_discussion';
+
+export interface CofounderProfile {
+  headline: string;
+  startupInterests: string[];
+  skillsOffered: CofounderOfferedSkill[];
+  skillsNeeded: CofounderNeededSkill[];
+  ideaStage: StartupIdeaStage;
+  fundingPreference: StartupFundingPreference;
+  timeCommitment: FounderTimeCommitment;
+  locationPreference: FounderLocationPreference;
+  city?: string;
+  equityExpectation: FounderEquityExpectation;
+  summaryNote?: string;
+  isDiscoverable: boolean;
+}
+
+export interface CommunityRespectPledgeSignature {
+  signed: boolean;
+  signedAt: number;
+  version: string;
+}
+
+export type IntroductionState =
+  | 'draft'
+  | 'sent'
+  | 'accepted'
+  | 'declined'
+  | 'expired'
+  | 'withdrawn';
+
+export interface IntentionIntroduction {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  intention: ExtendedIntentionId;
+  noteText: string;
+  state: IntroductionState;
+  createdAt: number;
+  respondedAt?: number;
+  expiresAt: number;
+}
+
+export interface PairExclusionRule {
+  id: string;
+  memberIdA: string;
+  memberIdB: string;
+  scope: 'all_spaces' | 'space_specific';
+  excludedSpace?: ExtendedIntentionId;
+  reason: 'connected_in_other_space' | 'user_hidden' | 'boundary_protection';
+  createdAt: number;
+}
+
+/**
  * Internal stable identifiers preserved for backend/storage compatibility ('echo' | 'counterpoint' | 'mosaic').
  * Member-facing UI displays:
  * - 'echo' -> 'Similar to Me'
@@ -106,7 +259,7 @@ export type PartnerSmokingRequirement =
 export interface SmokingVapingProfile {
   personalHabit: SmokingHabitStatus;
   environmentComfort: SmokingEnvironmentComfort;
-  partnerRequirementByIntention: Partial<Record<IntentionId, PartnerSmokingRequirement>>;
+  partnerRequirementByIntention: Partial<Record<ExtendedIntentionId, PartnerSmokingRequirement>>;
   isVoluntarilyDisclosed: boolean;
 }
 
@@ -239,13 +392,16 @@ export interface MemberEligibilityRequirements {
   memberId?: string;
   isAdult?: boolean;
   isAdultVerified?: boolean;
-  enabledIntentions: IntentionId[];
-  discoverableInIntentions?: IntentionId[];
-  discoveryEnabledByIntention?: Record<IntentionId, boolean>;
+  enabledIntentions: ExtendedIntentionId[];
+  discoverableInIntentions?: ExtendedIntentionId[];
+  discoveryEnabledByIntention?: Partial<Record<ExtendedIntentionId, boolean>>;
   blockedMemberIds: string[];
+  pairExclusions?: PairExclusionRule[];
+  connectedMemberIdsByIntention?: Partial<Record<ExtendedIntentionId, string[]>>;
+  hideCrossContextConnectionsByDefault?: boolean;
   relationshipStructure?: RelationshipStructureRequirement;
   relationshipStructureByIntention?: Partial<
-    Record<IntentionId, RelationshipStructureRequirement>
+    Record<ExtendedIntentionId, RelationshipStructureRequirement>
   >;
   relationshipStructureImportance?: ImportanceLevel;
   childrenPreference?: LongTermChildrenPreference;
@@ -253,6 +409,17 @@ export interface MemberEligibilityRequirements {
   childrenPreferenceImportance?: ImportanceLevel;
   relocationOpenness?: 'open' | 'anchored_in_city' | 'flexible' | 'unknown';
   smokingVapingProfile?: SmokingVapingProfile;
+  datingPurpose?: DatingRelationshipPurpose;
+  acceptableDatingPurposes?: DatingRelationshipPurpose[];
+  datingPacePreference?: DatingPacePreference;
+  acceptableDatingPaces?: DatingPacePreference[];
+  datingBoundariesPreference?: DatingBoundariesPreference;
+  datingCommunicationPreference?: DatingCommunicationPreference;
+  slowConnectionMode?: boolean;
+  cofounderProfile?: CofounderProfile;
+  acceptableFundingPreferences?: StartupFundingPreference[];
+  acceptableTimeCommitments?: FounderTimeCommitment[];
+  acceptableLocationPreferences?: FounderLocationPreference[];
 }
 
 export interface AdministeredItemResponse {
@@ -261,6 +428,9 @@ export interface AdministeredItemResponse {
   displayedOptionIndex: number;
   semanticOptionId: string;
   responseTimeMs: number;
+  normalizedValue?: number;
+  semanticNormalizedValue?: number;
+  constructId?: string;
 }
 
 export interface ConstructVectorPoint {
@@ -342,6 +512,24 @@ export interface MemberProfile {
    * Lifestyle smoking and vaping profile (voluntarily disclosed)
    */
   smokingVapingProfile?: SmokingVapingProfile;
+  /**
+   * Optional Cofounder space profile (isolated from dating/matrimony)
+   */
+  cofounderProfile?: CofounderProfile;
+  /**
+   * Dignity-first dating purpose and connection rhythm
+   */
+  datingPurposeProfile?: {
+    purpose: DatingRelationshipPurpose;
+    pace: DatingPacePreference;
+    boundaries: DatingBoundariesPreference;
+    communication: DatingCommunicationPreference;
+    slowConnectionMode: boolean;
+  };
+  /**
+   * Signed community respect pledge
+   */
+  respectPledgeSignature?: CommunityRespectPledgeSignature;
 }
 
 export interface PhotoCropTransform {
@@ -401,6 +589,8 @@ export interface AssessmentQuestionOption {
   translationReviewStatus?: 'machine_translation_pending_human_review' | 'human_reviewed';
   /** Measured flexibility contribution when this option explicitly reflects adaptability */
   measuredFlexibility?: number;
+  /** Semantic branch destination for adaptive exploration */
+  branchToQuestionId?: string;
 }
 
 export interface AssessmentQuestion {
@@ -601,3 +791,60 @@ export type TriangulationClassification =
   | 'consistent_stance'
   | 'plausible_situational_variation'
   | 'clarification_needed';
+
+export type ContradictionEvidenceCategory =
+  | 'different_facets_non_contradictory'
+  | 'plausible_contextual_variation'
+  | 'temporal_change_in_preference'
+  | 'genuine_unresolved_conflict_equivalent_context'
+  | 'potential_item_or_scoring_defect'
+  | 'insufficient_information';
+
+export interface ItemEvidenceTrace {
+  questionId: string;
+  version: string;
+  contextTag: string;
+  facetId: string;
+  normalizedValue: number;
+  semanticOptionId: string;
+  answeredAt?: number;
+}
+
+export interface TriangulationEvidenceReview {
+  facetId: string;
+  constructId: string;
+  facetName: string;
+  itemCount: number;
+  evidenceCategory: ContradictionEvidenceCategory;
+  isGenuinelyComparable: boolean;
+  directionsAligned: boolean;
+  situationalDifferencesExplainVariation: boolean;
+  contextualExplanation?: string;
+  potentialItemDefectFlag?: boolean;
+  temporalRevisionDetected?: boolean;
+  insufficientInformation: boolean;
+  clarificationRecommended: boolean;
+  clarificationOptions?: ClarificationOption[];
+  traceability: ItemEvidenceTrace[];
+  psychometricInterpretation: string;
+  userFacingExplanation: string;
+}
+
+export interface ClarificationOption {
+  id: string;
+  label: string;
+  explanation: string;
+}
+
+export interface ClarificationRequest {
+  id: string;
+  clusterId: string;
+  constructId: string;
+  facetId: string;
+  conflictingQuestionIds: string[];
+  prompt: string;
+  options: ClarificationOption[];
+  attemptCount: number;
+  maxAttempts: number;
+  status: 'pending' | 'resolved' | 'dismissed_by_user';
+}

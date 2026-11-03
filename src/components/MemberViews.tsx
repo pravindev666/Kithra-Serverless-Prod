@@ -47,7 +47,9 @@ import {
   ProfileSectionStatus,
   RelationshipSignalKind,
   SimilarityPresetId,
+  DatingRelationshipPurpose,
 } from '../types/kithra';
+import { COMMUNITY_RESPECT_PLEDGE_ITEMS } from '../data/communityRespectPledge';
 import {
   INTENTION_METADATA,
   QUESTION_THEME_MAP,
@@ -250,6 +252,12 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   const [showMatrimonyGuidesModal, setShowMatrimonyGuidesModal] = useState<boolean>(false);
   const [activeMatrimonyKitId, setActiveMatrimonyKitId] = useState<string>('kit-finances');
 
+  // Dignity-First Dating Purpose & Community Respect Pledge State
+  const [showRespectPledgeModal, setShowRespectPledgeModal] = useState<boolean>(false);
+  const [hasSignedPledge, setHasSignedPledge] = useState<boolean>(true);
+  const [datingPurpose, setDatingPurpose] = useState<DatingRelationshipPurpose>('committed_long_term');
+  const [slowConnectionMode, setSlowConnectionMode] = useState<boolean>(true);
+
   const showToast = (msg: string) => {
     setMemberFeedbackToast(msg);
     window.setTimeout(() => {
@@ -294,12 +302,26 @@ export const MemberShell: React.FC<MemberShellProps> = ({
   const handleSendIntroNote = (e: React.FormEvent) => {
     e.preventDefault();
     if (!noteModalMember || !introNoteText.trim()) return;
-    onUpdateProfiles((prev) =>
-      prev.map((p) =>
-        p.id === noteModalMember.id ? { ...p, connectionState: 'note-sent' } : p
-      )
-    );
-    showToast(`Thoughtful note saved for ${noteModalMember.name} (Simulated preview).`);
+
+    const result = memberStore.createIntroduction({
+      senderId: activeMemberId ?? 'member-kavya',
+      receiverId: noteModalMember.id,
+      intention: scopedIntention,
+      noteText: introNoteText.trim(),
+    });
+
+    if (result.success) {
+      onUpdateProfiles((prev) =>
+        prev.map((p) =>
+          p.id === noteModalMember.id ? { ...p, connectionState: 'note-sent' } : p
+        )
+      );
+      showToast(
+        `Thoughtful introduction note delivered to ${noteModalMember.name} in ${INTENTION_METADATA[scopedIntention].label} space.`
+      );
+    } else {
+      showToast(result.error ?? 'Could not send introduction.');
+    }
     setNoteModalMember(null);
     setIntroNoteText('');
   };
@@ -2803,6 +2825,9 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                           {currentQuestion.validationStatus}
                         </span>
                       )}
+                      <span className="px-2 py-0.5 rounded bg-[var(--surface2)] border border-[var(--line)] text-[11px] font-semibold text-[var(--ochre-text)]">
+                        Adaptive Selection
+                      </span>
                     </div>
                     <span className="text-xs font-semibold text-[var(--muted)]">
                       Applies to:{' '}
@@ -2885,7 +2910,18 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                           const activeMemberKey = activeSelfMember?.id ?? 'member-kavya';
                           memberStore.skipAssessmentQuestion(activeMemberKey, currentQuestion.id);
                           showToast('Question skipped. This will never penalize your profile readiness.');
-                          if (activeQuestionIndex < questions.length - 1) {
+                          const nextAdaptive = memberStore.getNextAdaptiveQuestionForMember(activeMemberKey, {
+                            questionBank: questions,
+                            targetSectionId: selectedSectionId !== 'all' ? selectedSectionId : undefined,
+                          });
+                          if (nextAdaptive?.nextQuestion) {
+                            const nextIdx = visibleQuestions.findIndex((q) => q.id === nextAdaptive.nextQuestion!.id);
+                            if (nextIdx >= 0 && nextIdx !== activeQuestionIndex) {
+                              setActiveQuestionIndex(nextIdx);
+                              return;
+                            }
+                          }
+                          if (activeQuestionIndex < visibleQuestions.length - 1) {
                             setActiveQuestionIndex((i) => i + 1);
                           }
                         }}
@@ -2904,7 +2940,19 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (activeQuestionIndex < questions.length - 1) {
+                          const activeMemberKey = activeSelfMember?.id ?? 'member-kavya';
+                          const nextAdaptive = memberStore.getNextAdaptiveQuestionForMember(activeMemberKey, {
+                            questionBank: questions,
+                            targetSectionId: selectedSectionId !== 'all' ? selectedSectionId : undefined,
+                          });
+                          if (nextAdaptive?.nextQuestion) {
+                            const nextIdx = visibleQuestions.findIndex((q) => q.id === nextAdaptive.nextQuestion!.id);
+                            if (nextIdx >= 0 && nextIdx !== activeQuestionIndex) {
+                              setActiveQuestionIndex(nextIdx);
+                              return;
+                            }
+                          }
+                          if (activeQuestionIndex < visibleQuestions.length - 1) {
                             setActiveQuestionIndex((i) => i + 1);
                           } else {
                             showToast('Assessment module complete. All responses saved.');
@@ -2912,7 +2960,7 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                         }}
                         className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] px-4 py-2.5 text-sm font-bold cursor-pointer min-h-[42px]"
                       >
-                        {activeQuestionIndex < questions.length - 1
+                        {activeQuestionIndex < visibleQuestions.length - 1
                           ? 'Next question →'
                           : 'Complete module'}
                       </button>
@@ -3128,6 +3176,62 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                   </p>
                 </div>
               </div>
+
+              {/* Optional Situational Clarification Card (Tasks 4 & 5) */}
+              {(() => {
+                const clarifications = memberStore.getActiveClarificationRequests(activeMemberKey, questions);
+                if (clarifications.length === 0) return null;
+                const req = clarifications[0];
+
+                return (
+                  <div className="p-5 rounded-[16px] bg-[var(--surface2)]/80 border border-[var(--ochre-text)]/40 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--ochre-text)] bg-[var(--surface)] px-2.5 py-0.5 rounded-full border border-[var(--line)]">
+                          🌿 Situational Clarification
+                        </span>
+                        <span className="text-xs text-[var(--muted)]">Self-Reflection Opportunity</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          memberStore.dismissClarification(activeMemberKey, req.id);
+                          showToast('Clarification dismissed. Your answers are preserved without penalty.');
+                        }}
+                        className="text-xs text-[var(--muted)] hover:text-[var(--heading)] cursor-pointer"
+                      >
+                        Skip for now ✕
+                      </button>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h3 className="font-serif-editorial text-[20px] font-bold text-[var(--heading)]">
+                        {req.prompt}
+                      </h3>
+                      <p className="text-xs text-[var(--muted)]">
+                        We observed that your answers point in different directions across similar scenarios. This is often healthy situational adaptability. You can clarify your approach below without changing your previous answers.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      {req.options.map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            memberStore.resolveClarification(activeMemberKey, req.id, opt.id);
+                            showToast(`Clarification saved: "${opt.label}".`);
+                          }}
+                          className="p-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)] text-left cursor-pointer transition-all hover:border-[var(--ochre-text)]"
+                        >
+                          <div className="text-xs font-bold text-[var(--heading)]">{opt.label}</div>
+                          <div className="text-[11px] text-[var(--muted)] mt-0.5 leading-snug">{opt.explanation}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Assessment Coverage & Readiness Band */}
               <div className="p-5 rounded-[16px] bg-[var(--surface)] border border-[var(--line)] space-y-3">
@@ -4144,6 +4248,89 @@ export const MemberShell: React.FC<MemberShellProps> = ({
               </div>
             </div>
 
+            {/* DIGNITY-FIRST DATING PURPOSE & SLOW CONNECTION MODE */}
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--line)]">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--ochre-text)]">
+                    Dignity-First Connection Rhythm
+                  </span>
+                  <h2 className="font-serif-editorial text-[26px] font-semibold text-[var(--heading)]">
+                    Dating Purpose &amp; Pacing Settings
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRespectPledgeModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface2)] border border-[var(--line)] text-xs font-bold text-[var(--heading)] hover:border-[var(--ochre-text)] cursor-pointer"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-[var(--friend)]" />
+                  <span>{hasSignedPledge ? '✓ Dignity Covenant Signed' : 'Sign Respect Pledge'}</span>
+                </button>
+              </div>
+
+              {/* Relationship Purpose Selector */}
+              <div>
+                <label className="text-xs font-bold uppercase text-[var(--muted)]">
+                  Stated Relationship Purpose (Self-Reported)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2">
+                  {[
+                    { id: 'committed_long_term', label: 'Committed Long-Term', desc: 'Seeking an enduring, committed partnership.' },
+                    { id: 'open_to_marriage', label: 'Open to Marriage', desc: 'Seeking dating that could lead to marriage.' },
+                    { id: 'intentional_dating', label: 'Intentional Dating', desc: 'Meaningful dating, not casual hookups.' },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setDatingPurpose(p.id as DatingRelationshipPurpose);
+                        showToast(`Dating purpose updated to: ${p.label}`);
+                      }}
+                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                        datingPurpose === p.id
+                          ? 'border-[var(--ochre-text)] bg-[var(--surface2)] ring-1 ring-[var(--ochre-text)]'
+                          : 'border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)]/50'
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-[var(--heading)]">{p.label}</div>
+                      <div className="text-[11px] text-[var(--muted)] mt-1">{p.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Slow Connection Mode Toggle */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface2)]/50 border border-[var(--line)]">
+                <div className="space-y-0.5 max-w-xl">
+                  <div className="text-sm font-bold text-[var(--heading)] flex items-center gap-2">
+                    <span>Slow Connection Mode</span>
+                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[var(--ochre-text)]/15 text-[var(--ochre-text)] font-extrabold">
+                      Recommended
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--muted)]">
+                    Low-pressure introductions, reflective conversation prompts, and private contact sharing. Protects against rushed communications or mass outreach.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-pressed={slowConnectionMode}
+                  onClick={() => {
+                    setSlowConnectionMode((curr) => !curr);
+                    showToast(slowConnectionMode ? 'Standard pacing enabled' : 'Slow Connection Mode activated');
+                  }}
+                  className={`px-3.5 py-2 rounded-[9px] text-xs font-bold border cursor-pointer ${
+                    slowConnectionMode
+                      ? 'bg-[var(--friend)] text-white border-[var(--friend)]'
+                      : 'bg-[var(--surface)] text-[var(--muted)] border-[var(--line)]'
+                  }`}
+                >
+                  {slowConnectionMode ? '✓ Active' : 'Off'}
+                </button>
+              </div>
+            </div>
+
             <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="font-serif-editorial text-[26px] font-semibold text-[var(--heading)]">
@@ -4427,6 +4614,89 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* DIGNITY-FIRST DATING PURPOSE & SLOW CONNECTION MODE */}
+            <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[15px] p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--line)]">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--ochre-text)]">
+                    Dignity-First Connection Rhythm
+                  </span>
+                  <h2 className="font-serif-editorial text-[26px] font-semibold text-[var(--heading)]">
+                    Dating Purpose &amp; Pacing Settings
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRespectPledgeModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface2)] border border-[var(--line)] text-xs font-bold text-[var(--heading)] hover:border-[var(--ochre-text)] cursor-pointer"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-[var(--friend)]" />
+                  <span>{hasSignedPledge ? '✓ Dignity Covenant Signed' : 'Sign Respect Pledge'}</span>
+                </button>
+              </div>
+
+              {/* Relationship Purpose Selector */}
+              <div>
+                <label className="text-xs font-bold uppercase text-[var(--muted)]">
+                  Stated Relationship Purpose (Self-Reported)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2">
+                  {[
+                    { id: 'committed_long_term', label: 'Committed Long-Term', desc: 'Seeking an enduring, committed partnership.' },
+                    { id: 'open_to_marriage', label: 'Open to Marriage', desc: 'Seeking dating that could lead to marriage.' },
+                    { id: 'intentional_dating', label: 'Intentional Dating', desc: 'Meaningful dating, not casual hookups.' },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setDatingPurpose(p.id as DatingRelationshipPurpose);
+                        showToast(`Dating purpose updated to: ${p.label}`);
+                      }}
+                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                        datingPurpose === p.id
+                          ? 'border-[var(--ochre-text)] bg-[var(--surface2)] ring-1 ring-[var(--ochre-text)]'
+                          : 'border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface2)]/50'
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-[var(--heading)]">{p.label}</div>
+                      <div className="text-[11px] text-[var(--muted)] mt-1">{p.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Slow Connection Mode Toggle */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--surface2)]/50 border border-[var(--line)]">
+                <div className="space-y-0.5 max-w-xl">
+                  <div className="text-sm font-bold text-[var(--heading)] flex items-center gap-2">
+                    <span>Slow Connection Mode</span>
+                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[var(--ochre-text)]/15 text-[var(--ochre-text)] font-extrabold">
+                      Recommended
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--muted)]">
+                    Low-pressure introductions, reflective conversation prompts, and private contact sharing. Protects against rushed communications or mass outreach.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-pressed={slowConnectionMode}
+                  onClick={() => {
+                    setSlowConnectionMode((curr) => !curr);
+                    showToast(slowConnectionMode ? 'Standard pacing enabled' : 'Slow Connection Mode activated');
+                  }}
+                  className={`px-3.5 py-2 rounded-[9px] text-xs font-bold border cursor-pointer ${
+                    slowConnectionMode
+                      ? 'bg-[var(--friend)] text-white border-[var(--friend)]'
+                      : 'bg-[var(--surface)] text-[var(--muted)] border-[var(--line)]'
+                  }`}
+                >
+                  {slowConnectionMode ? '✓ Active' : 'Off'}
+                </button>
               </div>
             </div>
           </div>
@@ -4771,6 +5041,90 @@ export const MemberShell: React.FC<MemberShellProps> = ({
           </div>
         );
       })()}
+
+      {/* Modal: Community Respect Pledge & Dignity Covenant */}
+      {showRespectPledgeModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="respect-pledge-title"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+        >
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-[20px] max-w-[760px] w-full p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-[var(--line)]">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--ochre-text)] bg-[var(--surface2)] px-2.5 py-0.5 rounded-full border border-[var(--line)]">
+                    🛡️ Safety &amp; Dignity First
+                  </span>
+                  <span className="text-xs text-[var(--muted)]">Community Covenant · 2026.11</span>
+                </div>
+                <h2
+                  id="respect-pledge-title"
+                  className="font-serif-editorial text-[28px] sm:text-[32px] font-bold text-[var(--heading)]"
+                >
+                  The Kithra Community Respect Pledge
+                </h2>
+                <p className="text-xs sm:text-sm text-[var(--muted)]">
+                  Kithra is designed for authentic human connection, mutual respect, and dignity. All members agree to these 8 foundational commitments.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRespectPledgeModal(false)}
+                className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--heading)] hover:bg-[var(--surface2)] cursor-pointer"
+                aria-label="Close dialog"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {COMMUNITY_RESPECT_PLEDGE_ITEMS.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-4 rounded-xl bg-[var(--surface2)]/40 border border-[var(--line)] space-y-1.5"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-[var(--ochre-text)]">
+                      0{item.number}.
+                    </span>
+                    <h3 className="text-sm font-bold text-[var(--heading)]">
+                      {item.title}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[var(--heading)] leading-relaxed font-serif">
+                    &ldquo;{item.commitment}&rdquo;
+                  </p>
+                  <p className="text-[11px] text-[var(--muted)] italic pt-0.5">
+                    Why it matters: {item.rationale}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[var(--line)]">
+              <div className="text-xs text-[var(--muted)]">
+                Status:{' '}
+                <strong className="text-[var(--friend)]">
+                  {hasSignedPledge ? '✓ Signed on Account Creation' : 'Pending Signature'}
+                </strong>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setHasSignedPledge(true);
+                  setShowRespectPledgeModal(false);
+                  showToast('Dignity Covenant signed. Thank you for protecting community safety.');
+                }}
+                className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] px-6 py-2.5 text-xs font-bold cursor-pointer"
+              >
+                I Affirm &amp; Sign the Dignity Covenant
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 };
