@@ -1499,7 +1499,13 @@ export const MemberShell: React.FC<MemberShellProps> = ({
 
         {/* TAB 2: DISCOVER (INTENTION-SCOPED & FULL 0-100 ATTRIBUTE SIMILARITY SPECTRUM) */}
         {activeTab === 'discover' && (
-          <div className="space-y-6">
+          <div
+            className="space-y-6 p-4 sm:p-6 rounded-[22px] transition-all"
+            style={{
+              background: `radial-gradient(ellipse at top left, color-mix(in srgb, ${INTENTION_METADATA[scopedIntention].colorVar} 4%, transparent) 0%, transparent 70%)`,
+              border: `1px solid color-mix(in srgb, ${INTENTION_METADATA[scopedIntention].colorVar} 18%, var(--line))`,
+            }}
+          >
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <h1 className="font-serif-editorial text-[36px] sm:text-[44px] leading-[1.05] font-semibold text-[var(--heading)]">
@@ -2266,6 +2272,14 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                 })}
               </div>
             )}
+
+            {/* Cross-Context Privacy Firewall Reassurance Banner (UX-007, UX-008) */}
+            <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--line)] flex items-center gap-3 text-xs text-[var(--muted)] shadow-xs">
+              <Shield className="w-4 h-4 text-[var(--ochre)] shrink-0" />
+              <span>
+                <strong>Cross-Context Privacy Firewall Active:</strong> Discovering people in {INTENTION_METADATA[scopedIntention].label} is strictly isolated. Your reflections and photos never appear in your other intention spaces.
+              </span>
+            </div>
           </div>
         )}
 
@@ -3539,21 +3553,39 @@ export const MemberShell: React.FC<MemberShellProps> = ({
                       </div>
                     </div>
 
-                    {/* Footer Actions / Exit Handle */}
+                    {/* Footer Actions / Exit Handle (UX-011, UX-012) */}
                     <div className="pt-4 border-t border-[var(--line)] flex flex-col sm:flex-row items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (window.confirm(`Cancel your RSVP for "${activeHiveCircle.title}"?\n\nYour seat will be released for someone on the waitlist, and you will step out of this Hive.`)) {
-                            onToggleCircleJoin(activeHiveCircle.id);
-                            setSalonCircleId(null);
-                            showToast('RSVP cancelled. Your seat has been released.');
-                          }
-                        }}
-                        className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline px-3.5 py-2 rounded border border-rose-200 dark:border-rose-900/40 hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer"
-                      >
-                        Cancel RSVP &amp; Release My Seat
-                      </button>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {isHiveHost ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Archive and cancel gathering "${activeHiveCircle.title}"?\n\nThis will notify confirmed members and free up this circle.`)) {
+                                onArchiveCircle?.(activeHiveCircle.id);
+                                setSalonCircleId(null);
+                                showToast('Circle gathering archived and cancelled.');
+                              }
+                            }}
+                            className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline px-3.5 py-2 rounded border border-rose-200 dark:border-rose-900/40 hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer"
+                          >
+                            Archive / Cancel Gathering
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Cancel your RSVP for "${activeHiveCircle.title}"?\n\nYour seat will be released for someone on the waitlist, and you will step out of this Hive.`)) {
+                                onToggleCircleJoin(activeHiveCircle.id);
+                                setSalonCircleId(null);
+                                showToast('RSVP cancelled. Your seat has been released.');
+                              }
+                            }}
+                            className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline px-3.5 py-2 rounded border border-rose-200 dark:border-rose-900/40 hover:bg-rose-50 dark:hover:bg-rose-950/20 cursor-pointer"
+                          >
+                            Cancel RSVP &amp; Release My Seat
+                          </button>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={() => setSalonCircleId(null)}

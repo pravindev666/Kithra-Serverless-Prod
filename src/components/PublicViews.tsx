@@ -200,27 +200,27 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
           {[
             {
               step: '01. Choose your intention',
-              body: 'Enable Friendship, Dating, or Matrimony independently. You decide which intention to browse at any time.',
+              body: 'Enable Friendship, Dating, Matrimony, or Cofounders independently. You decide which intention to browse at any time.',
               actionLabel: 'Set up your intentions →',
-              onClick: () => onNavigatePath('/onboarding'),
+              onClick: () => onNavigatePath('/join'),
             },
             {
               step: '02. Answer at your pace',
               body: 'Respond to thoughtful questions about daily life, communication, and values—save and return whenever you like.',
-              actionLabel: 'Explore questions →',
-              onClick: () => onNavigatePath('/member/assessments'),
+              actionLabel: 'Preview reflection questions →',
+              onClick: () => onNavigatePath('/join'),
             },
             {
               step: '03. Control photo visibility',
-              body: 'Frame your portrait and choose whether each photo is visible in Friendship, Dating, or Matrimony separately.',
-              actionLabel: 'Manage photos →',
-              onClick: () => onNavigatePath('/member/photos'),
+              body: 'Frame your portrait with our 4:5 guide and choose whether each photo is visible in Friendship, Dating, Matrimony, or Cofounders separately.',
+              actionLabel: 'Learn about 4:5 portraits →',
+              onClick: () => onNavigatePath('/join'),
             },
             {
               step: '04. Explore three honest lenses',
               body: 'Review Similar to Me, Different from Me, and We Balance Each Other across the full 0–100 similarity spectrum before saying hello.',
-              actionLabel: 'See compatibility example →',
-              onClick: () => onNavigatePath('/member/match/member-aarav'),
+              actionLabel: 'Explore compatibility lenses ↓',
+              onClick: () => scrollToSection('compatibility'),
             },
           ].map((item) => (
             <div
@@ -497,16 +497,16 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
           <div className="max-w-[660px]">
             <p className="uppercase tracking-[2.3px] text-xs font-bold text-[var(--ochre-text)]">
-              Unified membership · Illustrative pricing
+              Unified membership · Pilot research phase
             </p>
             <h2
               className="font-serif-editorial text-[var(--heading)] font-semibold mt-2 mb-2"
               style={{ fontSize: 'clamp(2.15rem, 3.8vw, 3.1rem)', lineHeight: 1.06, textWrap: 'balance' }}
             >
-              One membership across all three intentions.
+              One membership across all four spaces.
             </h2>
             <p className="text-base text-[var(--muted)]">
-              We never charge separately for Friendship, Dating, and Matrimony, and safety protections are never paywalled. Figures below are illustrative preview examples only—no billing is active.
+              We never charge separately for Friendship, Dating, Matrimony, or Cofounders, and safety protections are never paywalled. All pilot memberships are completely complimentary—Indian payment gateway integrations (Razorpay &amp; Cashfree) are architected for commercial launch.
             </p>
           </div>
 
@@ -540,7 +540,7 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
               name: 'Free Member',
               audience: 'Effort-to-Discovery (Earn matches by answering)',
               priceText: '₹0 · Always Free',
-              cadence: 'Available across Friendship, Dating & Matrimony',
+              cadence: 'Available across Friendship, Dating, Matrimony & Cofounders',
               badge: 'EFFORT-BASED',
               features: [
                 'Complete 60-question psychometric bank 100% free',
@@ -1525,16 +1525,33 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
           role="group"
           aria-label={`Onboarding step ${step} of 5`}
         >
-          {[1, 2, 3, 4, 5].map((idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => setStep(idx as 1 | 2 | 3 | 4 | 5)}
-              aria-label={`Go to onboarding step ${idx}`}
-              className={`h-2.5 rounded-full transition-all cursor-pointer ${step === idx ? 'w-8 bg-[var(--ochre)]' : 'w-2.5 bg-[var(--line)]'
+          {[1, 2, 3, 4, 5].map((idx) => {
+            const isCompleted = idx < step;
+            const isCurrent = idx === step;
+            return (
+              <button
+                key={idx}
+                type="button"
+                disabled={idx > step}
+                onClick={() => {
+                  if (idx <= step) {
+                    setStep(idx as 1 | 2 | 3 | 4 | 5);
+                  }
+                }}
+                aria-label={`Onboarding step ${idx} of 5${isCurrent ? ' (current)' : isCompleted ? ' (completed)' : ' (locked)'}`}
+                className={`relative h-2.5 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ochre)] ${
+                  isCurrent
+                    ? 'w-8 bg-[var(--ochre)]'
+                    : isCompleted
+                      ? 'w-3 bg-[var(--ochre)]/60 hover:bg-[var(--ochre)] cursor-pointer'
+                      : 'w-2.5 bg-[var(--line)] cursor-not-allowed opacity-40'
                 }`}
-            />
-          ))}
+              >
+                {/* 44x44px touch target padding under WCAG 2.2 AA & Fitts's Law */}
+                <span className="absolute -inset-3" aria-hidden="true" />
+              </button>
+            );
+          })}
         </div>
       </div>
 

@@ -52,13 +52,13 @@ export const KithraHero: React.FC<KithraHeroProps> = ({
             your values, with a separate, private profile for each kind of connection.
           </p>
 
-          <div className="flex flex-wrap items-center gap-3 mt-8">
+          <div className="flex flex-wrap items-center gap-4 mt-8">
             <button
               type="button"
               onClick={onPrimaryAction}
-              className="inline-flex items-center justify-center gap-2 min-h-[48px] rounded-[10px] bg-[var(--primary)] text-[var(--on-primary)] px-6 text-[15px] font-semibold hover:brightness-110 transition-[filter] cursor-pointer"
+              className="inline-flex items-center justify-center gap-2.5 min-h-[48px] rounded-[10px] bg-[var(--primary)] text-[var(--on-primary)] px-7 text-[15px] font-semibold hover:brightness-110 shadow-sm transition-all cursor-pointer"
             >
-              Get started
+              Begin your journey
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </button>
             <a
@@ -67,14 +67,18 @@ export const KithraHero: React.FC<KithraHeroProps> = ({
                 e.preventDefault();
                 onSecondaryScrollToHowItWorks();
               }}
-              className="inline-flex items-center justify-center min-h-[48px] rounded-[10px] px-5 text-[15px] font-semibold text-[var(--heading)] hover:bg-[var(--surface2)] transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 min-h-[48px] rounded-[10px] px-4 text-[14px] font-medium text-[var(--muted)] hover:text-[var(--heading)] transition-colors"
             >
-              How it works
+              Explore how Kithra works ↓
             </a>
           </div>
 
-          <p className="mt-6 text-sm text-[var(--muted)]">
-            Free to join · Your photos stay in the spaces you choose
+          <p className="mt-6 text-xs text-[var(--muted)] flex items-center gap-2">
+            <span>Free to join</span>
+            <span aria-hidden="true">·</span>
+            <span>Separate private profiles per intention</span>
+            <span aria-hidden="true">·</span>
+            <span className="text-[var(--ochre-text)] font-semibold">Pilot phase</span>
           </p>
         </motion.div>
 

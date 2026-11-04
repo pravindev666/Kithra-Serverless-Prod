@@ -130,6 +130,7 @@ export interface ExecutiveKpiSummary {
       friendship: number;
       dating: number;
       matrimony: number;
+      cofounders?: number;
     };
     totalPairingsEvaluated: number;
     mutualInterestsFormed: number;
@@ -478,6 +479,7 @@ export function getExecutiveOverviewMetrics(dateRange = 'last_30_days'): Executi
         friendship: friendshipCount,
         dating: datingCount,
         matrimony: matrimonyCount,
+        cofounders: Math.max(1, Math.round(total * 0.35)),
       },
       totalPairingsEvaluated: Math.round((total * (total - 1)) / 2),
       mutualInterestsFormed: Math.round(total * 1.8),

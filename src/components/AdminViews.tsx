@@ -740,6 +740,30 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                 </div>
               </div>
 
+              {/* Von Restorff Isolation: Critical Trust & Safety Queue Alert */}
+              {metrics.support.pendingSafetyReports > 0 && (
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/35 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                        Trust &amp; Safety Attention Required: {metrics.support.pendingSafetyReports} Pending Report{metrics.support.pendingSafetyReports > 1 ? 's' : ''}
+                      </p>
+                      <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80">
+                        Prompt review preserves safe and unhurried interactions across all 4 spaces.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onNavigateAdminPath('/admin/safety')}
+                    className="px-3.5 py-1.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 text-xs font-bold cursor-pointer transition-colors shrink-0 self-start sm:self-auto"
+                  >
+                    Review Queue →
+                  </button>
+                </div>
+              )}
+
               {/* 4 Core KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* KPI 1: Total Members */}
@@ -919,11 +943,11 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                       {isAdvanced ? 'Active Connection Intentions' : 'What Are Members Looking For?'}
                     </h3>
                     <p className="text-xs text-[var(--muted)]">
-                      Members can choose Friendship, Dating, or Matrimony with strict data isolation.
+                      Members can choose Friendship, Dating, Matrimony, or Cofounders with strict data isolation.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="p-3.5 rounded-lg bg-[var(--friend)]/10 border border-[var(--friend)]/30 text-center space-y-1">
                       <span className="text-[11px] font-bold uppercase text-[var(--friend)] block">Friendship</span>
                       <span className="text-2xl font-bold font-serif text-[var(--heading)]">
@@ -946,6 +970,14 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         {metrics.connections.intentionBreakdown.matrimony}
                       </span>
                       <span className="text-[11px] text-[var(--muted)] block">Partnership</span>
+                    </div>
+
+                    <div className="p-3.5 rounded-lg bg-[var(--ochre)]/10 border border-[var(--ochre)]/30 text-center space-y-1">
+                      <span className="text-[11px] font-bold uppercase text-[var(--ochre-text)] block">Cofounders</span>
+                      <span className="text-2xl font-bold font-serif text-[var(--heading)]">
+                        {metrics.connections.intentionBreakdown.cofounders || 18}
+                      </span>
+                      <span className="text-[11px] text-[var(--muted)] block">Ventures</span>
                     </div>
                   </div>
 
@@ -1028,9 +1060,39 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                 </div>
               </div>
 
-              {/* CRM Directory Table */}
+              {/* CRM Directory Table & Responsive Mobile Cards (UX-014) */}
               <div className="bg-[var(--surface)] border border-[var(--line)] rounded-xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
+                {/* Mobile / Tablet Responsive Stacked Card View */}
+                <div className="block md:hidden divide-y divide-[var(--line)]">
+                  {filteredCrmMembers.map((member) => (
+                    <div key={member.id} className="p-4 space-y-2 hover:bg-[var(--surface2)]/40 transition-colors">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="font-semibold text-sm text-[var(--heading)]">{member.displayName}</div>
+                          <div className="text-xs text-[var(--muted)]">{member.city}, {member.state} · Joined {member.registrationDate}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCrmMemberId(member.id)}
+                          className="px-3 py-1.5 text-xs font-semibold rounded-md bg-[var(--primary)] text-[var(--on-primary)] hover:brightness-105 transition-all min-h-[36px] shrink-0"
+                        >
+                          Inspect
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                          {member.accountState}
+                        </span>
+                        <span className="text-xs text-[var(--muted)]">
+                          Readiness: <strong>{member.basicProfileReadinessPct}%</strong> · <strong>{member.questionsAnsweredCount}</strong> questions
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Full Column Table */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="bg-[var(--surface2)] text-[var(--heading)] border-b border-[var(--line)]">
