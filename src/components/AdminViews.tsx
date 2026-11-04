@@ -1074,7 +1074,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         <button
                           type="button"
                           onClick={() => setSelectedCrmMemberId(member.id)}
-                          className="px-3 py-1.5 text-xs font-semibold rounded-md bg-[var(--primary)] text-[var(--on-primary)] hover:brightness-105 transition-all min-h-[36px] shrink-0"
+                          className="px-3 py-1.5 text-xs font-semibold rounded-md bg-[var(--primary)] text-[var(--on-primary)] hover:brightness-105 transition-all min-h-[44px] shrink-0"
                         >
                           Inspect
                         </button>
