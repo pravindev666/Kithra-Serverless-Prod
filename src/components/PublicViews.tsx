@@ -101,7 +101,7 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
   manualReduceMotion = false,
 }) => {
   const [selectedSignal, setSelectedSignal] = useState<RelationshipSignalKind>('echo');
-  const [pricingDisplayMode, setPricingDisplayMode] = useState<'illustrative' | 'coming-soon'>('illustrative');
+  const [showSampleAlignmentModal, setShowSampleAlignmentModal] = useState<boolean>(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   const scrollToSection = (id: string) => {
@@ -162,13 +162,13 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
                   <button
                     type="button"
                     onClick={() =>
-                      onNavigatePath('/member/discover', {
+                      onNavigatePath('/join', {
                         intentionFilter: intentKey,
                       })
                     }
-                    className="text-sm font-bold text-[var(--heading)] hover:underline inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap min-h-[40px]"
+                    className="text-sm font-bold text-[var(--heading)] hover:underline inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap min-h-[44px]"
                   >
-                    <span>Explore {info.label.toLowerCase()}</span>
+                    <span>Join with {info.label.toLowerCase()}</span>
                     <span aria-hidden="true">→</span>
                   </button>
                   <span className="text-xs text-[var(--muted)]">Independent scope</span>
@@ -332,12 +332,35 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
 
             <button
               type="button"
-              onClick={() => onNavigatePath('/member/match/member-aarav')}
+              onClick={() => setShowSampleAlignmentModal((prev) => !prev)}
+              aria-expanded={showSampleAlignmentModal}
               className="inline-flex items-center gap-2 rounded-[9px] border border-[var(--line)] text-[var(--heading)] hover:bg-[var(--surface2)] px-4 py-3 text-sm font-bold transition-colors cursor-pointer whitespace-nowrap min-h-[44px]"
             >
-              <span>Inspect full alignment details sheet</span>
-              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              <span>{showSampleAlignmentModal ? 'Hide sample alignment breakdown' : 'Inspect sample alignment breakdown'}</span>
+              <ArrowRight className={`w-4 h-4 transition-transform ${showSampleAlignmentModal ? 'rotate-90' : ''}`} aria-hidden="true" />
             </button>
+
+            {showSampleAlignmentModal && (
+              <div className="mt-4 p-4 rounded-[12px] bg-[var(--surface)] border border-[var(--line)] text-xs space-y-2.5 shadow-sm">
+                <div className="flex items-center justify-between font-bold text-[var(--heading)] text-sm">
+                  <span>12-Domain Alignment Report (Sample)</span>
+                  <span className="text-[var(--friend)]">91% Attribute Similarity</span>
+                </div>
+                <p className="text-[var(--muted)] leading-relaxed">
+                  Evaluates communication pace, circadian sync, conflict repair, and boundary respect. Transparent calculations with zero AI hallucination.
+                </p>
+                <div className="pt-2 border-t border-[var(--line)] flex items-center justify-between">
+                  <span className="text-[var(--muted)]">Ready to see your own fit?</span>
+                  <button
+                    type="button"
+                    onClick={() => onNavigatePath('/join')}
+                    className="font-bold text-[var(--primary)] hover:underline cursor-pointer"
+                  >
+                    Create your account →
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-7 space-y-3.5">
@@ -453,15 +476,15 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
                     Per-intention boundary preview
                   </p>
                   <p className="text-xs text-[var(--muted)]">
-                    Simulated example · One account, three independent scopes
+                    Simulated example · One account, four independent spaces
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => onNavigatePath('/member/photos')}
-                  className="text-sm font-bold text-[var(--heading)] hover:underline cursor-pointer whitespace-nowrap"
+                  onClick={() => onNavigatePath('/join')}
+                  className="text-sm font-bold text-[var(--heading)] hover:underline cursor-pointer whitespace-nowrap min-h-[44px]"
                 >
-                  Open Photo Manager →
+                  Preview privacy controls →
                 </button>
               </div>
               <div className="space-y-3 text-sm">
@@ -483,6 +506,13 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
                   <div>
                     <span className="font-bold text-[var(--heading)] block">Matrimony scope</span>
                     <span className="text-[var(--muted)]">Shows long-term partnership prompts &amp; primary 4:5 portrait</span>
+                  </div>
+                  <span className="font-semibold text-[var(--heading)] whitespace-nowrap">✓ Visible</span>
+                </div>
+                <div className="p-4 rounded-[11px] bg-[var(--surface2)] flex items-center justify-between gap-4">
+                  <div>
+                    <span className="font-bold text-[var(--heading)] block">Cofounders scope</span>
+                    <span className="text-[var(--muted)]">Shows startup vision, complementary skills &amp; venture ethics</span>
                   </div>
                   <span className="font-semibold text-[var(--heading)] whitespace-nowrap">✓ Visible</span>
                 </div>
@@ -510,27 +540,9 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-1 p-1 bg-[var(--surface2)] border border-[var(--line)] rounded-[9px] self-start">
-            <button
-              type="button"
-              onClick={() => setPricingDisplayMode('illustrative')}
-              className={`px-3.5 py-2 text-xs rounded-[7px] transition-colors cursor-pointer whitespace-nowrap ${pricingDisplayMode === 'illustrative'
-                ? 'bg-[var(--surface)] text-[var(--heading)] font-bold'
-                : 'text-[var(--muted)]'
-                }`}
-            >
-              Illustrative pricing
-            </button>
-            <button
-              type="button"
-              onClick={() => setPricingDisplayMode('coming-soon')}
-              className={`px-3.5 py-2 text-xs rounded-[7px] transition-colors cursor-pointer whitespace-nowrap ${pricingDisplayMode === 'coming-soon'
-                ? 'bg-[var(--surface)] text-[var(--heading)] font-bold'
-                : 'text-[var(--muted)]'
-                }`}
-            >
-              Coming soon view
-            </button>
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[var(--surface2)] border border-[var(--line)] self-start text-xs font-bold text-[var(--ochre-text)]">
+            <Sparkles className="w-3.5 h-3.5 text-[var(--ochre-text)]" aria-hidden="true" />
+            <span>Pilot Research Phase · All Accounts Complimentary Today</span>
           </div>
         </div>
 
@@ -542,6 +554,7 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
               priceText: '₹0 · Always Free',
               cadence: 'Available across Friendship, Dating, Matrimony & Cofounders',
               badge: 'EFFORT-BASED',
+              isPrimaryCta: true,
               features: [
                 'Complete 60-question psychometric bank 100% free',
                 'Earn 3–10 daily curated matches by answering reflections',
@@ -552,8 +565,9 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
             {
               name: '1-Month Explorer',
               audience: 'No-rush companion discovery for 30 days',
-              priceText: pricingDisplayMode === 'illustrative' ? '₹499 / month' : 'Coming soon',
+              priceText: '₹499 / mo · Coming soon',
               cadence: 'Single upfront pass · No auto-renewals',
+              isPrimaryCta: false,
               features: [
                 'Full 12-domain dimensional radar & harmony breakdown',
                 'All 3 discovery lenses (Similar, Different, Balance)',
@@ -564,9 +578,10 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
             {
               name: '3-Month Pacing',
               audience: 'The natural relationship incubation window',
-              priceText: pricingDisplayMode === 'illustrative' ? '₹999 (₹333 / mo)' : 'Coming soon',
+              priceText: '₹999 (₹333 / mo) · Coming soon',
               cadence: 'Billed once quarterly · Save 33%',
               badge: 'MOST POPULAR',
+              isPrimaryCta: false,
               features: [
                 'Everything in Explorer with unhurried 90-day pacing',
                 'Full conflict repair, social battery & circadian sync',
@@ -576,12 +591,13 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
             },
             {
               name: '1-Year All-Access Journey',
-              audience: '365 days across Friendship, Dating & Matrimony (Unhurried)',
-              priceText: pricingDisplayMode === 'illustrative' ? '₹2,499 (₹208 / mo)' : 'Coming soon',
+              audience: '365 days across Friendship, Dating, Matrimony & Cofounders (Unhurried)',
+              priceText: '₹2,499 (₹208 / mo) · Coming soon',
               cadence: 'Annual pass (Save 58%) · Or 6 Mo for ₹1,599',
               badge: '365-DAY PASS · BEST VALUE',
+              isPrimaryCta: false,
               features: [
-                'Complete access across all 3 intentions: Friendship, Dating & Matrimony',
+                'Complete access across all 4 spaces: Friendship, Dating, Matrimony & Cofounders',
                 'All 4 Pre-Marriage Alignment Kits & In-law boundary guides included',
                 'Strict Intention Isolation: Zero awkward marriage overlap in Friendship',
                 'Verified Serious-Intent Badge (displayed only within Matrimony scope)',
@@ -623,10 +639,13 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
               </div>
               <button
                 type="button"
-                onClick={() => onNavigatePath('/pricing')}
-                className="mt-6 w-full rounded-[9px] border border-[var(--line)] text-[var(--heading)] hover:bg-[var(--surface2)] py-3 text-sm font-bold transition-colors cursor-pointer min-h-[44px]"
+                onClick={() => onNavigatePath('/join')}
+                className={`mt-6 w-full rounded-[9px] py-3 text-sm font-bold transition-all cursor-pointer min-h-[44px] ${tier.isPrimaryCta
+                  ? 'bg-[var(--primary)] text-[var(--on-primary)] hover:brightness-105 shadow-sm'
+                  : 'border border-[var(--line)] text-[var(--heading)] hover:bg-[var(--surface2)]'
+                  }`}
               >
-                Compare membership plans
+                {tier.isPrimaryCta ? 'Begin Free Pilot Access →' : 'Reserve Pilot Membership →'}
               </button>
             </div>
           ))}
@@ -650,7 +669,7 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
             {[
               {
                 q: 'Can people in Dating or Matrimony see my Friendship profile?',
-                a: 'No. Each intention has its own visibility switch and photo permissions. If you only enable Friendship, your profile and photos never appear in Dating or Matrimony searches.',
+                a: 'No. Each intention has its own visibility switch and photo permissions. If you only enable Friendship, your profile and photos never appear in Dating, Matrimony, or Cofounder searches.',
               },
               {
                 q: 'Does Kithra use AI to score or rank people?',
@@ -661,7 +680,7 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
                 a: 'Not at all. You can start with a handful of questions during onboarding and continue answering across the five themes whenever you have a quiet moment.',
               },
               {
-                q: 'Do I need separate subscriptions for Friendship, Dating, and Matrimony?',
+                q: 'Do I need separate subscriptions for Friendship, Dating, Matrimony, or Cofounders?',
                 a: 'No. One unified membership covers your entire account across whichever intentions you choose to enable, and core safety and privacy controls are always free.',
               },
             ].map((faq, idx) => {
@@ -705,23 +724,24 @@ export const LandingView: React.FC<PublicNavigateProps> = ({
               Choose the intention that fits your life today.
             </h2>
             <p className="text-base text-[var(--muted)] mt-2">
-              Start with Friendship, Dating, or Matrimony—or preview the member experience directly.
+              Start with Friendship, Dating, Matrimony, or Cofounders—separated by rigorous privacy boundaries and built for unhurried human judgement.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
             <button
               type="button"
               onClick={() => onNavigatePath('/join')}
-              className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] border border-[var(--primary)] px-5 py-3.5 text-sm font-bold hover:brightness-105 transition-all cursor-pointer whitespace-nowrap min-h-[44px]"
+              className="rounded-[10px] bg-[var(--primary)] text-[var(--on-primary)] border border-[var(--primary)] px-7 py-3.5 text-[15px] font-bold hover:brightness-110 shadow-sm transition-all cursor-pointer whitespace-nowrap min-h-[48px] inline-flex items-center justify-center gap-2"
             >
-              Get started
+              <span>Begin your journey</span>
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </button>
             <button
               type="button"
-              onClick={() => onNavigatePath('/member/home')}
-              className="rounded-[9px] border border-[var(--line)] text-[var(--heading)] hover:bg-[var(--surface2)] px-4 py-3.5 text-sm font-bold transition-colors cursor-pointer whitespace-nowrap min-h-[44px]"
+              onClick={() => onNavigatePath('/signin')}
+              className="rounded-[10px] border border-[var(--line)] text-[var(--heading)] hover:bg-[var(--surface2)] px-5 py-3.5 text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap min-h-[48px] inline-flex items-center justify-center"
             >
-              Explore member home
+              Already a member? Sign in
             </button>
           </div>
         </div>
@@ -1539,13 +1559,12 @@ export const OnboardingView: React.FC<PublicNavigateProps> = ({
                   }
                 }}
                 aria-label={`Onboarding step ${idx} of 5${isCurrent ? ' (current)' : isCompleted ? ' (completed)' : ' (locked)'}`}
-                className={`relative h-2.5 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ochre)] ${
-                  isCurrent
+                className={`relative h-2.5 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ochre)] ${isCurrent
                     ? 'w-8 bg-[var(--ochre)]'
                     : isCompleted
                       ? 'w-3 bg-[var(--ochre)]/60 hover:bg-[var(--ochre)] cursor-pointer'
                       : 'w-2.5 bg-[var(--line)] cursor-not-allowed opacity-40'
-                }`}
+                  }`}
               >
                 {/* 44x44px touch target padding under WCAG 2.2 AA & Fitts's Law */}
                 <span className="absolute -inset-3" aria-hidden="true" />
@@ -2002,10 +2021,10 @@ export const PricingView: React.FC<PublicNavigateProps> = ({ onNavigatePath }) =
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             type="button"
-            onClick={() => onNavigatePath('/member/settings')}
+            onClick={() => onNavigatePath('/join')}
             className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] px-5 py-3 text-sm font-bold cursor-pointer whitespace-nowrap min-h-[44px] hover:opacity-95 transition-opacity"
           >
-            Manage Membership in Settings →
+            Begin Free Pilot Access →
           </button>
         </div>
       </div>
@@ -2014,13 +2033,13 @@ export const PricingView: React.FC<PublicNavigateProps> = ({ onNavigatePath }) =
       <div>
         <div className="text-center max-w-xl mx-auto mb-8 space-y-2">
           <p className="text-xs uppercase tracking-[2px] font-bold text-[var(--ochre-text)]">
-            Single Membership · Friendship, Dating &amp; Matrimony
+            Single Membership · Friendship, Dating, Matrimony &amp; Cofounders
           </p>
           <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[var(--heading)]">
             Choose your pace of connection
           </h2>
           <p className="text-sm text-[var(--muted)]">
-            One membership unlocks all three intention scopes. Every tier is billed once upfront with zero hidden fees.
+            One membership unlocks all four spaces. Every tier is billed once upfront with zero hidden fees.
           </p>
         </div>
 
@@ -2076,7 +2095,7 @@ export const PricingView: React.FC<PublicNavigateProps> = ({ onNavigatePath }) =
                 <ul className="space-y-2 text-xs text-[var(--text)]">
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-[var(--friend)] shrink-0" />
-                    <span>Friendship, Dating &amp; Matrimony</span>
+                    <span>Friendship, Dating, Matrimony &amp; Cofounders</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-[var(--friend)] shrink-0" />
@@ -2108,13 +2127,13 @@ export const PricingView: React.FC<PublicNavigateProps> = ({ onNavigatePath }) =
               <div className="pt-6 mt-4">
                 <button
                   type="button"
-                  onClick={() => onNavigatePath('/member/settings')}
+                  onClick={() => onNavigatePath('/join')}
                   className={`w-full py-2.5 px-4 rounded-[10px] text-xs font-bold cursor-pointer transition-colors ${plan.isPopular
                     ? 'bg-[var(--ochre-text)] text-[#09121C] hover:opacity-90'
                     : 'bg-[var(--surface2)] text-[var(--heading)] hover:bg-[var(--line)] border border-[var(--line)]'
                     }`}
                 >
-                  Choose {plan.name.split(' ')[0]} →
+                  Reserve {plan.name.split(' ')[0]} Pilot Pass →
                 </button>
               </div>
             </div>
@@ -2232,10 +2251,10 @@ export const PricingView: React.FC<PublicNavigateProps> = ({ onNavigatePath }) =
         </div>
         <button
           type="button"
-          onClick={() => onNavigatePath('/member/settings')}
+          onClick={() => onNavigatePath('/join')}
           className="rounded-[9px] bg-[var(--primary)] text-[var(--on-primary)] px-4 py-2.5 text-xs font-bold cursor-pointer whitespace-nowrap min-h-[40px] hover:opacity-90"
         >
-          Open Member Settings →
+          Get Started Free →
         </button>
       </div>
     </section>

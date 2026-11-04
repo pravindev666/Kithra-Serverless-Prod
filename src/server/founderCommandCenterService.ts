@@ -66,7 +66,7 @@ export const INDIAN_PRICING_PLANS: PricingPlan[] = [
     name: '1-Year All-Access Journey',
     priceInr: 2499,
     billingCadence: 'Annual (₹208 / mo)',
-    description: '365 days across Friendship, Dating & Matrimony with family kits & verified intent badge.',
+    description: '365 days across Friendship, Dating, Matrimony & Cofounders with family kits & verified intent badge.',
     savingsBadge: 'SAVE 58%',
   },
 ];

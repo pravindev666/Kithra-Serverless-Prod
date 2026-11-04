@@ -816,16 +816,6 @@ export default function App() {
             >
               Membership
             </a>
-            <a
-              href="/member/home"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavigatePath('/member/home');
-              }}
-              className="hover:text-[var(--heading)] transition-colors whitespace-nowrap shrink-0"
-            >
-              Member home
-            </a>
           </nav>
 
           {/* Zone 3: Theme Switcher, Primary CTA & Mobile Drawer Trigger */}
@@ -884,13 +874,11 @@ export default function App() {
           >
             {[
               { label: 'Kithra Home', path: '/' },
-              { label: 'Three Intentions', path: '/#intentions' },
+              { label: 'Four Spaces', path: '/#intentions' },
               { label: 'How It Works', path: '/#how-it-works' },
               { label: 'Compatibility & Fit', path: '/#compatibility' },
               { label: 'Frequently Asked Questions', path: '/#faq' },
               { label: 'Membership & Pricing', path: '/pricing' },
-              { label: 'Member Home', path: '/member/home' },
-              { label: 'Discover People', path: '/member/discover' },
               { label: 'Sign in / Create account', path: '/signin' },
             ].map((item) => (
               <a
@@ -1001,7 +989,7 @@ export default function App() {
           <div>
             <span>© Kithra · Coromandel Indigo & Ochre</span>
             <span aria-hidden="true"> · </span>
-            <span>One account · Three intentions</span>
+            <span>One account · Four independent spaces</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -1028,14 +1016,14 @@ export default function App() {
             </a>
             <span aria-hidden="true">·</span>
             <a
-              href="/member/home"
+              href="/signin"
               onClick={(e) => {
                 e.preventDefault();
-                handleNavigatePath('/member/home');
+                handleNavigatePath('/signin');
               }}
               className="hover:text-[var(--heading)] hover:underline cursor-pointer"
             >
-              Member home
+              Sign in
             </a>
             <span aria-hidden="true">·</span>
             <a

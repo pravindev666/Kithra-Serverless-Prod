@@ -28,6 +28,7 @@ const PUBLIC_VIEWS_PATH = path.join(ROOT_DIR, 'src/components/PublicViews.tsx');
 const HERO_PATH = path.join(ROOT_DIR, 'src/components/KithraHero.tsx');
 const MEMBER_VIEWS_PATH = path.join(ROOT_DIR, 'src/components/MemberViews.tsx');
 const ADMIN_VIEWS_PATH = path.join(ROOT_DIR, 'src/components/AdminViews.tsx');
+const APP_PATH = path.join(ROOT_DIR, 'src/App.tsx');
 
 test('Phase 16 — [UX-001] Hero Action Hierarchy: Single primary CTA and subtle scroll link', () => {
   const heroCode = fs.readFileSync(HERO_PATH, 'utf-8');
@@ -44,21 +45,35 @@ test('Phase 16 — [UX-001] Hero Action Hierarchy: Single primary CTA and subtle
 test('Phase 16 — [UX-002] & [UX-003] Landing Page: Four spaces described, zero premature member links', () => {
   const publicCode = fs.readFileSync(PUBLIC_VIEWS_PATH, 'utf-8');
 
-  // UX-002: "How Kithra Works" step cards must NOT link directly to internal authenticated routes
-  // Previously: /member/assessments, /member/photos, /member/match/member-aarav
-  const howItWorksSection = publicCode.substring(
-    publicCode.indexOf('How Kithra works'),
-    publicCode.indexOf('Three discovery &')
+  // UX-002: LandingView must contain ZERO premature /member/ route links
+  const landingViewCode = publicCode.substring(
+    publicCode.indexOf('export const LandingView'),
+    publicCode.indexOf('export const AuthView')
   );
 
-  assert.ok(!howItWorksSection.includes("onNavigatePath('/member/assessments')"), 'Step cards must not link to /member/assessments');
-  assert.ok(!howItWorksSection.includes("onNavigatePath('/member/photos')"), 'Step cards must not link to /member/photos');
-  assert.ok(!howItWorksSection.includes("onNavigatePath('/member/match/member-aarav')"), 'Step cards must not link to /member/match');
+  assert.ok(!landingViewCode.includes('/member/'), 'LandingView must contain ZERO /member/ route links');
+  assert.ok(!landingViewCode.includes('Illustrative pricing'), 'LandingView must remove confusing illustrative pricing toggle');
 
   // UX-003: Must represent all four spaces in copy
   assert.ok(publicCode.includes('One membership across all four spaces.'), 'Pricing headline must acknowledge all four spaces');
   assert.ok(publicCode.includes('Available across Friendship, Dating, Matrimony & Cofounders'), 'Free tier must cover all four spaces');
   assert.ok(publicCode.includes('Friendship, Dating, Matrimony, or Cofounders'), 'Explainer must cover all four spaces');
+  assert.ok(publicCode.includes('Cofounders scope'), 'Trust & Visibility simulator must include Cofounders scope');
+});
+
+test('Phase 16 — Public Header & Mobile Navigation: Zero premature member links for unauthenticated visitors', () => {
+  const appCode = fs.readFileSync(APP_PATH, 'utf-8');
+
+  const consumerHeader = appCode.substring(
+    appCode.indexOf('{/* CONSUMER HEADER */}'),
+    appCode.indexOf('{/* MAIN VIEWPORT */}')
+  );
+
+  // Unauthenticated public header & mobile drawer must not link to internal member routes
+  assert.ok(!consumerHeader.includes("handleNavigatePath('/member/home')"), 'Public header must not link to /member/home');
+  assert.ok(!consumerHeader.includes("handleNavigatePath('/member/discover')"), 'Public mobile drawer must not link to /member/discover');
+  assert.ok(consumerHeader.includes('Four Spaces'), 'Mobile drawer must list Four Spaces');
+  assert.ok(appCode.includes('One account · Four independent spaces'), 'Footer must state four independent spaces');
 });
 
 test('Phase 16 — [UX-004] & [UX-005] Onboarding: Forward-jumping locked & strict adult gate', () => {
